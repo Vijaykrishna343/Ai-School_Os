@@ -1,0 +1,8 @@
+from enum import StrEnum
+
+
+class TokenType(StrEnum):
+    ACCESS = "ACCESS"
+    REFRESH = "REFRESH"
+    PASSWORD_RESET = "PASSWORD_RESET"
+    EMAIL_VERIFICATION = "EMAIL_VERIFICATION"

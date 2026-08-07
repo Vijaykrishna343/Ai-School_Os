@@ -1,0 +1,11 @@
+class APITags:
+    SCHOOL = "School"
+    STUDENT = "Student"
+    PARENT = "Parent"
+    SECTIONS = "Sections"
+    TEACHER = "Teacher"
+    ATTENDANCE = "Attendance"
+    FEES = "Fees"
+    EXAMS = "Exams"
+    AUTH = "Authentication"
+    AI = "AI"

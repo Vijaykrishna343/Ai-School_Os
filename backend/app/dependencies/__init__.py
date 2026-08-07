@@ -1,0 +1,44 @@
+from .database import get_db
+from .services import (
+    # Repository dependencies
+    get_academic_year_repository,
+    get_parent_repository,
+    get_school_class_repository,
+    get_school_repository,
+    get_section_repository,
+    get_student_repository,
+    get_subject_repository,
+    get_teacher_repository,
+    # Service dependencies
+    get_academic_year_service,
+    get_parent_service,
+    get_school_class_service,
+    get_school_service,
+    get_section_service,
+    get_student_service,
+    get_subject_service,
+    get_teacher_service,
+)
+
+__all__ = [
+    # Database
+    "get_db",
+    # Repository dependencies
+    "get_academic_year_repository",
+    "get_parent_repository",
+    "get_school_class_repository",
+    "get_school_repository",
+    "get_section_repository",
+    "get_student_repository",
+    "get_subject_repository",
+    "get_teacher_repository",
+    # Service dependencies
+    "get_academic_year_service",
+    "get_parent_service",
+    "get_school_class_service",
+    "get_school_service",
+    "get_section_service",
+    "get_student_service",
+    "get_subject_service",
+    "get_teacher_service",
+]
