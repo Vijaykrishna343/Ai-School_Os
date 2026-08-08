@@ -1,10 +1,10 @@
-import logging
 from typing import Callable
 
 from fastapi import Depends, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.common.logger.logger import get_logger
 from app.dependencies import get_db
 from app.identity.dependencies.require_permission import (
     require_permission,
@@ -13,7 +13,7 @@ from app.identity.models.user import IdentityUser
 from app.identity.security.current_user import get_current_user
 from app.identity.security.oauth2 import get_token, http_bearer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def bootstrap_or_require_permission(

@@ -63,14 +63,20 @@ def engine():
     Base.metadata.create_all(bind=eng)
     yield eng
     Base.metadata.drop_all(bind=eng)
+    eng.dispose()
 
 
 @pytest.fixture(scope="module")
-def db(engine):
+def db_session(engine):
     Session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     session = Session()
     yield session
     session.close()
+
+
+@pytest.fixture(scope="module")
+def db(db_session):
+    return db_session
 
 
 @pytest.fixture(scope="module")
@@ -88,6 +94,7 @@ def client(engine):
     with TestClient(fastapi_app) as c:
         yield c
     fastapi_app.dependency_overrides.clear()
+
 
 
 # ---------------------------------------------------------------------------

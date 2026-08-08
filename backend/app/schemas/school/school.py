@@ -67,12 +67,26 @@ class SchoolUpdate(BaseModel):
 
 class SchoolResponse(SchoolBase):
     """
-    API response.
+    API response representation for School.
     """
 
     id: UUID
 
     created_at: datetime
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SchoolListResponse(BaseModel):
+    """
+    Paginated API response representation for School lists.
+    """
+
+    items: list[SchoolResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
     model_config = ConfigDict(from_attributes=True)

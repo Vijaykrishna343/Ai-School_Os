@@ -1,5 +1,5 @@
-import uuid
 from datetime import date
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -7,6 +7,10 @@ from app.common.enums import AcademicYearStatus
 
 
 class AcademicYearBase(BaseModel):
+    """
+    Shared fields for AcademicYear.
+    """
+
     name: str = Field(
         ...,
         min_length=4,
@@ -23,10 +27,18 @@ class AcademicYearBase(BaseModel):
 
 
 class AcademicYearCreate(AcademicYearBase):
-    school_id: uuid.UUID
+    """
+    Request body for creating an AcademicYear.
+    """
+
+    school_id: UUID
 
 
 class AcademicYearUpdate(BaseModel):
+    """
+    Request body for updating an AcademicYear.
+    """
+
     name: str | None = Field(
         default=None,
         min_length=4,
@@ -42,7 +54,25 @@ class AcademicYearUpdate(BaseModel):
 
 
 class AcademicYearResponse(AcademicYearBase):
+    """
+    API response representation for AcademicYear.
+    """
+
     model_config = ConfigDict(from_attributes=True)
 
-    id: uuid.UUID
-    school_id: uuid.UUID
+    id: UUID
+    school_id: UUID
+
+
+class AcademicYearListResponse(BaseModel):
+    """
+    Paginated API response representation for AcademicYear lists.
+    """
+
+    items: list[AcademicYearResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+    model_config = ConfigDict(from_attributes=True)

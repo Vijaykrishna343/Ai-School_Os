@@ -1,33 +1,9 @@
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from app.database.base import Base
-import app.identity.models  # Ensure all identity models are registered with Base
-import app.models.school  # Ensure school model is registered with Base
-from app.identity.seeders import (
-    seed_identity,
-    permission_seeder,
-    role_seeder,
-    role_permission_seeder,
-)
+from app.identity.seeders import seed_identity
 from app.identity.repositories import (
     permission_repository,
     role_repository,
     role_permission_repository,
 )
-
-
-@pytest.fixture
-def db_session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(bind=engine)
-    TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def test_seed_identity_first_run(db_session):

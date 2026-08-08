@@ -6,6 +6,7 @@ from app.common.exceptions import (
     AlreadyExistsException,
     NotFoundException,
 )
+from app.common.logger.logger import get_logger
 from app.identity.models.user import IdentityUser
 from app.identity.repositories import (
     identity_user_repository,
@@ -19,11 +20,13 @@ from app.identity.schemas.user import (
     UserResponse,
     UserUpdate,
 )
+from app.identity.security.password import hash_password
 from app.identity.services.base_identity_service import (
     BaseIdentityService,
 )
-from app.identity.security.password import hash_password
 from app.repositories.school.school_repository import school_repository
+
+logger = get_logger(__name__)
 
 
 class IdentityUserService(BaseIdentityService):
@@ -36,6 +39,14 @@ class IdentityUserService(BaseIdentityService):
         db: Session,
         user: UserCreate,
     ) -> IdentityUser:
+        """
+        Create a new identity user.
+        """
+        logger.info(
+            "Creating identity user email '%s' for school ID: %s",
+            user.email,
+            user.school_id,
+        )
 
         school = school_repository.get_by_id(
             db,
@@ -43,6 +54,10 @@ class IdentityUserService(BaseIdentityService):
         )
 
         if school is None:
+            logger.warning(
+                "Validation failure: School ID '%s' not found for user creation",
+                user.school_id,
+            )
             raise NotFoundException(
                 "School not found."
             )
@@ -52,6 +67,11 @@ class IdentityUserService(BaseIdentityService):
             user.school_id,
             user.email,
         ):
+            logger.warning(
+                "Validation failure: User email '%s' already exists for school ID: %s",
+                user.email,
+                user.school_id,
+            )
             raise AlreadyExistsException(
                 "Email",
                 user.email,
@@ -65,6 +85,11 @@ class IdentityUserService(BaseIdentityService):
                 user.username,
             )
         ):
+            logger.warning(
+                "Validation failure: Username '%s' already exists for school ID: %s",
+                user.username,
+                user.school_id,
+            )
             raise AlreadyExistsException(
                 "Username",
                 user.username,
@@ -91,8 +116,15 @@ class IdentityUserService(BaseIdentityService):
             db_user,
         )
 
+        logger.info(
+            "Identity user '%s' created successfully with ID: %s",
+            created_user.email,
+            created_user.id,
+        )
+
         # Automatic bootstrap role assignment for the first user of the school
         if active_user_count == 0:
+            logger.info("First active user detected for school %s: Assigning School Admin role", user.school_id)
             admin_role = role_repository.get_by_name(
                 db,
                 user.school_id,
@@ -116,32 +148,39 @@ class IdentityUserService(BaseIdentityService):
                         created_user.id,
                         admin_role.id,
                     )
+                    logger.info("Assigned School Admin role to user ID: %s", created_user.id)
 
         return created_user
+
     def get_user(
         self,
         db: Session,
         user_id: UUID,
-
     ) -> IdentityUser:
-
+        """
+        Get an identity user by ID.
+        """
         user = identity_user_repository.get_by_id(
             db,
             user_id,
         )
 
         if user is None:
+            logger.warning("Validation failure: User ID '%s' not found", user_id)
             raise NotFoundException(
                 "User not found."
             )
 
         return user
+
     def get_users(
         self,
         db: Session,
         filters: UserFilter,
     ) -> UserListResponse:
-
+        """
+        Get paginated list of users.
+        """
         users, total, _ = (
             identity_user_repository.get_paginated(
                 db,
@@ -159,13 +198,17 @@ class IdentityUserService(BaseIdentityService):
             page=filters.page,
             page_size=filters.page_size,
         )
+
     def update_user(
         self,
         db: Session,
         user_id: UUID,
         data: UserUpdate,
     ) -> IdentityUser:
-
+        """
+        Update an identity user.
+        """
+        logger.info("Updating identity user ID: %s", user_id)
         user = self.get_user(
             db,
             user_id,
@@ -182,16 +225,22 @@ class IdentityUserService(BaseIdentityService):
                 value,
             )
 
-        return identity_user_repository.update(
+        updated_user = identity_user_repository.update(
             db,
             user,
         )
+        logger.info("Identity user ID: %s updated successfully", user_id)
+        return updated_user
+
     def delete_user(
         self,
         db: Session,
         user_id: UUID,
     ) -> None:
-
+        """
+        Soft delete an identity user.
+        """
+        logger.info("Soft deleting identity user ID: %s", user_id)
         user = self.get_user(
             db,
             user_id,
@@ -201,4 +250,7 @@ class IdentityUserService(BaseIdentityService):
             db,
             user,
         )
+        logger.info("Identity user ID: %s soft deleted successfully", user_id)
+
+
 identity_user_service = IdentityUserService()

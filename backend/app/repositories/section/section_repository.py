@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import uuid
+from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -16,18 +16,24 @@ class SectionRepository(BaseRepository[Section]):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize SectionRepository with Section model.
+        """
         super().__init__(Section)
+
+    # ------------------------------------------------------------------
+    # Read / Query Methods
+    # ------------------------------------------------------------------
 
     def get_by_name(
         self,
         db: Session,
-        school_class_id: uuid.UUID,
+        school_class_id: UUID,
         name: str,
     ) -> Section | None:
         """
         Get a section by name within a school class.
         """
-
         return db.scalar(
             select(Section).where(
                 Section.school_class_id == school_class_id,
@@ -36,16 +42,54 @@ class SectionRepository(BaseRepository[Section]):
             )
         )
 
+    def get_by_class(
+        self,
+        db: Session,
+        school_class_id: UUID,
+    ) -> list[Section]:
+        """
+        Get all sections of a class.
+        """
+        return list(
+            db.scalars(
+                select(Section).where(
+                    Section.school_class_id == school_class_id,
+                    Section.is_deleted.is_(False),
+                )
+            )
+        )
+
+    def get_active_sections(
+        self,
+        db: Session,
+        school_class_id: UUID,
+    ) -> list[Section]:
+        """
+        Get active sections of a class.
+        """
+        return list(
+            db.scalars(
+                select(Section).where(
+                    Section.school_class_id == school_class_id,
+                    Section.status == SectionStatus.ACTIVE,
+                    Section.is_deleted.is_(False),
+                )
+            )
+        )
+
+    # ------------------------------------------------------------------
+    # Existence Methods
+    # ------------------------------------------------------------------
+
     def exists_by_name(
         self,
         db: Session,
-        school_class_id: uuid.UUID,
+        school_class_id: UUID,
         name: str,
     ) -> bool:
         """
         Check whether a section with the given name already exists.
         """
-
         return (
             self.get_by_name(
                 db,
@@ -55,41 +99,5 @@ class SectionRepository(BaseRepository[Section]):
             is not None
         )
 
-    def get_by_class(
-        self,
-        db: Session,
-        school_class_id: uuid.UUID,
-    ) -> list[Section]:
-        """
-        Get all sections of a class.
-        """
-
-        return list(
-            db.scalars(
-                select(Section).where(
-                    Section.school_class_id == school_class_id,
-                    Section.is_deleted.is_(False),
-                )
-            ).all()
-        )
-
-    def get_active_sections(
-        self,
-        db: Session,
-        school_class_id: uuid.UUID,
-    ) -> list[Section]:
-        """
-        Get active sections of a class.
-        """
-
-        return list(
-            db.scalars(
-                select(Section).where(
-                    Section.school_class_id == school_class_id,
-                    Section.status == SectionStatus.ACTIVE,
-                    Section.is_deleted.is_(False),
-                )
-            ).all()
-        )
 
 section_repository = SectionRepository()

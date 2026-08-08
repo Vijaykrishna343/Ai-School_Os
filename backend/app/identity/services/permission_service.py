@@ -8,12 +8,15 @@ from app.common.exceptions import (
     AlreadyExistsException,
     NotFoundException,
 )
+from app.common.logger.logger import get_logger
 from app.identity.models.permission import IdentityPermission
 from app.identity.repositories import permission_repository
 from app.identity.schemas.permission import (
     PermissionCreate,
     PermissionUpdate,
 )
+
+logger = get_logger(__name__)
 
 
 class IdentityPermissionService:
@@ -26,11 +29,16 @@ class IdentityPermissionService:
         db: Session,
         data: PermissionCreate,
     ) -> IdentityPermission:
+        """
+        Create a new permission.
+        """
+        logger.info("Creating permission '%s' for module '%s'", data.name, data.module)
 
         if permission_repository.exists_by_name(
             db,
             data.name,
         ):
+            logger.warning("Validation failure: Permission name '%s' already exists", data.name)
             raise AlreadyExistsException(
                 "Permission",
                 data.name,
@@ -43,23 +51,28 @@ class IdentityPermissionService:
             action=data.action,
         )
 
-        return permission_repository.create(
+        created = permission_repository.create(
             db,
             permission,
         )
+        logger.info("Permission '%s' created successfully with ID: %s", created.name, created.id)
+        return created
 
     def get_permission(
         self,
         db: Session,
         permission_id: UUID,
     ) -> IdentityPermission:
-
+        """
+        Get a permission by ID.
+        """
         permission = permission_repository.get_by_id(
             db,
             permission_id,
         )
 
         if permission is None:
+            logger.warning("Validation failure: Permission ID '%s' not found", permission_id)
             raise NotFoundException(
                 "Permission",
                 str(permission_id),
@@ -71,7 +84,9 @@ class IdentityPermissionService:
         self,
         db: Session,
     ) -> list[IdentityPermission]:
-
+        """
+        List all permissions.
+        """
         permissions, _, _ = (
             permission_repository.get_paginated(
                 db=db,
@@ -87,7 +102,9 @@ class IdentityPermissionService:
         db: Session,
         module: str,
     ) -> list[IdentityPermission]:
-
+        """
+        List all permissions for a module.
+        """
         return permission_repository.get_by_module(
             db,
             module,
@@ -99,7 +116,10 @@ class IdentityPermissionService:
         permission_id: UUID,
         data: PermissionUpdate,
     ) -> IdentityPermission:
-
+        """
+        Update an existing permission.
+        """
+        logger.info("Updating permission ID: %s", permission_id)
         permission = self.get_permission(
             db,
             permission_id,
@@ -117,6 +137,7 @@ class IdentityPermissionService:
                 exclude_id=permission.id,
             )
         ):
+            logger.warning("Validation failure: Permission name '%s' already exists", updates["name"])
             raise AlreadyExistsException(
                 "Permission",
                 updates["name"],
@@ -129,17 +150,22 @@ class IdentityPermissionService:
                 value,
             )
 
-        return permission_repository.update(
+        updated = permission_repository.update(
             db,
             permission,
         )
+        logger.info("Permission ID: %s updated successfully", permission_id)
+        return updated
 
     def delete_permission(
         self,
         db: Session,
         permission_id: UUID,
     ) -> None:
-
+        """
+        Soft delete a permission.
+        """
+        logger.info("Soft deleting permission ID: %s", permission_id)
         permission = self.get_permission(
             db,
             permission_id,
@@ -149,6 +175,7 @@ class IdentityPermissionService:
             db,
             permission,
         )
+        logger.info("Permission ID: %s soft deleted successfully", permission_id)
 
 
 permission_service = IdentityPermissionService()

@@ -1,13 +1,15 @@
 from .school import (
     SchoolBase,
     SchoolCreate,
-    SchoolUpdate,
+    SchoolListResponse,
     SchoolResponse,
+    SchoolUpdate,
 )
 
 __all__ = [
     "SchoolBase",
     "SchoolCreate",
-    "SchoolUpdate",
+    "SchoolListResponse",
     "SchoolResponse",
+    "SchoolUpdate",
 ]

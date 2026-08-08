@@ -12,28 +12,28 @@ from app.common.enums import (
 from app.models.student import Student
 from app.repositories.base import BaseRepository
 
+
 class StudentRepository(BaseRepository[Student]):
     """
     Repository responsible for all Student database operations.
 
     Responsibilities:
-    - Student lookup
-    - Duplicate validation
+    - Student lookup queries
+    - Duplicate check queries
     - Admission/Roll number lookup
-    - Search
-    - Filtering
-    - Pagination
-
-    NOTE:
-    Business validations belong in the Service layer.
+    - Multi-field search
+    - Filtering and pagination queries
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize StudentRepository with Student model.
+        """
         super().__init__(Student)
 
-    # ==========================================================
-    # Lookup Methods
-    # ==========================================================
+    # ------------------------------------------------------------------
+    # Read / Query Methods
+    # ------------------------------------------------------------------
 
     def get_by_admission_number(
         self,
@@ -41,9 +41,8 @@ class StudentRepository(BaseRepository[Student]):
         admission_number: str,
     ) -> Student | None:
         """
-        Get student by admission number.
+        Get active student by admission number.
         """
-
         stmt = (
             select(Student)
             .where(
@@ -63,9 +62,8 @@ class StudentRepository(BaseRepository[Student]):
         roll_number: str,
     ) -> Student | None:
         """
-        Get student by roll number.
+        Get active student by roll number within academic year, class, and section.
         """
-
         stmt = (
             select(Student)
             .where(
@@ -85,10 +83,8 @@ class StudentRepository(BaseRepository[Student]):
         email: str,
     ) -> Student | None:
         """
-        Get student by email.
-        Email comparison is case-insensitive.
+        Get active student by email (case-insensitive).
         """
-
         stmt = (
             select(Student)
             .where(
@@ -105,9 +101,8 @@ class StudentRepository(BaseRepository[Student]):
         phone: str,
     ) -> Student | None:
         """
-        Get student by phone.
+        Get active student by phone.
         """
-
         stmt = (
             select(Student)
             .where(
@@ -118,130 +113,13 @@ class StudentRepository(BaseRepository[Student]):
 
         return db.scalar(stmt)
 
-    # ==========================================================
-    # Exists Methods
-    # ==========================================================
-
-    def exists_by_admission_number(
-        self,
-        db: Session,
-        admission_number: str,
-        exclude_id: UUID | None = None,
-    ) -> bool:
-        """
-        Check admission number uniqueness.
-        """
-
-        stmt = (
-            select(Student.id)
-            .where(
-                Student.admission_number == admission_number,
-                Student.is_deleted.is_(False),
-            )
-        )
-
-        if exclude_id:
-            stmt = stmt.where(
-                Student.id != exclude_id,
-            )
-
-        return db.scalar(stmt.limit(1)) is not None
-
-    def exists_by_roll_number(
-        self,
-        db: Session,
-        academic_year_id: UUID,
-        school_class_id: UUID,
-        section_id: UUID,
-        roll_number: str,
-        exclude_id: UUID | None = None,
-    ) -> bool:
-        """
-        Check roll number uniqueness.
-        """
-
-        stmt = (
-            select(Student.id)
-            .where(
-                Student.academic_year_id == academic_year_id,
-                Student.school_class_id == school_class_id,
-                Student.section_id == section_id,
-                Student.roll_number == roll_number,
-                Student.is_deleted.is_(False),
-            )
-        )
-
-        if exclude_id:
-            stmt = stmt.where(
-                Student.id != exclude_id,
-            )
-
-        return db.scalar(stmt.limit(1)) is not None
-
-    def exists_by_email(
-        self,
-        db: Session,
-        email: str,
-        exclude_id: UUID | None = None,
-    ) -> bool:
-        """
-        Check email uniqueness.
-        """
-
-        stmt = (
-            select(Student.id)
-            .where(
-                func.lower(Student.email) == email.lower(),
-                Student.is_deleted.is_(False),
-            )
-        )
-
-        if exclude_id:
-            stmt = stmt.where(
-                Student.id != exclude_id,
-            )
-
-        return db.scalar(stmt.limit(1)) is not None
-
-    def exists_by_phone(
-        self,
-        db: Session,
-        phone: str,
-        exclude_id: UUID | None = None,
-    ) -> bool:
-        """
-        Check phone uniqueness.
-        """
-
-        stmt = (
-            select(Student.id)
-            .where(
-                Student.phone == phone,
-                Student.is_deleted.is_(False),
-            )
-        )
-
-        if exclude_id:
-            stmt = stmt.where(
-                Student.id != exclude_id,
-            )
-
-        return db.scalar(stmt.limit(1)) is not None
-
-    # ==========================================================
-    # Number Generation
-    # ==========================================================
-
     def get_last_admission_number(
         self,
         db: Session,
     ) -> Student | None:
         """
-        Get the latest admission number.
-
-        Used by AdmissionNumberGenerator.
+        Get the latest active student record by admission number order.
         """
-
         stmt = (
             select(Student)
             .where(
@@ -263,10 +141,8 @@ class StudentRepository(BaseRepository[Student]):
         section_id: UUID,
     ) -> Student | None:
         """
-        Get the latest roll number within an
-        Academic Year + Class + Section.
+        Get the latest active student record by roll number order within Academic Year + Class + Section.
         """
-
         stmt = (
             select(Student)
             .where(
@@ -283,19 +159,14 @@ class StudentRepository(BaseRepository[Student]):
 
         return db.scalar(stmt)
 
-    # ==========================================================
-    # Search
-    # ==========================================================
-
     def search_students(
         self,
         db: Session,
         keyword: str,
     ) -> list[Student]:
         """
-        Search students using multiple fields.
+        Search active students using multiple fields.
         """
-
         keyword = keyword.strip()
 
         stmt = (
@@ -317,13 +188,7 @@ class StudentRepository(BaseRepository[Student]):
             )
         )
 
-        return list(
-            db.scalars(stmt).all()
-        )
-
-    # ==========================================================
-    # Filter + Pagination
-    # ==========================================================
+        return list(db.scalars(stmt))
 
     def get_students(
         self,
@@ -340,9 +205,8 @@ class StudentRepository(BaseRepository[Student]):
         page_size: int = 10,
     ) -> tuple[list[Student], int]:
         """
-        Filter students with pagination.
+        Filter active students with pagination.
         """
-
         page = max(page, 1)
         page_size = max(page_size, 1)
 
@@ -401,7 +265,7 @@ class StudentRepository(BaseRepository[Student]):
 
         total = db.scalar(count_stmt) or 0
 
-        students = (
+        students = list(
             db.scalars(
                 stmt.offset(
                     (page - 1) * page_size,
@@ -409,10 +273,115 @@ class StudentRepository(BaseRepository[Student]):
                     page_size,
                 )
             )
-            .all()
         )
 
-        return students, total  
-      
+        return students, total
+
+    # ------------------------------------------------------------------
+    # Existence Methods
+    # ------------------------------------------------------------------
+
+    def exists_by_admission_number(
+        self,
+        db: Session,
+        admission_number: str,
+        exclude_id: UUID | None = None,
+    ) -> bool:
+        """
+        Check whether an active student exists with the specified admission number.
+        """
+        stmt = (
+            select(Student.id)
+            .where(
+                Student.admission_number == admission_number,
+                Student.is_deleted.is_(False),
+            )
+        )
+
+        if exclude_id:
+            stmt = stmt.where(
+                Student.id != exclude_id,
+            )
+
+        return db.scalar(stmt.limit(1)) is not None
+
+    def exists_by_roll_number(
+        self,
+        db: Session,
+        academic_year_id: UUID,
+        school_class_id: UUID,
+        section_id: UUID,
+        roll_number: str,
+        exclude_id: UUID | None = None,
+    ) -> bool:
+        """
+        Check whether an active student exists with the specified roll number in the given class and section.
+        """
+        stmt = (
+            select(Student.id)
+            .where(
+                Student.academic_year_id == academic_year_id,
+                Student.school_class_id == school_class_id,
+                Student.section_id == section_id,
+                Student.roll_number == roll_number,
+                Student.is_deleted.is_(False),
+            )
+        )
+
+        if exclude_id:
+            stmt = stmt.where(
+                Student.id != exclude_id,
+            )
+
+        return db.scalar(stmt.limit(1)) is not None
+
+    def exists_by_email(
+        self,
+        db: Session,
+        email: str,
+        exclude_id: UUID | None = None,
+    ) -> bool:
+        """
+        Check whether an active student exists with the specified email.
+        """
+        stmt = (
+            select(Student.id)
+            .where(
+                func.lower(Student.email) == email.lower(),
+                Student.is_deleted.is_(False),
+            )
+        )
+
+        if exclude_id:
+            stmt = stmt.where(
+                Student.id != exclude_id,
+            )
+
+        return db.scalar(stmt.limit(1)) is not None
+
+    def exists_by_phone(
+        self,
+        db: Session,
+        phone: str,
+        exclude_id: UUID | None = None,
+    ) -> bool:
+        """
+        Check whether an active student exists with the specified phone.
+        """
+        stmt = (
+            select(Student.id)
+            .where(
+                Student.phone == phone,
+                Student.is_deleted.is_(False),
+            )
+        )
+
+        if exclude_id:
+            stmt = stmt.where(
+                Student.id != exclude_id,
+            )
+
+        return db.scalar(stmt.limit(1)) is not None
+
+
 student_repository = StudentRepository()
-    

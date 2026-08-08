@@ -17,6 +17,7 @@ Format:
 Roll numbers restart for every Academic Year + Class + Section.
 """
 
+from app.common.utils.sequence_generator import SequenceCodeGenerator
 from app.models.student import Student
 
 
@@ -37,32 +38,19 @@ class RollNumberGenerator:
 
         Args:
             last_student:
-                Latest student in the same
-                Academic Year + Class + Section.
+                Latest student in the same Academic Year + Class + Section.
 
         Returns:
             Next roll number.
 
         Examples:
             None -> 001
-
             001 -> 002
-
             099 -> 100
         """
-
-        if last_student is None:
-            return f"{1:0{cls.NUMBER_LENGTH}d}"
-
-        roll_number = last_student.roll_number
-
-        if not roll_number:
-            return f"{1:0{cls.NUMBER_LENGTH}d}"
-
-        try:
-            next_number = int(roll_number) + 1
-
-        except ValueError:
-            next_number = 1
-
-        return f"{next_number:0{cls.NUMBER_LENGTH}d}"
+        last_code = last_student.roll_number if last_student else None
+        return SequenceCodeGenerator.generate_next_code(
+            current_code=last_code,
+            prefix="",
+            number_length=cls.NUMBER_LENGTH,
+        )

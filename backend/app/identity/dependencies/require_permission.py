@@ -10,20 +10,20 @@ Usage in API routes:
         ...
 """
 
-import logging
 from typing import Callable
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.common.exceptions import ForbiddenException
+from app.common.logger.logger import get_logger
 from app.dependencies import get_db
 from app.identity.models.user import IdentityUser
 from app.identity.security.current_user import (
     get_current_user,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def require_permission(

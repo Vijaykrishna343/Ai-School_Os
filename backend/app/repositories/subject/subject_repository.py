@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -8,7 +9,6 @@ from app.repositories.base import BaseRepository
 from app.schemas.subject import (
     SubjectCreate,
     SubjectFilter,
-    SubjectUpdate,
 )
 
 
@@ -17,22 +17,34 @@ class SubjectRepository(BaseRepository[Subject]):
     Repository responsible for Subject database operations.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize SubjectRepository with Subject model.
+        """
         super().__init__(Subject)
+
+    # ------------------------------------------------------------------
+    # Create Methods
+    # ------------------------------------------------------------------
 
     def create(
         self,
         db: Session,
-        subject: SubjectCreate,
+        subject: Subject | SubjectCreate,
     ) -> Subject:
-        db_subject = Subject(
-            **subject.model_dump()
-        )
+        """
+        Create a new Subject entity in the database.
+        """
+        if isinstance(subject, Subject):
+            db_subject = subject
+        else:
+            db_subject = Subject(**subject.model_dump())
 
-        return super().create(
-            db,
-            db_subject,
-        )
+        return super().create(db, db_subject)
+
+    # ------------------------------------------------------------------
+    # Read / Query Methods
+    # ------------------------------------------------------------------
 
     def get_by_subject_code(
         self,
@@ -40,6 +52,9 @@ class SubjectRepository(BaseRepository[Subject]):
         school_id: UUID,
         subject_code: str,
     ) -> Subject | None:
+        """
+        Retrieve an active subject by school ID and subject code.
+        """
         return db.scalar(
             select(Subject).where(
                 Subject.school_id == school_id,
@@ -54,6 +69,9 @@ class SubjectRepository(BaseRepository[Subject]):
         school_id: UUID,
         subject_name: str,
     ) -> Subject | None:
+        """
+        Retrieve an active subject by school ID and subject name.
+        """
         return db.scalar(
             select(Subject).where(
                 Subject.school_id == school_id,
@@ -67,7 +85,9 @@ class SubjectRepository(BaseRepository[Subject]):
         db: Session,
         filters: SubjectFilter,
     ) -> tuple[list[Subject], int]:
-
+        """
+        List active subjects based on query filters and pagination parameters.
+        """
         query = select(Subject).where(
             Subject.is_deleted.is_(False)
         )
@@ -123,38 +143,39 @@ class SubjectRepository(BaseRepository[Subject]):
             total,
         )
 
+    # ------------------------------------------------------------------
+    # Update Methods
+    # ------------------------------------------------------------------
+
     def update(
         self,
         db: Session,
         db_subject: Subject,
-        subject: SubjectUpdate,
+        subject: Any = None,
     ) -> Subject:
+        """
+        Update an existing Subject entity.
+        """
+        if subject is not None and hasattr(subject, "model_dump"):
+            update_data = subject.model_dump(exclude_unset=True)
+            for field, value in update_data.items():
+                setattr(db_subject, field, value)
 
-        update_data = subject.model_dump(
-            exclude_unset=True
-        )
+        return super().update(db, db_subject)
 
-        for field, value in update_data.items():
-            setattr(
-                db_subject,
-                field,
-                value,
-            )
-
-        return super().update(
-            db,
-            db_subject,
-        )
+    # ------------------------------------------------------------------
+    # Delete Methods
+    # ------------------------------------------------------------------
 
     def soft_delete(
         self,
         db: Session,
         db_subject: Subject,
     ) -> None:
+        """
+        Soft delete a Subject entity.
+        """
+        super().delete(db, db_subject)
 
-        super().delete(
-            db,
-            db_subject,
-        )
 
 subject_repository = SubjectRepository()

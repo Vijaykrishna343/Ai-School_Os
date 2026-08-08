@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 from uuid import UUID
+
+from sqlalchemy.orm import Session
 
 from app.common.exceptions import NotFoundException
 from app.repositories.base import BaseRepository
@@ -22,39 +24,40 @@ class BaseService(Generic[RepositoryType]):
     def __init__(
         self,
         repository: RepositoryType,
-    ):
+    ) -> None:
+        """
+        Initialize the base service with a repository instance.
+        """
         self.repository = repository
 
     def get_by_id(
         self,
-        db,
+        db: Session,
         obj_id: UUID,
         resource_name: str,
-    ):
+    ) -> Any:
         """
-        Retrieve an entity or raise NotFoundException.
+        Retrieve an entity by ID or raise NotFoundException.
         """
-
         obj = self.repository.get(
             db,
             obj_id,
         )
 
         if obj is None:
-            raise NotFoundException(resource_name)
+            raise NotFoundException(resource_name, str(obj_id))
 
         return obj
 
     def delete(
         self,
-        db,
+        db: Session,
         obj_id: UUID,
         resource_name: str,
     ) -> None:
         """
-        Soft delete an entity.
+        Soft delete an entity by ID.
         """
-
         obj = self.get_by_id(
             db,
             obj_id,

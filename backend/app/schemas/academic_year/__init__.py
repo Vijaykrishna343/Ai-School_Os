@@ -1,6 +1,7 @@
 from .academic_year import (
     AcademicYearBase,
     AcademicYearCreate,
+    AcademicYearListResponse,
     AcademicYearResponse,
     AcademicYearUpdate,
 )
@@ -8,6 +9,7 @@ from .academic_year import (
 __all__ = [
     "AcademicYearBase",
     "AcademicYearCreate",
+    "AcademicYearListResponse",
     "AcademicYearResponse",
     "AcademicYearUpdate",
 ]

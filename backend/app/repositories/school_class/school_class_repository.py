@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import uuid
+from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -12,18 +12,28 @@ from app.repositories.base import BaseRepository
 
 class SchoolClassRepository(BaseRepository[SchoolClass]):
     """
-    Repository for SchoolClass.
+    Repository responsible for SchoolClass database operations.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize SchoolClassRepository with SchoolClass model.
+        """
         super().__init__(SchoolClass)
+
+    # ------------------------------------------------------------------
+    # Read / Query Methods
+    # ------------------------------------------------------------------
 
     def get_by_name(
         self,
         db: Session,
-        school_id: uuid.UUID,
+        school_id: UUID,
         name: str,
     ) -> SchoolClass | None:
+        """
+        Retrieve a school class by name (case-insensitive) for a specific school.
+        """
         stmt = (
             select(SchoolClass)
             .where(
@@ -38,8 +48,11 @@ class SchoolClassRepository(BaseRepository[SchoolClass]):
     def get_by_school(
         self,
         db: Session,
-        school_id: uuid.UUID,
+        school_id: UUID,
     ) -> list[SchoolClass]:
+        """
+        Retrieve all active classes for a school ordered by display order.
+        """
         stmt = (
             select(SchoolClass)
             .where(
@@ -49,13 +62,16 @@ class SchoolClassRepository(BaseRepository[SchoolClass]):
             .order_by(SchoolClass.display_order)
         )
 
-        return list(db.scalars(stmt).all())
+        return list(db.scalars(stmt))
 
     def get_active_classes(
         self,
         db: Session,
-        school_id: uuid.UUID,
+        school_id: UUID,
     ) -> list[SchoolClass]:
+        """
+        Retrieve active classes with status ACTIVE for a school ordered by display order.
+        """
         stmt = (
             select(SchoolClass)
             .where(
@@ -66,15 +82,22 @@ class SchoolClassRepository(BaseRepository[SchoolClass]):
             .order_by(SchoolClass.display_order)
         )
 
-        return list(db.scalars(stmt).all())
+        return list(db.scalars(stmt))
+
+    # ------------------------------------------------------------------
+    # Existence Methods
+    # ------------------------------------------------------------------
 
     def exists_by_name(
         self,
         db: Session,
-        school_id: uuid.UUID,
+        school_id: UUID,
         name: str,
-        exclude_id: uuid.UUID | None = None,
+        exclude_id: UUID | None = None,
     ) -> bool:
+        """
+        Check if a class with the given name exists in a school, optionally excluding an ID.
+        """
         stmt = (
             select(SchoolClass)
             .where(
@@ -90,5 +113,6 @@ class SchoolClassRepository(BaseRepository[SchoolClass]):
             )
 
         return db.scalar(stmt) is not None
+
 
 school_class_repository = SchoolClassRepository()

@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
@@ -11,7 +12,7 @@ from app.common.enums.teacher import (
 
 
 class TeacherCreate(BaseModel):
-    school_id: str
+    school_id: UUID
 
     first_name: str
     middle_name: str | None = None

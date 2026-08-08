@@ -1,4 +1,3 @@
-import logging
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -8,6 +7,7 @@ from app.common.exceptions import (
     BadRequestException,
     UnauthorizedException,
 )
+from app.common.logger.logger import get_logger
 from app.core.config import settings
 from app.identity.repositories import identity_user_repository
 from app.identity.schemas.user import (
@@ -24,7 +24,7 @@ from app.identity.services.base_identity_service import (
 )
 from app.repositories.school.school_repository import school_repository
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class AuthenticationService(BaseIdentityService):
@@ -37,6 +37,14 @@ class AuthenticationService(BaseIdentityService):
         db: Session,
         credentials: UserLogin,
     ) -> UserLoginResponse:
+        """
+        Authenticate a user with school_code, email, and password.
+        """
+        logger.info(
+            "Login attempt for email '%s' under school code '%s'",
+            credentials.email,
+            credentials.school_code,
+        )
 
         # ---------------------------------------
         # Find School
@@ -48,6 +56,10 @@ class AuthenticationService(BaseIdentityService):
         )
 
         if school is None:
+            logger.warning(
+                "Authentication failure: Invalid school code '%s'",
+                credentials.school_code,
+            )
             raise BadRequestException(
                 "Invalid school code."
             )
@@ -63,6 +75,11 @@ class AuthenticationService(BaseIdentityService):
         )
 
         if user is None:
+            logger.warning(
+                "Authentication failure: User email '%s' not found for school '%s'",
+                credentials.email,
+                credentials.school_code,
+            )
             raise UnauthorizedException(
                 "Invalid email or password."
             )
@@ -72,6 +89,10 @@ class AuthenticationService(BaseIdentityService):
         # ---------------------------------------
 
         if not user.is_active:
+            logger.warning(
+                "Authentication failure: User account ID '%s' is inactive",
+                user.id,
+            )
             raise UnauthorizedException(
                 "User account is inactive."
             )
@@ -84,6 +105,10 @@ class AuthenticationService(BaseIdentityService):
             credentials.password,
             user.password_hash,
         ):
+            logger.warning(
+                "Authentication failure: Invalid credentials for user ID '%s'",
+                user.id,
+            )
             raise UnauthorizedException(
                 "Invalid email or password."
             )
@@ -112,7 +137,7 @@ class AuthenticationService(BaseIdentityService):
         )
 
         logger.info(
-            "User %s logged in (school=%s)",
+            "User %s logged in successfully (school=%s)",
             user.id,
             school.id,
         )
@@ -132,15 +157,15 @@ class AuthenticationService(BaseIdentityService):
         data: RefreshToken,
     ) -> UserLoginResponse:
         """
-        Issue a new access + refresh token pair using
-        a valid refresh token.
+        Issue a new access + refresh token pair using a valid refresh token.
         """
-
+        logger.info("Token refresh request received")
         payload = jwt_manager.verify_token(
             data.refresh_token,
         )
 
         if payload is None:
+            logger.warning("Token refresh failure: Invalid or expired refresh token")
             raise UnauthorizedException(
                 "Invalid or expired refresh token."
             )
@@ -152,6 +177,7 @@ class AuthenticationService(BaseIdentityService):
         token_type = payload.get("type")
 
         if token_type != TokenType.REFRESH:
+            logger.warning("Token refresh failure: Invalid token type '%s'", token_type)
             raise UnauthorizedException(
                 "Invalid token type. Refresh token required."
             )
@@ -169,11 +195,13 @@ class AuthenticationService(BaseIdentityService):
         )
 
         if user is None:
+            logger.warning("Token refresh failure: User ID '%s' not found", user_id)
             raise UnauthorizedException(
                 "User not found."
             )
 
         if not user.is_active:
+            logger.warning("Token refresh failure: User ID '%s' is inactive", user_id)
             raise UnauthorizedException(
                 "User account is inactive."
             )
@@ -197,7 +225,7 @@ class AuthenticationService(BaseIdentityService):
         )
 
         logger.info(
-            "Token refreshed for user %s",
+            "Token refreshed successfully for user %s",
             user_id,
         )
 

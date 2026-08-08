@@ -1,6 +1,7 @@
 from .school_class import (
     SchoolClassBase,
     SchoolClassCreate,
+    SchoolClassListResponse,
     SchoolClassResponse,
     SchoolClassUpdate,
 )
@@ -8,6 +9,7 @@ from .school_class import (
 __all__ = [
     "SchoolClassBase",
     "SchoolClassCreate",
+    "SchoolClassListResponse",
     "SchoolClassResponse",
     "SchoolClassUpdate",
 ]

@@ -14,6 +14,7 @@ The next admission number is generated based on the latest
 existing student admission number.
 """
 
+from app.common.utils.sequence_generator import SequenceCodeGenerator
 from app.models.student import Student
 
 
@@ -42,35 +43,12 @@ class AdmissionNumberGenerator:
 
         Examples:
             None -> ADM000001
-
             ADM000001 -> ADM000002
-
             ADM000999 -> ADM001000
         """
-
-        if last_student is None:
-            return f"{cls.PREFIX}{1:0{cls.NUMBER_LENGTH}d}"
-
-        admission_number = last_student.admission_number
-
-        if (
-            not admission_number
-            or not admission_number.startswith(cls.PREFIX)
-        ):
-            return f"{cls.PREFIX}{1:0{cls.NUMBER_LENGTH}d}"
-
-        numeric_part = admission_number.replace(
-            cls.PREFIX,
-            "",
-        )
-
-        try:
-            next_number = int(numeric_part) + 1
-
-        except ValueError:
-            next_number = 1
-
-        return (
-            f"{cls.PREFIX}"
-            f"{next_number:0{cls.NUMBER_LENGTH}d}"
+        last_code = last_student.admission_number if last_student else None
+        return SequenceCodeGenerator.generate_next_code(
+            current_code=last_code,
+            prefix=cls.PREFIX,
+            number_length=cls.NUMBER_LENGTH,
         )

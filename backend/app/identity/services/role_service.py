@@ -9,6 +9,7 @@ from app.common.exceptions import (
     BadRequestException,
     NotFoundException,
 )
+from app.common.logger.logger import get_logger
 from app.identity.models.role import IdentityRole
 from app.identity.repositories import (
     permission_repository,
@@ -18,6 +19,8 @@ from app.identity.schemas.role import (
     RoleCreate,
     RoleUpdate,
 )
+
+logger = get_logger(__name__)
 
 
 class IdentityRoleService:
@@ -30,12 +33,25 @@ class IdentityRoleService:
         db: Session,
         role_data: RoleCreate,
     ) -> IdentityRole:
+        """
+        Create a new role.
+        """
+        logger.info(
+            "Creating role '%s' for school ID: %s",
+            role_data.name,
+            role_data.school_id,
+        )
 
         if role_repository.exists_by_name(
             db=db,
             school_id=role_data.school_id,
             name=role_data.name,
         ):
+            logger.warning(
+                "Validation failure: Role name '%s' already exists for school ID: %s",
+                role_data.name,
+                role_data.school_id,
+            )
             raise AlreadyExistsException(
                 "Role",
                 role_data.name,
@@ -48,23 +64,28 @@ class IdentityRoleService:
             is_system=False,
         )
 
-        return role_repository.create(
+        created = role_repository.create(
             db,
             role,
         )
+        logger.info("Role '%s' created successfully with ID: %s", created.name, created.id)
+        return created
 
     def get_role(
         self,
         db: Session,
         role_id: UUID,
     ) -> IdentityRole:
-
+        """
+        Get a role by ID.
+        """
         role = role_repository.get_by_id(
             db,
             role_id,
         )
 
         if role is None:
+            logger.warning("Validation failure: Role ID '%s' not found", role_id)
             raise NotFoundException(
                 "Role",
                 str(role_id),
@@ -77,7 +98,9 @@ class IdentityRoleService:
         db: Session,
         school_id: UUID,
     ) -> list[IdentityRole]:
-
+        """
+        List all roles for a school.
+        """
         return role_repository.get_school_roles(
             db,
             school_id,
@@ -87,7 +110,9 @@ class IdentityRoleService:
         self,
         db: Session,
     ) -> list[IdentityRole]:
-
+        """
+        List all system roles.
+        """
         return role_repository.get_system_roles(
             db,
         )
@@ -98,13 +123,17 @@ class IdentityRoleService:
         role_id: UUID,
         data: RoleUpdate,
     ) -> IdentityRole:
-
+        """
+        Update an existing role.
+        """
+        logger.info("Updating role ID: %s", role_id)
         role = self.get_role(
             db,
             role_id,
         )
 
         if role.is_system:
+            logger.warning("Validation failure: Attempted to modify system role ID: %s", role_id)
             raise BadRequestException(
                 "System roles cannot be modified."
             )
@@ -122,6 +151,11 @@ class IdentityRoleService:
                 exclude_id=role.id,
             )
         ):
+            logger.warning(
+                "Validation failure: Role name '%s' already exists for school ID: %s",
+                updates["name"],
+                role.school_id,
+            )
             raise AlreadyExistsException(
                 "Role",
                 updates["name"],
@@ -134,23 +168,29 @@ class IdentityRoleService:
                 value,
             )
 
-        return role_repository.update(
+        updated = role_repository.update(
             db,
             role,
         )
+        logger.info("Role ID: %s updated successfully", role_id)
+        return updated
 
     def delete_role(
         self,
         db: Session,
         role_id: UUID,
     ) -> None:
-
+        """
+        Soft delete a role.
+        """
+        logger.info("Soft deleting role ID: %s", role_id)
         role = self.get_role(
             db,
             role_id,
         )
 
         if role.is_system:
+            logger.warning("Validation failure: Attempted to delete system role ID: %s", role_id)
             raise BadRequestException(
                 "System roles cannot be deleted."
             )
@@ -159,6 +199,7 @@ class IdentityRoleService:
             db,
             role,
         )
+        logger.info("Role ID: %s soft deleted successfully", role_id)
 
     def assign_permission(
         self,
@@ -166,7 +207,10 @@ class IdentityRoleService:
         role_id: UUID,
         permission_id: UUID,
     ) -> IdentityRole:
-
+        """
+        Assign a permission to a role.
+        """
+        logger.info("Assigning permission ID %s to role ID %s", permission_id, role_id)
         role = self.get_role(
             db,
             role_id,
@@ -178,6 +222,7 @@ class IdentityRoleService:
         )
 
         if permission is None:
+            logger.warning("Validation failure: Permission ID '%s' not found for role assignment", permission_id)
             raise NotFoundException(
                 "Permission",
                 str(permission_id),
@@ -186,10 +231,12 @@ class IdentityRoleService:
         if permission not in role.permissions:
             role.permissions.append(permission)
 
-        return role_repository.update(
+        updated = role_repository.update(
             db,
             role,
         )
+        logger.info("Assigned permission ID %s to role ID %s successfully", permission_id, role_id)
+        return updated
 
     def remove_permission(
         self,
@@ -197,7 +244,10 @@ class IdentityRoleService:
         role_id: UUID,
         permission_id: UUID,
     ) -> IdentityRole:
-
+        """
+        Remove a permission from a role.
+        """
+        logger.info("Removing permission ID %s from role ID %s", permission_id, role_id)
         role = self.get_role(
             db,
             role_id,
@@ -209,10 +259,12 @@ class IdentityRoleService:
             if permission.id != permission_id
         ]
 
-        return role_repository.update(
+        updated = role_repository.update(
             db,
             role,
         )
+        logger.info("Removed permission ID %s from role ID %s successfully", permission_id, role_id)
+        return updated
 
 
 role_service = IdentityRoleService()

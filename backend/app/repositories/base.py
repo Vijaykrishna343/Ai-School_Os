@@ -15,11 +15,14 @@ class BaseRepository(Generic[ModelType]):
     Base repository providing reusable CRUD operations.
     """
 
-    def __init__(self, model: type[ModelType]):
+    def __init__(self, model: type[ModelType]) -> None:
+        """
+        Initialize the base repository with the specified model type.
+        """
         self.model = model
 
     # ------------------------------------------------------------------
-    # Create
+    # Create Methods
     # ------------------------------------------------------------------
 
     def create(
@@ -27,13 +30,16 @@ class BaseRepository(Generic[ModelType]):
         db: Session,
         obj: ModelType,
     ) -> ModelType:
+        """
+        Add a new record to the database session and commit.
+        """
         db.add(obj)
         db.commit()
         db.refresh(obj)
         return obj
 
     # ------------------------------------------------------------------
-    # Get by Primary Key
+    # Read / Query Methods
     # ------------------------------------------------------------------
 
     def get(
@@ -41,6 +47,9 @@ class BaseRepository(Generic[ModelType]):
         db: Session,
         obj_id: UUID,
     ) -> ModelType | None:
+        """
+        Retrieve an active record by ID.
+        """
         return db.scalar(
             select(self.model).where(
                 self.model.id == obj_id,
@@ -48,87 +57,29 @@ class BaseRepository(Generic[ModelType]):
             )
         )
 
-    # Alias for consistency with identity repositories
     def get_by_id(
         self,
         db: Session,
         obj_id: UUID,
     ) -> ModelType | None:
+        """
+        Alias for get() to maintain consistency with identity repositories.
+        """
         return self.get(db, obj_id)
-
-    # ------------------------------------------------------------------
-    # Get All
-    # ------------------------------------------------------------------
 
     def get_all(
         self,
         db: Session,
     ) -> list[ModelType]:
+        """
+        Retrieve all active records for this model.
+        """
         result = db.scalars(
             select(self.model).where(
                 self.model.is_deleted.is_(False)
             )
         )
         return list(result)
-
-    # ------------------------------------------------------------------
-    # Update
-    # ------------------------------------------------------------------
-
-    def update(
-        self,
-        db: Session,
-        obj: ModelType,
-    ) -> ModelType:
-        db.commit()
-        db.refresh(obj)
-        return obj
-
-    # ------------------------------------------------------------------
-    # Soft Delete
-    # ------------------------------------------------------------------
-
-    def delete(
-        self,
-        db: Session,
-        obj: ModelType,
-    ) -> None:
-        obj.soft_delete()
-        db.commit()
-
-    # ------------------------------------------------------------------
-    # Exists
-    # ------------------------------------------------------------------
-
-    def exists(
-        self,
-        db: Session,
-        obj_id: UUID,
-    ) -> bool:
-        return self.get(db, obj_id) is not None
-
-    # ------------------------------------------------------------------
-    # Count
-    # ------------------------------------------------------------------
-
-    def count(
-        self,
-        db: Session,
-    ) -> int:
-        return (
-            db.scalar(
-                select(func.count())
-                .select_from(self.model)
-                .where(
-                    self.model.is_deleted.is_(False)
-                )
-            )
-            or 0
-        )
-
-    # ------------------------------------------------------------------
-    # Pagination
-    # ------------------------------------------------------------------
 
     def get_paginated(
         self,
@@ -137,14 +88,11 @@ class BaseRepository(Generic[ModelType]):
         page_size: int = 10,
     ) -> tuple[list[ModelType], int, int]:
         """
-        Returns:
-            (
-                items,
-                total_records,
-                total_pages
-            )
-        """
+        Retrieve paginated active records.
 
+        Returns:
+            (items, total_records, total_pages)
+        """
         page = max(page, 1)
         page_size = max(page_size, 1)
 
@@ -169,4 +117,67 @@ class BaseRepository(Generic[ModelType]):
             list(result),
             total,
             total_pages,
+        )
+
+    # ------------------------------------------------------------------
+    # Update Methods
+    # ------------------------------------------------------------------
+
+    def update(
+        self,
+        db: Session,
+        obj: ModelType,
+    ) -> ModelType:
+        """
+        Commit updates on a record and refresh its state.
+        """
+        db.commit()
+        db.refresh(obj)
+        return obj
+
+    # ------------------------------------------------------------------
+    # Delete Methods
+    # ------------------------------------------------------------------
+
+    def delete(
+        self,
+        db: Session,
+        obj: ModelType,
+    ) -> None:
+        """
+        Perform a soft delete on a record and commit the change.
+        """
+        obj.soft_delete()
+        db.commit()
+
+    # ------------------------------------------------------------------
+    # Existence & Count Methods
+    # ------------------------------------------------------------------
+
+    def exists(
+        self,
+        db: Session,
+        obj_id: UUID,
+    ) -> bool:
+        """
+        Check if an active record with the given ID exists.
+        """
+        return self.get(db, obj_id) is not None
+
+    def count(
+        self,
+        db: Session,
+    ) -> int:
+        """
+        Count total active records for this model.
+        """
+        return (
+            db.scalar(
+                select(func.count())
+                .select_from(self.model)
+                .where(
+                    self.model.is_deleted.is_(False)
+                )
+            )
+            or 0
         )

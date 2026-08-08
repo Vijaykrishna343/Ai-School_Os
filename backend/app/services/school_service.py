@@ -6,6 +6,7 @@ from app.common.exceptions import (
     AlreadyExistsException,
     NotFoundException,
 )
+from app.common.logger.logger import get_logger
 from app.models.school import School
 from app.repositories.school import (
     SchoolRepository,
@@ -17,6 +18,8 @@ from app.schemas.school.school import (
 )
 from app.services.base_service import BaseService
 
+logger = get_logger(__name__)
+
 
 class SchoolService(BaseService[SchoolRepository]):
     """
@@ -26,8 +29,15 @@ class SchoolService(BaseService[SchoolRepository]):
     def __init__(
         self,
         repository: SchoolRepository,
-    ):
+    ) -> None:
+        """
+        Initialize SchoolService with SchoolRepository.
+        """
         super().__init__(repository)
+
+    # ------------------------------------------------------------------
+    # Create Methods
+    # ------------------------------------------------------------------
 
     def create_school(
         self,
@@ -35,13 +45,15 @@ class SchoolService(BaseService[SchoolRepository]):
         school_data: SchoolCreate,
     ) -> School:
         """
-        Create a new school.
+        Create a new school entity.
         """
+        logger.info("Creating new school with code: %s", school_data.code)
 
         if self.repository.exists_by_code(
             db,
             school_data.code,
         ):
+            logger.warning("Validation failure: School code '%s' already exists", school_data.code)
             raise AlreadyExistsException(
                 "School",
                 school_data.code,
@@ -51,10 +63,16 @@ class SchoolService(BaseService[SchoolRepository]):
             **school_data.model_dump()
         )
 
-        return self.repository.create(
+        created = self.repository.create(
             db,
             school,
         )
+        logger.info("School created successfully with ID: %s", created.id)
+        return created
+
+    # ------------------------------------------------------------------
+    # Read / Query Methods
+    # ------------------------------------------------------------------
 
     def get_school(
         self,
@@ -62,15 +80,15 @@ class SchoolService(BaseService[SchoolRepository]):
         school_id: UUID,
     ) -> School:
         """
-        Get a school by ID.
+        Get a school by ID or raise NotFoundException.
         """
-
         school = self.repository.get(
             db,
             school_id,
         )
 
         if school is None:
+            logger.warning("Validation failure: School ID '%s' not found", school_id)
             raise NotFoundException(
                 "School",
                 str(school_id),
@@ -85,8 +103,11 @@ class SchoolService(BaseService[SchoolRepository]):
         """
         Get all active schools.
         """
-
         return self.repository.get_all(db)
+
+    # ------------------------------------------------------------------
+    # Update Methods
+    # ------------------------------------------------------------------
 
     def update_school(
         self,
@@ -97,7 +118,7 @@ class SchoolService(BaseService[SchoolRepository]):
         """
         Update an existing school.
         """
-
+        logger.info("Updating school ID: %s", school_id)
         school = self.get_school(
             db,
             school_id,
@@ -114,10 +135,16 @@ class SchoolService(BaseService[SchoolRepository]):
                 value,
             )
 
-        return self.repository.update(
+        updated = self.repository.update(
             db,
             school,
         )
+        logger.info("School ID: %s updated successfully", school_id)
+        return updated
+
+    # ------------------------------------------------------------------
+    # Delete Methods
+    # ------------------------------------------------------------------
 
     def delete_school(
         self,
@@ -125,9 +152,9 @@ class SchoolService(BaseService[SchoolRepository]):
         school_id: UUID,
     ) -> None:
         """
-        Soft delete a school.
+        Soft delete a school entity.
         """
-
+        logger.info("Soft deleting school ID: %s", school_id)
         school = self.get_school(
             db,
             school_id,
@@ -137,6 +164,7 @@ class SchoolService(BaseService[SchoolRepository]):
             db,
             school,
         )
+        logger.info("School ID: %s soft deleted successfully", school_id)
 
 
-school_service = SchoolService(repository=school_repository)
+school_service = SchoolService(repository=school_repository)

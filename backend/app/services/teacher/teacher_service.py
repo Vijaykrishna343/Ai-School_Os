@@ -9,6 +9,7 @@ from app.common.exceptions import (
     AlreadyExistsException,
     NotFoundException,
 )
+from app.common.logger.logger import get_logger
 from app.models.teacher import Teacher
 from app.repositories.school import (
     SchoolRepository,
@@ -29,6 +30,8 @@ from app.services.base_service import BaseService
 from app.utils.employee_id import (
     EmployeeIdGenerator,
 )
+
+logger = get_logger(__name__)
 
 
 class TeacherService(
@@ -55,6 +58,7 @@ class TeacherService(
     ) -> None:
         super().__init__(repository)
         self.school_repository = school_repository
+
     # ==========================================================
     # Private Validation Helpers
     # ==========================================================
@@ -74,6 +78,7 @@ class TeacherService(
         )
 
         if school is None:
+            logger.warning("Validation failure: School ID '%s' not found for teacher", school_id)
             raise NotFoundException(
                 "School",
                 str(school_id),
@@ -96,6 +101,7 @@ class TeacherService(
         )
 
         if teacher is None:
+            logger.warning("Validation failure: Teacher ID '%s' not found", teacher_id)
             raise NotFoundException(
                 "Teacher",
                 str(teacher_id),
@@ -122,6 +128,7 @@ class TeacherService(
             employee_id,
             exclude_id,
         ):
+            logger.warning("Validation failure: Employee ID '%s' already exists", employee_id)
             raise AlreadyExistsException(
                 "Employee ID",
                 employee_id,
@@ -145,6 +152,7 @@ class TeacherService(
             email,
             exclude_id,
         ):
+            logger.warning("Validation failure: Teacher email '%s' already exists", email)
             raise AlreadyExistsException(
                 "Teacher Email",
                 email,
@@ -168,6 +176,7 @@ class TeacherService(
             phone,
             exclude_id,
         ):
+            logger.warning("Validation failure: Teacher phone '%s' already exists", phone)
             raise AlreadyExistsException(
                 "Teacher Phone",
                 phone,
@@ -203,6 +212,7 @@ class TeacherService(
         )
 
         return employee_id
+
     # ==========================================================
     # Create Teacher
     # ==========================================================
@@ -214,27 +224,18 @@ class TeacherService(
     ) -> TeacherResponse:
         """
         Create a new teacher.
-
-        Business Rules
-        --------------
-        • School must exist
-        • Employee ID is auto-generated
-        • Email must be unique
-        • Phone must be unique
         """
-
-    # ------------------------------------------------------
-    # Validate School
-    # ------------------------------------------------------
+        logger.info(
+            "Creating teacher '%s %s' for school ID: %s",
+            teacher_data.first_name,
+            teacher_data.last_name,
+            teacher_data.school_id,
+        )
 
         self._validate_school(
             db,
             teacher_data.school_id,
         )
-
-        # ------------------------------------------------------
-        # Duplicate Validation
-        # ------------------------------------------------------
 
         self._validate_email(
             db,
@@ -246,42 +247,27 @@ class TeacherService(
             teacher_data.phone,
         )
 
-        # ------------------------------------------------------
-        # Generate Employee ID
-        # ------------------------------------------------------
-
         employee_id = self._generate_employee_id(
             db,
         )
 
-        # ------------------------------------------------------
-        # Create Entity
-        # ------------------------------------------------------
-
         teacher = Teacher(
             school_id=teacher_data.school_id,
             employee_id=employee_id,
-
             first_name=teacher_data.first_name,
             middle_name=teacher_data.middle_name,
             last_name=teacher_data.last_name,
-
             gender=teacher_data.gender,
             blood_group=teacher_data.blood_group,
-
             date_of_birth=teacher_data.date_of_birth,
             joining_date=teacher_data.joining_date,
-
             qualification=teacher_data.qualification,
             specialization=teacher_data.specialization,
             experience_years=teacher_data.experience_years,
-
             phone=teacher_data.phone,
             email=teacher_data.email,
             emergency_contact=teacher_data.emergency_contact,
-
             profile_photo_url=teacher_data.profile_photo_url,
-
             address_line1=teacher_data.address_line1,
             address_line2=teacher_data.address_line2,
             city=teacher_data.city,
@@ -289,7 +275,6 @@ class TeacherService(
             state=teacher_data.state,
             country=teacher_data.country,
             postal_code=teacher_data.postal_code,
-
             salary=teacher_data.salary,
             remarks=teacher_data.remarks,
             status=teacher_data.status,
@@ -300,9 +285,18 @@ class TeacherService(
             teacher,
         )
 
+        logger.info(
+            "Teacher '%s %s' created successfully with ID: %s (Employee ID: %s)",
+            created_teacher.first_name,
+            created_teacher.last_name,
+            created_teacher.id,
+            created_teacher.employee_id,
+        )
+
         return TeacherResponse.model_validate(
             created_teacher,
         )
+
     # ==========================================================
     # Get Teacher
     # ==========================================================
@@ -314,12 +308,7 @@ class TeacherService(
     ) -> TeacherResponse:
         """
         Get a teacher by ID.
-
-        Raises:
-            NotFoundException:
-                If the teacher does not exist.
         """
-
         teacher = self._get_teacher_or_raise(
             db,
             teacher_id,
@@ -328,6 +317,7 @@ class TeacherService(
         return TeacherResponse.model_validate(
             teacher,
         )
+
     # ==========================================================
     # Get Teachers
     # ==========================================================
@@ -340,7 +330,6 @@ class TeacherService(
         """
         Get paginated teachers with filters.
         """
-
         teachers, total = self.repository.get_teachers(
             db=db,
             school_id=filters.school_id,
@@ -368,6 +357,7 @@ class TeacherService(
             page_size=filters.page_size,
             total_pages=total_pages,
         )
+
     # ==========================================================
     # Search Teachers
     # ==========================================================
@@ -380,7 +370,6 @@ class TeacherService(
         """
         Search teachers using multiple fields.
         """
-
         keyword = keyword.strip()
 
         if not keyword:
@@ -397,6 +386,7 @@ class TeacherService(
             )
             for teacher in teachers
         ]
+
     # ==========================================================
     # Update Teacher
     # ==========================================================
@@ -410,12 +400,11 @@ class TeacherService(
         """
         Update an existing teacher.
         """
-
+        logger.info("Updating teacher ID: %s", teacher_id)
         teacher = self._get_teacher_or_raise(
             db,
             teacher_id,
         )
-
 
         self._validate_email(
             db,
@@ -433,7 +422,6 @@ class TeacherService(
             teacher_data.model_dump(exclude_unset=True)
         )
 
-        # Apply update fields to the entity before persisting
         for key, value in update_data.items():
             setattr(teacher, key, value)
 
@@ -442,9 +430,11 @@ class TeacherService(
             teacher,
         )
 
+        logger.info("Teacher ID: %s updated successfully", teacher_id)
         return TeacherResponse.model_validate(
             updated_teacher,
         )
+
     # ==========================================================
     # Delete Teacher
     # ==========================================================
@@ -457,7 +447,7 @@ class TeacherService(
         """
         Soft delete a teacher.
         """
-
+        logger.info("Soft deleting teacher ID: %s", teacher_id)
         teacher = self._get_teacher_or_raise(
             db,
             teacher_id,
@@ -467,7 +457,7 @@ class TeacherService(
             db,
             teacher,
         )
-
+        logger.info("Teacher ID: %s soft deleted successfully", teacher_id)
         return True
     # ==========================================================
     # Exists

@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -6,6 +6,10 @@ from app.common.enums import SchoolClassStatus
 
 
 class SchoolClassBase(BaseModel):
+    """
+    Shared fields for SchoolClass.
+    """
+
     name: str = Field(
         ...,
         min_length=1,
@@ -23,10 +27,18 @@ class SchoolClassBase(BaseModel):
 
 
 class SchoolClassCreate(SchoolClassBase):
-    school_id: uuid.UUID
+    """
+    Request body for creating a SchoolClass.
+    """
+
+    school_id: UUID
 
 
 class SchoolClassUpdate(BaseModel):
+    """
+    Request body for updating a SchoolClass.
+    """
+
     name: str | None = Field(
         default=None,
         min_length=1,
@@ -42,9 +54,27 @@ class SchoolClassUpdate(BaseModel):
 
 
 class SchoolClassResponse(SchoolClassBase):
+    """
+    API response representation for SchoolClass.
+    """
+
     model_config = ConfigDict(
         from_attributes=True,
     )
 
-    id: uuid.UUID
-    school_id: uuid.UUID
+    id: UUID
+    school_id: UUID
+
+
+class SchoolClassListResponse(BaseModel):
+    """
+    Paginated API response representation for SchoolClass lists.
+    """
+
+    items: list[SchoolClassResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+    model_config = ConfigDict(from_attributes=True)

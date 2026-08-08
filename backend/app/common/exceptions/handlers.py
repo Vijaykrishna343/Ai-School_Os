@@ -5,6 +5,9 @@ from fastapi.responses import JSONResponse
 from app.common.exceptions.api_exception import APIException
 from app.common.exceptions.error_codes import ErrorCode
 from app.common.exceptions.error_response import ErrorResponse
+from app.common.logger.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def register_exception_handlers(
@@ -18,7 +21,15 @@ def register_exception_handlers(
     async def api_exception_handler(
         request: Request,
         exc: APIException,
-    ):
+    ) -> JSONResponse:
+        logger.warning(
+            "API Exception [%s %s] Status: %s Code: %s Message: %s",
+            request.method,
+            request.url.path,
+            exc.status_code,
+            exc.code,
+            exc.message,
+        )
         return JSONResponse(
             status_code=exc.status_code,
             content=ErrorResponse.build(
@@ -31,7 +42,13 @@ def register_exception_handlers(
     async def validation_exception_handler(
         request: Request,
         exc: RequestValidationError,
-    ):
+    ) -> JSONResponse:
+        logger.warning(
+            "Validation Failure [%s %s]: %s",
+            request.method,
+            request.url.path,
+            str(exc.errors()),
+        )
         return JSONResponse(
             status_code=422,
             content=ErrorResponse.build(
@@ -44,7 +61,14 @@ def register_exception_handlers(
     async def unknown_exception_handler(
         request: Request,
         exc: Exception,
-    ):
+    ) -> JSONResponse:
+        logger.error(
+            "Unexpected Exception [%s %s]: %s",
+            request.method,
+            request.url.path,
+            str(exc),
+            exc_info=True,
+        )
         return JSONResponse(
             status_code=500,
             content=ErrorResponse.build(

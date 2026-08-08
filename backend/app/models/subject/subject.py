@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
-    relationship,
+    relationship as orm_relationship,
 )
 
 from app.common.enums.subject import SubjectStatus
@@ -67,6 +67,6 @@ class Subject(CommonModel):
         nullable=False,
     )
 
-    school: Mapped["School"] = relationship(
+    school: Mapped["School"] = orm_relationship(
         back_populates="subjects",
     )

@@ -10,6 +10,10 @@ from app.common.enums.parent import ParentRelationship
 
 
 class ParentBase(BaseModel):
+    """
+    Shared fields for Parent.
+    """
+
     father_name: str
     mother_name: str | None = None
     guardian_name: str | None = None
@@ -39,10 +43,18 @@ class ParentBase(BaseModel):
 
 
 class ParentCreate(ParentBase):
+    """
+    Request body for creating a Parent.
+    """
+
     pass
 
 
 class ParentUpdate(BaseModel):
+    """
+    Request body for updating a Parent.
+    """
+
     father_name: str | None = None
     mother_name: str | None = None
     guardian_name: str | None = None
@@ -72,10 +84,28 @@ class ParentUpdate(BaseModel):
 
 
 class ParentResponse(ParentBase):
+    """
+    API response representation for Parent.
+    """
+
     id: UUID
     created_at: datetime
     updated_at: datetime
     is_deleted: bool
     deleted_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ParentListResponse(BaseModel):
+    """
+    Paginated API response representation for Parent lists.
+    """
+
+    items: list[ParentResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
     model_config = ConfigDict(from_attributes=True)

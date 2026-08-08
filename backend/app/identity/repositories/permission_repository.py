@@ -13,17 +13,27 @@ class IdentityPermissionRepository(
     BaseRepository[IdentityPermission]
 ):
     """
-    Repository for Identity Permissions.
+    Repository for Identity Permissions database operations.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize IdentityPermissionRepository with IdentityPermission model.
+        """
         super().__init__(IdentityPermission)
+
+    # ------------------------------------------------------------------
+    # Read / Query Methods
+    # ------------------------------------------------------------------
 
     def get_by_name(
         self,
         db: Session,
         name: str,
     ) -> IdentityPermission | None:
+        """
+        Retrieve an active permission by name (case-insensitive).
+        """
         stmt = (
             select(IdentityPermission)
             .where(
@@ -39,11 +49,13 @@ class IdentityPermissionRepository(
         db: Session,
         module: str,
     ) -> list[IdentityPermission]:
+        """
+        Retrieve active permissions belonging to a specific module.
+        """
         stmt = (
             select(IdentityPermission)
             .where(
-                func.lower(IdentityPermission.module)
-                == module.lower(),
+                func.lower(IdentityPermission.module) == module.lower(),
                 IdentityPermission.is_deleted.is_(False),
             )
             .order_by(
@@ -51,7 +63,11 @@ class IdentityPermissionRepository(
             )
         )
 
-        return list(db.scalars(stmt).all())
+        return list(db.scalars(stmt))
+
+    # ------------------------------------------------------------------
+    # Existence Methods
+    # ------------------------------------------------------------------
 
     def exists_by_name(
         self,
@@ -59,11 +75,13 @@ class IdentityPermissionRepository(
         name: str,
         exclude_id: UUID | None = None,
     ) -> bool:
+        """
+        Check whether an active permission exists with the given name, optionally excluding an ID.
+        """
         stmt = (
             select(IdentityPermission)
             .where(
-                func.lower(IdentityPermission.name)
-                == name.lower(),
+                func.lower(IdentityPermission.name) == name.lower(),
                 IdentityPermission.is_deleted.is_(False),
             )
         )

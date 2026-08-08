@@ -18,23 +18,22 @@ class TeacherRepository(BaseRepository[Teacher]):
     Repository responsible for all Teacher database operations.
 
     Responsibilities:
-    - Teacher lookup
-    - Duplicate validation
+    - Teacher lookup queries
+    - Duplicate check queries
     - Employee ID lookup
     - Search
-    - Filtering
-    - Pagination
-
-    NOTE:
-    Business validations belong in the Service layer.
+    - Filtering and pagination queries
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize TeacherRepository with Teacher model.
+        """
         super().__init__(Teacher)
 
-    # ==========================================================
-    # Lookup Methods
-    # ==========================================================
+    # ------------------------------------------------------------------
+    # Read / Query Methods
+    # ------------------------------------------------------------------
 
     def get_by_employee_id(
         self,
@@ -42,9 +41,8 @@ class TeacherRepository(BaseRepository[Teacher]):
         employee_id: str,
     ) -> Teacher | None:
         """
-        Get teacher by employee ID.
+        Get active teacher by employee ID.
         """
-
         stmt = (
             select(Teacher)
             .where(
@@ -61,10 +59,8 @@ class TeacherRepository(BaseRepository[Teacher]):
         email: str,
     ) -> Teacher | None:
         """
-        Get teacher by email.
-        Email comparison is case-insensitive.
+        Get active teacher by email (case-insensitive).
         """
-
         stmt = (
             select(Teacher)
             .where(
@@ -81,9 +77,8 @@ class TeacherRepository(BaseRepository[Teacher]):
         phone: str,
     ) -> Teacher | None:
         """
-        Get teacher by phone.
+        Get active teacher by phone.
         """
-
         stmt = (
             select(Teacher)
             .where(
@@ -94,99 +89,13 @@ class TeacherRepository(BaseRepository[Teacher]):
 
         return db.scalar(stmt)
 
-    # ==========================================================
-    # Exists Methods
-    # ==========================================================
-
-    def exists_by_employee_id(
-        self,
-        db: Session,
-        employee_id: str,
-        exclude_id: UUID | None = None,
-    ) -> bool:
-        """
-        Check employee ID uniqueness.
-        """
-
-        stmt = (
-            select(Teacher.id)
-            .where(
-                Teacher.employee_id == employee_id,
-                Teacher.is_deleted.is_(False),
-            )
-        )
-
-        if exclude_id:
-            stmt = stmt.where(
-                Teacher.id != exclude_id,
-            )
-
-        return db.scalar(stmt.limit(1)) is not None
-
-    def exists_by_email(
-        self,
-        db: Session,
-        email: str,
-        exclude_id: UUID | None = None,
-    ) -> bool:
-        """
-        Check email uniqueness.
-        """
-
-        stmt = (
-            select(Teacher.id)
-            .where(
-                func.lower(Teacher.email) == email.lower(),
-                Teacher.is_deleted.is_(False),
-            )
-        )
-
-        if exclude_id:
-            stmt = stmt.where(
-                Teacher.id != exclude_id,
-            )
-
-        return db.scalar(stmt.limit(1)) is not None
-
-    def exists_by_phone(
-        self,
-        db: Session,
-        phone: str,
-        exclude_id: UUID | None = None,
-    ) -> bool:
-        """
-        Check phone uniqueness.
-        """
-
-        stmt = (
-            select(Teacher.id)
-            .where(
-                Teacher.phone == phone,
-                Teacher.is_deleted.is_(False),
-            )
-        )
-
-        if exclude_id:
-            stmt = stmt.where(
-                Teacher.id != exclude_id,
-            )
-
-        return db.scalar(stmt.limit(1)) is not None
-
-    # ==========================================================
-    # Employee ID Generation
-    # ==========================================================
-
     def get_last_employee(
         self,
         db: Session,
     ) -> Teacher | None:
         """
-        Get the latest employee.
-
-        Used by Employee ID Generator.
+        Get the latest active teacher by employee ID order.
         """
-
         stmt = (
             select(Teacher)
             .where(
@@ -200,19 +109,14 @@ class TeacherRepository(BaseRepository[Teacher]):
 
         return db.scalar(stmt)
 
-    # ==========================================================
-    # Search
-    # ==========================================================
-
     def search_teachers(
         self,
         db: Session,
         keyword: str,
     ) -> list[Teacher]:
         """
-        Search teachers using multiple fields.
+        Search active teachers using multiple fields.
         """
-
         keyword = keyword.strip()
 
         stmt = (
@@ -233,13 +137,7 @@ class TeacherRepository(BaseRepository[Teacher]):
             )
         )
 
-        return list(
-            db.scalars(stmt).all()
-        )
-
-    # ==========================================================
-    # Filter + Pagination
-    # ==========================================================
+        return list(db.scalars(stmt))
 
     def get_teachers(
         self,
@@ -252,9 +150,8 @@ class TeacherRepository(BaseRepository[Teacher]):
         page_size: int = 10,
     ) -> tuple[list[Teacher], int]:
         """
-        Filter teachers with pagination.
+        Filter active teachers with pagination.
         """
-
         page = max(page, 1)
         page_size = max(page_size, 1)
 
@@ -293,7 +190,7 @@ class TeacherRepository(BaseRepository[Teacher]):
 
         total = db.scalar(count_stmt) or 0
 
-        teachers = (
+        teachers = list(
             db.scalars(
                 stmt.offset(
                     (page - 1) * page_size,
@@ -301,9 +198,85 @@ class TeacherRepository(BaseRepository[Teacher]):
                     page_size,
                 )
             )
-            .all()
         )
 
         return teachers, total
+
+    # ------------------------------------------------------------------
+    # Existence Methods
+    # ------------------------------------------------------------------
+
+    def exists_by_employee_id(
+        self,
+        db: Session,
+        employee_id: str,
+        exclude_id: UUID | None = None,
+    ) -> bool:
+        """
+        Check employee ID uniqueness.
+        """
+        stmt = (
+            select(Teacher.id)
+            .where(
+                Teacher.employee_id == employee_id,
+                Teacher.is_deleted.is_(False),
+            )
+        )
+
+        if exclude_id:
+            stmt = stmt.where(
+                Teacher.id != exclude_id,
+            )
+
+        return db.scalar(stmt.limit(1)) is not None
+
+    def exists_by_email(
+        self,
+        db: Session,
+        email: str,
+        exclude_id: UUID | None = None,
+    ) -> bool:
+        """
+        Check email uniqueness.
+        """
+        stmt = (
+            select(Teacher.id)
+            .where(
+                func.lower(Teacher.email) == email.lower(),
+                Teacher.is_deleted.is_(False),
+            )
+        )
+
+        if exclude_id:
+            stmt = stmt.where(
+                Teacher.id != exclude_id,
+            )
+
+        return db.scalar(stmt.limit(1)) is not None
+
+    def exists_by_phone(
+        self,
+        db: Session,
+        phone: str,
+        exclude_id: UUID | None = None,
+    ) -> bool:
+        """
+        Check phone uniqueness.
+        """
+        stmt = (
+            select(Teacher.id)
+            .where(
+                Teacher.phone == phone,
+                Teacher.is_deleted.is_(False),
+            )
+        )
+
+        if exclude_id:
+            stmt = stmt.where(
+                Teacher.id != exclude_id,
+            )
+
+        return db.scalar(stmt.limit(1)) is not None
+
 
 teacher_repository = TeacherRepository()

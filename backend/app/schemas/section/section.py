@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -37,7 +37,7 @@ class SectionCreate(SectionBase):
     Schema for creating a section.
     """
 
-    school_class_id: uuid.UUID
+    school_class_id: UUID
 
 
 class SectionUpdate(BaseModel):
@@ -66,12 +66,26 @@ class SectionUpdate(BaseModel):
 
 class SectionResponse(SectionBase):
     """
-    Schema returned to clients.
+    Schema returned to clients for Section.
     """
 
     model_config = ConfigDict(
         from_attributes=True,
     )
 
-    id: uuid.UUID
-    school_class_id: uuid.UUID
+    id: UUID
+    school_class_id: UUID
+
+
+class SectionListResponse(BaseModel):
+    """
+    Paginated API response representation for Section lists.
+    """
+
+    items: list[SectionResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+    model_config = ConfigDict(from_attributes=True)

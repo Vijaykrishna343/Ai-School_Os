@@ -1,13 +1,12 @@
 import json
-import logging
 
 import click
 
-from app.common.logger.logger import setup_logging
+from app.common.logger.logger import get_logger, setup_logging
 from app.database.session import SessionLocal
 from app.identity.seeders import seed_identity
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @click.group()

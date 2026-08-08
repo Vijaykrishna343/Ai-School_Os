@@ -10,6 +10,7 @@ from app.common.exceptions import (
     NotFoundException,
     ValidationException,
 )
+from app.common.logger.logger import get_logger
 from app.models.student import Student
 from app.repositories.academic_year import (
     AcademicYearRepository,
@@ -49,6 +50,8 @@ from app.utils.admission_number import (
 from app.utils.roll_number import (
     RollNumberGenerator,
 )
+
+logger = get_logger(__name__)
 
 
 class StudentService(
@@ -109,6 +112,7 @@ class StudentService(
         )
 
         if school is None:
+            logger.warning("Validation failure: School ID '%s' not found for student", school_id)
             raise NotFoundException(
                 "School",
                 str(school_id),
@@ -131,6 +135,7 @@ class StudentService(
         )
 
         if parent is None:
+            logger.warning("Validation failure: Parent ID '%s' not found for student", parent_id)
             raise NotFoundException(
                 "Parent",
                 str(parent_id),
@@ -155,6 +160,7 @@ class StudentService(
         )
 
         if academic_year is None:
+            logger.warning("Validation failure: Academic Year ID '%s' not found for student", academic_year_id)
             raise NotFoundException(
                 "Academic Year",
                 str(academic_year_id),
@@ -179,6 +185,7 @@ class StudentService(
         )
 
         if school_class is None:
+            logger.warning("Validation failure: School Class ID '%s' not found for student", school_class_id)
             raise NotFoundException(
                 "School Class",
                 str(school_class_id),
@@ -203,6 +210,7 @@ class StudentService(
         )
 
         if section is None:
+            logger.warning("Validation failure: Section ID '%s' not found for student", section_id)
             raise NotFoundException(
                 "Section",
                 str(section_id),
@@ -225,14 +233,13 @@ class StudentService(
         )
 
         if student is None:
+            logger.warning("Validation failure: Student ID '%s' not found", student_id)
             raise NotFoundException(
                 "Student",
                 str(student_id),
             )
 
         return student
-        
-    
 
     # ==========================================================
     # Duplicate Validation
@@ -256,6 +263,7 @@ class StudentService(
             email,
             exclude_id,
         ):
+            logger.warning("Validation failure: Student email '%s' already exists", email)
             raise AlreadyExistsException(
                 "Student Email",
                 email,
@@ -279,6 +287,7 @@ class StudentService(
             phone,
             exclude_id,
         ):
+            logger.warning("Validation failure: Student phone '%s' already exists", phone)
             raise AlreadyExistsException(
                 "Student Phone",
                 phone,
@@ -305,6 +314,7 @@ class StudentService(
             roll_number=roll_number,
             exclude_id=exclude_id,
         ):
+            logger.warning("Validation failure: Roll number '%s' already exists", roll_number)
             raise AlreadyExistsException(
                 "Roll Number",
                 roll_number,
@@ -324,6 +334,7 @@ class StudentService(
             admission_number,
             exclude_id,
         ):
+            logger.warning("Validation failure: Admission number '%s' already exists", admission_number)
             raise AlreadyExistsException(
                 "Admission Number",
                 admission_number,
@@ -407,19 +418,13 @@ class StudentService(
     ) -> StudentResponse:
         """
         Create a new student.
-
-        Business Rules
-        --------------
-        • School must exist
-        • Parent must exist
-        • Academic Year must exist
-        • Class must exist
-        • Section must exist
-        • Email must be unique
-        • Phone must be unique
-        • Admission Number is auto-generated
-        • Roll Number is auto-generated
         """
+        logger.info(
+            "Creating student '%s %s' for school ID: %s",
+            student_data.first_name,
+            student_data.last_name,
+            student_data.school_id,
+        )
 
         # ------------------------------------------------------
         # Validate Foreign Keys
@@ -459,11 +464,13 @@ class StudentService(
         # ------------------------------------------------------
 
         if academic_year.school_id != school.id:
+            logger.warning("Validation failure: Academic Year school mismatch")
             raise ValidationException(
                 "Academic Year does not belong to the selected School."
             )
 
         if school_class.school_id != school.id:
+            logger.warning("Validation failure: School Class school mismatch")
             raise ValidationException(
                 "School Class does not belong to the selected School."
             )
@@ -472,6 +479,7 @@ class StudentService(
             section.school_class_id
             != school_class.id
         ):
+            logger.warning("Validation failure: Section class mismatch")
             raise ValidationException(
                 "Section does not belong to the selected School Class."
             )
@@ -548,6 +556,14 @@ class StudentService(
                 db,
                 student,
             )
+        )
+
+        logger.info(
+            "Student '%s %s' created successfully with ID: %s (Admission No: %s)",
+            created_student.first_name,
+            created_student.last_name,
+            created_student.id,
+            created_student.admission_number,
         )
 
         return StudentResponse.model_validate(
@@ -679,11 +695,12 @@ class StudentService(
         """
         Update an existing student.
         """
+        logger.info("Updating student ID: %s", student_id)
 
         student = self._get_student_or_raise(
-        db,
-        student_id,
-)
+            db,
+            student_id,
+        )
 
         update_data = (
             student_data.model_dump(
@@ -719,6 +736,7 @@ class StudentService(
             )
 
             if school_class.school_id != student.school_id:
+                logger.warning("Validation failure: Class school mismatch during student update")
                 raise ValidationException(
                     "School Class does not belong to the student's school."
                 )
@@ -739,6 +757,7 @@ class StudentService(
             )
 
             if section.school_class_id != class_id:
+                logger.warning("Validation failure: Section class mismatch during student update")
                 raise ValidationException(
                     "Section does not belong to the selected School Class."
                 )
@@ -815,6 +834,8 @@ class StudentService(
             )
         )
 
+        logger.info("Student ID: %s updated successfully", student_id)
+
         return StudentResponse.model_validate(
             updated_student,
         )
@@ -835,16 +856,18 @@ class StudentService(
             NotFoundException:
                 If the student does not exist.
         """
+        logger.info("Soft deleting student ID: %s", student_id)
 
         student = self._get_student_or_raise(
-        db,
-        student_id,
-)
+            db,
+            student_id,
+        )
 
         self.repository.delete(
             db,
             student,
         )
+        logger.info("Student ID: %s soft deleted successfully", student_id)
 
     # ==========================================================
     # Exists

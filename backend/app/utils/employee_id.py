@@ -14,6 +14,7 @@ The next employee ID is generated based on the latest
 existing teacher employee ID.
 """
 
+from app.common.utils.sequence_generator import SequenceCodeGenerator
 from app.models.teacher import Teacher
 
 
@@ -42,35 +43,12 @@ class EmployeeIdGenerator:
 
         Examples:
             None -> EMP000001
-
             EMP000001 -> EMP000002
-
             EMP000999 -> EMP001000
         """
-
-        if last_teacher is None:
-            return f"{cls.PREFIX}{1:0{cls.NUMBER_LENGTH}d}"
-
-        employee_id = last_teacher.employee_id
-
-        if (
-            not employee_id
-            or not employee_id.startswith(cls.PREFIX)
-        ):
-            return f"{cls.PREFIX}{1:0{cls.NUMBER_LENGTH}d}"
-
-        numeric_part = employee_id.replace(
-            cls.PREFIX,
-            "",
-        )
-
-        try:
-            next_number = int(numeric_part) + 1
-
-        except ValueError:
-            next_number = 1
-
-        return (
-            f"{cls.PREFIX}"
-            f"{next_number:0{cls.NUMBER_LENGTH}d}"
+        last_code = last_teacher.employee_id if last_teacher else None
+        return SequenceCodeGenerator.generate_next_code(
+            current_code=last_code,
+            prefix=cls.PREFIX,
+            number_length=cls.NUMBER_LENGTH,
         )
