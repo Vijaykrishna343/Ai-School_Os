@@ -31,6 +31,10 @@ from .teacher.teacher_repository import (
     TeacherRepository,
     teacher_repository,
 )
+from .attendance.attendance_repository import (
+    AttendanceRepository,
+    attendance_repository,
+)
 
 __all__ = [
     # Base
@@ -44,6 +48,7 @@ __all__ = [
     "StudentRepository",
     "SubjectRepository",
     "TeacherRepository",
+    "AttendanceRepository",
     # Singleton instances
     "academic_year_repository",
     "parent_repository",
@@ -53,4 +58,5 @@ __all__ = [
     "student_repository",
     "subject_repository",
     "teacher_repository",
-]
+    "attendance_repository",
+]

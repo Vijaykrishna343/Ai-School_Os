@@ -2,6 +2,7 @@ from .academic_year import AcademicYearStatus
 from .school_class import SchoolClassStatus
 from .section import SectionStatus
 from .subject import SubjectStatus
+from .attendance import AttendanceStatus
 from .student import (
     AdmissionType,
     StudentStatus,
@@ -22,4 +23,5 @@ __all__ = [
     "StudentStatus",
     "SubjectStatus",
     "TeacherStatus",
-]
+    "AttendanceStatus",
+]

@@ -3,6 +3,9 @@ from fastapi import APIRouter
 from app.api.v1.endpoints.academic_year import (
     router as academic_year_router,
 )
+from app.api.v1.endpoints.attendance import (
+    router as attendance_router,
+)
 from app.api.v1.endpoints.parent import (
     router as parent_router,
 )
@@ -24,6 +27,7 @@ from app.api.section.section_controller import (
 from app.api.teacher.teacher_controller import (
     router as teacher_router,
 )
+from app.common.constants.api_tags import APITags
 from app.identity.api.auth import (
     router as auth_router,
 )
@@ -64,6 +68,12 @@ api_router.include_router(
     academic_year_router,
     prefix="/academic-years",
     tags=["Academic Years"],
+)
+
+api_router.include_router(
+    attendance_router,
+    prefix="/attendance",
+    tags=[APITags.ATTENDANCE],
 )
 
 api_router.include_router(

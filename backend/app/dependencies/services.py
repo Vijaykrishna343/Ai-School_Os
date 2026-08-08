@@ -6,6 +6,7 @@ No service or repository is ever instantiated here.
 """
 
 from app.repositories.academic_year import academic_year_repository
+from app.repositories.attendance import attendance_repository
 from app.repositories.parent import parent_repository
 from app.repositories.school import school_repository
 from app.repositories.school_class import school_class_repository
@@ -16,6 +17,10 @@ from app.repositories.teacher import teacher_repository
 from app.services.academic_year_service import (
     AcademicYearService,
     academic_year_service,
+)
+from app.services.attendance_service import (
+    AttendanceService,
+    attendance_service,
 )
 from app.services.parent_service import (
     ParentService,
@@ -67,6 +72,11 @@ def get_academic_year_repository():
     return academic_year_repository
 
 
+def get_attendance_repository():
+    """Return the AttendanceRepository singleton."""
+    return attendance_repository
+
+
 def get_school_class_repository():
     """Return the SchoolClassRepository singleton."""
     return school_class_repository
@@ -110,6 +120,11 @@ def get_parent_service() -> ParentService:
 def get_academic_year_service() -> AcademicYearService:
     """Return the AcademicYearService singleton."""
     return academic_year_service
+
+
+def get_attendance_service() -> AttendanceService:
+    """Return the AttendanceService singleton."""
+    return attendance_service
 
 
 def get_school_class_service() -> SchoolClassService:
