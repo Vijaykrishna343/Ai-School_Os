@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from math import ceil
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.academic_year import AcademicYear
@@ -23,6 +24,23 @@ class AcademicYearRepository(BaseRepository[AcademicYear]):
     # ------------------------------------------------------------------
     # Read / Query Methods
     # ------------------------------------------------------------------
+
+    def get_by_id_and_school(
+        self,
+        db: Session,
+        academic_year_id: UUID,
+        school_id: UUID,
+    ) -> AcademicYear | None:
+        """
+        Retrieve an active academic year by ID and school ID.
+        """
+        return db.scalar(
+            select(AcademicYear).where(
+                AcademicYear.id == academic_year_id,
+                AcademicYear.school_id == school_id,
+                AcademicYear.is_deleted.is_(False),
+            )
+        )
 
     def get_by_name(
         self,
@@ -75,6 +93,45 @@ class AcademicYearRepository(BaseRepository[AcademicYear]):
         )
 
         return list(result)
+
+    def get_paginated_by_school(
+        self,
+        db: Session,
+        school_id: UUID,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[AcademicYear], int, int]:
+        """
+        Retrieve paginated active academic years for a school using DB-level offset and limit.
+
+        Returns:
+            (items, total_count, total_pages)
+        """
+        count_stmt = (
+            select(func.count())
+            .select_from(AcademicYear)
+            .where(
+                AcademicYear.school_id == school_id,
+                AcademicYear.is_deleted.is_(False),
+            )
+        )
+        total = db.scalar(count_stmt) or 0
+
+        offset = (page - 1) * page_size
+        items_stmt = (
+            select(AcademicYear)
+            .where(
+                AcademicYear.school_id == school_id,
+                AcademicYear.is_deleted.is_(False),
+            )
+            .order_by(AcademicYear.start_date.desc())
+            .offset(offset)
+            .limit(page_size)
+        )
+        items = list(db.scalars(items_stmt))
+        total_pages = ceil(total / page_size) if total > 0 else 0
+
+        return items, total, total_pages
 
     # ------------------------------------------------------------------
     # Existence Methods

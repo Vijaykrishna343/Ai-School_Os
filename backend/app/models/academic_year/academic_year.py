@@ -128,5 +128,4 @@ class AcademicYear(CommonModel):
 
     students: Mapped[list["Student"]] = orm_relationship(
         back_populates="academic_year",
-        cascade="all, delete-orphan",
     )

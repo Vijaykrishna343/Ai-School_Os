@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.common.exceptions import (
     AlreadyExistsException,
+    ForbiddenException,
     NotFoundException,
     ValidationException,
 )
@@ -49,10 +50,25 @@ class AcademicYearService:
         self,
         db: Session,
         academic_year_data: AcademicYearCreate,
+        current_school_id: UUID | None = None,
     ) -> AcademicYear:
         """
         Create a new academic year entity.
+        Enforces tenant boundary if current_school_id is provided.
         """
+        if (
+            current_school_id is not None
+            and academic_year_data.school_id != current_school_id
+        ):
+            logger.warning(
+                "Tenant mismatch: User school '%s' tried creating academic year for school '%s'",
+                current_school_id,
+                academic_year_data.school_id,
+            )
+            raise ForbiddenException(
+                "Cannot create academic year for another school."
+            )
+
         logger.info(
             "Creating academic year '%s' for school ID: %s",
             academic_year_data.name,
@@ -127,17 +143,30 @@ class AcademicYearService:
         self,
         db: Session,
         academic_year_id: UUID,
+        school_id: UUID | None = None,
     ) -> AcademicYear:
         """
-        Get an academic year by ID or raise NotFoundException.
+        Get an academic year by ID. Scoped to tenant if school_id is provided.
+        Raises NotFoundException if not found or belongs to another tenant.
         """
-        academic_year = self.repository.get(
-            db,
-            academic_year_id,
-        )
+        if school_id is not None:
+            academic_year = self.repository.get_by_id_and_school(
+                db,
+                academic_year_id,
+                school_id,
+            )
+        else:
+            academic_year = self.repository.get(
+                db,
+                academic_year_id,
+            )
 
-        if academic_year is None:
-            logger.warning("Validation failure: Academic Year ID '%s' not found", academic_year_id)
+        if academic_year is None or academic_year.is_deleted:
+            logger.warning(
+                "Validation failure: Academic Year ID '%s' not found for school '%s'",
+                academic_year_id,
+                school_id,
+            )
             raise NotFoundException(
                 "Academic Year",
                 str(academic_year_id),
@@ -148,11 +177,32 @@ class AcademicYearService:
     def get_all_academic_years(
         self,
         db: Session,
+        school_id: UUID | None = None,
     ) -> list[AcademicYear]:
         """
-        Get all academic years.
+        Get all active academic years, optionally scoped to school_id.
         """
+        if school_id is not None:
+            return self.repository.get_by_school(db, school_id)
         return self.repository.get_all(db)
+
+    def get_paginated_academic_years(
+        self,
+        db: Session,
+        school_id: UUID,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[AcademicYear], int, int]:
+        """
+        Get paginated active academic years for a school using database-level offset/limit.
+        Returns (items, total, total_pages).
+        """
+        return self.repository.get_paginated_by_school(
+            db,
+            school_id,
+            page,
+            page_size,
+        )
 
     # ------------------------------------------------------------------
     # Update Methods
@@ -163,14 +213,16 @@ class AcademicYearService:
         db: Session,
         academic_year_id: UUID,
         academic_year_data: AcademicYearUpdate,
+        school_id: UUID | None = None,
     ) -> AcademicYear:
         """
-        Update an academic year.
+        Update an academic year. Scoped to tenant if school_id is provided.
         """
         logger.info("Updating academic year ID: %s", academic_year_id)
         academic_year = self.get_academic_year(
             db,
             academic_year_id,
+            school_id=school_id,
         )
 
         update_data = academic_year_data.model_dump(
@@ -250,14 +302,16 @@ class AcademicYearService:
         self,
         db: Session,
         academic_year_id: UUID,
+        school_id: UUID | None = None,
     ) -> None:
         """
-        Soft delete an academic year entity.
+        Soft delete an academic year entity. Scoped to tenant if school_id is provided.
         """
         logger.info("Soft deleting academic year ID: %s", academic_year_id)
         academic_year = self.get_academic_year(
             db,
             academic_year_id,
+            school_id=school_id,
         )
 
         self.repository.delete(

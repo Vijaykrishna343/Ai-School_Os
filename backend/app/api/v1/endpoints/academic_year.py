@@ -4,7 +4,6 @@ Academic Year Management Endpoints.
 Provides HTTP routes for creating, retrieving, updating, and deleting AcademicYear entities.
 """
 
-from math import ceil
 from http import HTTPStatus
 from uuid import UUID
 
@@ -14,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.common.responses import ApiResponse
 from app.dependencies import get_academic_year_service, get_db
 from app.identity.dependencies.require_permission import require_permission
+from app.identity.models.user import IdentityUser
 from app.schemas.academic_year import (
     AcademicYearCreate,
     AcademicYearListResponse,
@@ -30,19 +30,20 @@ router = APIRouter()
     response_model=dict,
     status_code=HTTPStatus.CREATED,
     summary="Create Academic Year",
-    dependencies=[Depends(require_permission("academic_year.create"))],
 )
 def create_academic_year(
     academic_year: AcademicYearCreate,
+    current_user: IdentityUser = Depends(require_permission("academic_year.create")),
     db: Session = Depends(get_db),
     service: AcademicYearService = Depends(get_academic_year_service),
 ) -> dict[str, object]:
     """
-    Create a new academic year entity.
+    Create a new academic year entity for the authenticated user's school.
     """
     created = service.create_academic_year(
         db,
         academic_year,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -57,29 +58,29 @@ def create_academic_year(
     "/",
     response_model=dict,
     summary="Get All Academic Years",
-    dependencies=[Depends(require_permission("academic_year.view"))],
 )
 def get_all_academic_years(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
+    current_user: IdentityUser = Depends(require_permission("academic_year.view")),
     db: Session = Depends(get_db),
     service: AcademicYearService = Depends(get_academic_year_service),
 ) -> dict[str, object]:
     """
-    Get paginated list of active academic years.
+    Get paginated list of active academic years for the authenticated user's school.
+    Uses database-level offset and limit.
     """
-    academic_years = service.get_all_academic_years(db)
-    total = len(academic_years)
-
-    start = (page - 1) * page_size
-    end = start + page_size
-    paginated_items = academic_years[start:end]
-    total_pages = ceil(total / page_size) if total > 0 else 0
+    items, total, total_pages = service.get_paginated_academic_years(
+        db,
+        school_id=current_user.school_id,
+        page=page,
+        page_size=page_size,
+    )
 
     list_response = AcademicYearListResponse(
         items=[
             AcademicYearResponse.model_validate(ay)
-            for ay in paginated_items
+            for ay in items
         ],
         total=total,
         page=page,
@@ -97,19 +98,20 @@ def get_all_academic_years(
     "/{academic_year_id}",
     response_model=dict,
     summary="Get Academic Year",
-    dependencies=[Depends(require_permission("academic_year.view"))],
 )
 def get_academic_year(
     academic_year_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("academic_year.view")),
     db: Session = Depends(get_db),
     service: AcademicYearService = Depends(get_academic_year_service),
 ) -> dict[str, object]:
     """
-    Retrieve an academic year by ID.
+    Retrieve an academic year by ID for the authenticated user's school.
     """
     academic_year = service.get_academic_year(
         db,
         academic_year_id,
+        school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -124,21 +126,22 @@ def get_academic_year(
     "/{academic_year_id}",
     response_model=dict,
     summary="Update Academic Year",
-    dependencies=[Depends(require_permission("academic_year.update"))],
 )
 def update_academic_year(
     academic_year_id: UUID,
     academic_year: AcademicYearUpdate,
+    current_user: IdentityUser = Depends(require_permission("academic_year.update")),
     db: Session = Depends(get_db),
     service: AcademicYearService = Depends(get_academic_year_service),
 ) -> dict[str, object]:
     """
-    Update an existing academic year entity.
+    Update an existing academic year entity for the authenticated user's school.
     """
     updated = service.update_academic_year(
         db,
         academic_year_id,
         academic_year,
+        school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -153,19 +156,20 @@ def update_academic_year(
     "/{academic_year_id}",
     response_model=dict,
     summary="Delete Academic Year",
-    dependencies=[Depends(require_permission("academic_year.delete"))],
 )
 def delete_academic_year(
     academic_year_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("academic_year.delete")),
     db: Session = Depends(get_db),
     service: AcademicYearService = Depends(get_academic_year_service),
 ) -> dict[str, object]:
     """
-    Soft delete an academic year entity.
+    Soft delete an academic year entity for the authenticated user's school.
     """
     service.delete_academic_year(
         db,
         academic_year_id,
+        school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
