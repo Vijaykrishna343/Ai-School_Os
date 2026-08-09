@@ -18,6 +18,12 @@ from app.api.v1.endpoints.school_class import (
 from app.api.v1.endpoints.subject import (
     router as subject_router,
 )
+from app.api.v1.endpoints.exam import (
+    router as exam_router,
+)
+from app.api.v1.endpoints.exam_schedule import (
+    router as exam_schedule_router,
+)
 from app.api.student.student_controller import (
     router as student_router,
 )
@@ -104,6 +110,18 @@ api_router.include_router(
     subject_router,
     prefix="/subjects",
     tags=["Subjects"],
+)
+
+api_router.include_router(
+    exam_router,
+    prefix="/exams",
+    tags=[APITags.EXAMS],
+)
+
+api_router.include_router(
+    exam_schedule_router,
+    prefix="/exam-schedules",
+    tags=[APITags.EXAMS],
 )
 
 api_router.include_router(

@@ -3,6 +3,7 @@ from .school_class import SchoolClassStatus
 from .section import SectionStatus
 from .subject import SubjectStatus
 from .attendance import AttendanceStatus
+from .exam import ExamStatus, ExamType
 from .student import (
     AdmissionType,
     StudentStatus,
@@ -16,12 +17,14 @@ from .teacher import (
 __all__ = [
     "AcademicYearStatus",
     "AdmissionType",
+    "AttendanceStatus",
     "BloodGroup",
+    "ExamStatus",
+    "ExamType",
     "Gender",
     "SchoolClassStatus",
     "SectionStatus",
     "StudentStatus",
     "SubjectStatus",
     "TeacherStatus",
-    "AttendanceStatus",
 ]

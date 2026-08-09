@@ -17,6 +17,7 @@ from app.models.section.section import Section
 from app.models.student.student import Student
 from app.models.teacher.teacher import Teacher
 from app.models.subject.subject import Subject
+from app.models.exam import Exam, ExamSchedule
 
 # ==========================
 # Identity Models
@@ -39,6 +40,8 @@ __all__ = [
     "Student",
     "Teacher",
     "Subject",
+    "Exam",
+    "ExamSchedule",
     "IdentityUser",
     "IdentityRole",
     "IdentityPermission",
