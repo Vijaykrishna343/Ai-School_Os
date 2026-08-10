@@ -27,6 +27,9 @@ from app.api.v1.endpoints.exam_schedule import (
 from app.api.v1.endpoints.student_exam_result import (
     router as student_exam_result_router,
 )
+from app.api.v1.endpoints.fees import (
+    router as fees_router,
+)
 from app.api.student.student_controller import (
     router as student_router,
 )
@@ -132,6 +135,13 @@ api_router.include_router(
     prefix="/student-exam-results",
     tags=[APITags.EXAMS],
 )
+
+api_router.include_router(
+    fees_router,
+    prefix="/fees",
+    tags=[APITags.FEES],
+)
+
 
 
 api_router.include_router(

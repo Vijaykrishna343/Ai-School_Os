@@ -1,0 +1,51 @@
+from enum import Enum
+
+
+class FeeCategory(str, Enum):
+    TUITION = "TUITION"
+    ADMISSION = "ADMISSION"
+    TRANSPORTATION = "TRANSPORTATION"
+    EXAMINATION = "EXAMINATION"
+    BOOKS = "BOOKS"
+    STUDY_MATERIAL = "STUDY_MATERIAL"
+    UNIFORM = "UNIFORM"
+    ID_CARD = "ID_CARD"
+    TIE = "TIE"
+    BELT = "BELT"
+    SHOES = "SHOES"
+    DIARY = "DIARY"
+    ACTIVITY = "ACTIVITY"
+    MISCELLANEOUS = "MISCELLANEOUS"
+    OTHER = "OTHER"
+
+
+class FeeStructureStatus(str, Enum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    ARCHIVED = "ARCHIVED"
+
+
+class DiscountType(str, Enum):
+    SIBLING_CONCESSION = "SIBLING_CONCESSION"
+    SCHOLARSHIP = "SCHOLARSHIP"
+    STAFF_CONCESSION = "STAFF_CONCESSION"
+    MANAGEMENT_CONCESSION = "MANAGEMENT_CONCESSION"
+    SPECIAL_DISCOUNT = "SPECIAL_DISCOUNT"
+    OTHER = "OTHER"
+
+
+class PaymentMode(str, Enum):
+    CASH = "CASH"
+    UPI = "UPI"
+    BANK_TRANSFER = "BANK_TRANSFER"
+    CARD = "CARD"
+    CHEQUE = "CHEQUE"
+    OTHER = "OTHER"
+
+
+class StudentFeeAssignmentStatus(str, Enum):
+    PENDING = "PENDING"
+    PARTIALLY_PAID = "PARTIALLY_PAID"
+    PAID = "PAID"
+    CANCELLED = "CANCELLED"

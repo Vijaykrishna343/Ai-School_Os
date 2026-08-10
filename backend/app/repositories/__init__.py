@@ -3,6 +3,18 @@ from .academic_year.academic_year_repository import (
     academic_year_repository,
 )
 from .base import BaseRepository
+from .fees.fee_payment_repository import (
+    FeePaymentRepository,
+    fee_payment_repository,
+)
+from .fees.fee_structure_repository import (
+    FeeStructureRepository,
+    fee_structure_repository,
+)
+from .fees.student_fee_assignment_repository import (
+    StudentFeeAssignmentRepository,
+    student_fee_assignment_repository,
+)
 from .parent.parent_repository import (
     ParentRepository,
     parent_repository,
@@ -49,6 +61,9 @@ __all__ = [
     "SubjectRepository",
     "TeacherRepository",
     "AttendanceRepository",
+    "FeeStructureRepository",
+    "StudentFeeAssignmentRepository",
+    "FeePaymentRepository",
     # Singleton instances
     "academic_year_repository",
     "parent_repository",
@@ -59,4 +74,7 @@ __all__ = [
     "subject_repository",
     "teacher_repository",
     "attendance_repository",
+    "fee_structure_repository",
+    "student_fee_assignment_repository",
+    "fee_payment_repository",
 ]

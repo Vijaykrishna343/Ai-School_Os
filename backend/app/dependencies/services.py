@@ -63,7 +63,15 @@ from app.services.student_exam_result_service import (
     StudentExamResultService,
     student_exam_result_service,
 )
-
+from app.repositories.fees import (
+    fee_payment_repository,
+    fee_structure_repository,
+    student_fee_assignment_repository,
+)
+from app.services.fee_service import (
+    FeeService,
+    fee_service,
+)
 
 
 # ------------------------------------------------------------------
@@ -131,6 +139,21 @@ def get_student_exam_result_repository():
     return student_exam_result_repository
 
 
+def get_fee_structure_repository():
+    """Return the FeeStructureRepository singleton."""
+    return fee_structure_repository
+
+
+def get_student_fee_assignment_repository():
+    """Return the StudentFeeAssignmentRepository singleton."""
+    return student_fee_assignment_repository
+
+
+def get_fee_payment_repository():
+    """Return the FeePaymentRepository singleton."""
+    return fee_payment_repository
+
+
 # ------------------------------------------------------------------
 # Service Dependencies
 # ------------------------------------------------------------------
@@ -194,3 +217,8 @@ def get_exam_schedule_service() -> ExamScheduleService:
 def get_student_exam_result_service() -> StudentExamResultService:
     """Return the StudentExamResultService singleton."""
     return student_exam_result_service
+
+
+def get_fee_service() -> FeeService:
+    """Return the FeeService singleton."""
+    return fee_service
