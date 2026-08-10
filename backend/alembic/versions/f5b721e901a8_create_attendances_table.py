@@ -39,9 +39,10 @@ def upgrade() -> None:
         sa.Column('attendance_date', sa.Date(), nullable=False),
         sa.Column(
             'status',
-            sa.Enum(
+            postgresql.ENUM(
                 'PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'EXCUSED',
-                name='attendance_status'
+                name='attendance_status',
+                create_type=False
             ),
             nullable=False
         ),

@@ -49,6 +49,7 @@ from app.services.subject.subject_service import (
 from app.repositories.exam import (
     exam_repository,
     exam_schedule_repository,
+    student_exam_result_repository,
 )
 from app.services.exam_service import (
     ExamService,
@@ -58,6 +59,11 @@ from app.services.exam_schedule_service import (
     ExamScheduleService,
     exam_schedule_service,
 )
+from app.services.student_exam_result_service import (
+    StudentExamResultService,
+    student_exam_result_service,
+)
+
 
 
 # ------------------------------------------------------------------
@@ -120,6 +126,11 @@ def get_exam_schedule_repository():
     return exam_schedule_repository
 
 
+def get_student_exam_result_repository():
+    """Return the StudentExamResultRepository singleton."""
+    return student_exam_result_repository
+
+
 # ------------------------------------------------------------------
 # Service Dependencies
 # ------------------------------------------------------------------
@@ -178,3 +189,8 @@ def get_exam_service() -> ExamService:
 def get_exam_schedule_service() -> ExamScheduleService:
     """Return the ExamScheduleService singleton."""
     return exam_schedule_service
+
+
+def get_student_exam_result_service() -> StudentExamResultService:
+    """Return the StudentExamResultService singleton."""
+    return student_exam_result_service

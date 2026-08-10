@@ -12,6 +12,7 @@ from .services import (
     get_attendance_repository,
     get_exam_repository,
     get_exam_schedule_repository,
+    get_student_exam_result_repository,
     # Service dependencies
     get_academic_year_service,
     get_parent_service,
@@ -24,6 +25,7 @@ from .services import (
     get_attendance_service,
     get_exam_service,
     get_exam_schedule_service,
+    get_student_exam_result_service,
 )
 
 __all__ = [
@@ -41,6 +43,7 @@ __all__ = [
     "get_attendance_repository",
     "get_exam_repository",
     "get_exam_schedule_repository",
+    "get_student_exam_result_repository",
     # Service dependencies
     "get_academic_year_service",
     "get_parent_service",
@@ -53,4 +56,5 @@ __all__ = [
     "get_attendance_service",
     "get_exam_service",
     "get_exam_schedule_service",
+    "get_student_exam_result_service",
 ]

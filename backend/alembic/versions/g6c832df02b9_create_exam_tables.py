@@ -43,9 +43,10 @@ def upgrade() -> None:
         sa.Column('name', sa.String(length=100), nullable=False),
         sa.Column(
             'exam_type',
-            sa.Enum(
+            postgresql.ENUM(
                 'REGULAR', 'RETEST', 'OTHER',
-                name='exam_type'
+                name='exam_type',
+                create_type=False
             ),
             nullable=False
         ),
@@ -54,9 +55,10 @@ def upgrade() -> None:
         sa.Column('end_date', sa.Date(), nullable=False),
         sa.Column(
             'status',
-            sa.Enum(
+            postgresql.ENUM(
                 'DRAFT', 'SCHEDULED', 'ONGOING', 'COMPLETED', 'CANCELLED',
-                name='exam_status'
+                name='exam_status',
+                create_type=False
             ),
             nullable=False,
             server_default='DRAFT'
@@ -130,9 +132,41 @@ def upgrade() -> None:
     op.create_index('ix_exam_schedules_section_id', 'exam_schedules', ['section_id'], unique=False)
     op.create_index('ix_exam_schedules_subject_id', 'exam_schedules', ['subject_id'], unique=False)
 
+    op.create_table(
+        'student_exam_results',
+        sa.Column('id', sa.UUID(), nullable=False),
+        sa.Column('exam_schedule_id', sa.UUID(), nullable=False),
+        sa.Column('student_id', sa.UUID(), nullable=False),
+        sa.Column('marks_obtained', sa.Numeric(precision=5, scale=2), nullable=False),
+        sa.Column('remarks', sa.String(), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('is_deleted', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('deleted_by_user_id', sa.UUID(), nullable=True),
+        sa.ForeignKeyConstraint(['deleted_by_user_id'], ['identity_users.id'], ondelete='SET NULL'),
+        sa.ForeignKeyConstraint(['exam_schedule_id'], ['exam_schedules.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['student_id'], ['students.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(
+        "uq_student_exam_result_active",
+        "student_exam_results",
+        ["exam_schedule_id", "student_id"],
+        unique=True,
+        postgresql_where=sa.text("is_deleted = false"),
+    )
+    op.create_index('ix_student_exam_results_exam_schedule_id', 'student_exam_results', ['exam_schedule_id'], unique=False)
+    op.create_index('ix_student_exam_results_student_id', 'student_exam_results', ['student_id'], unique=False)
+
 
 def downgrade() -> None:
     """Downgrade schema."""
+    op.drop_index('ix_student_exam_results_student_id', table_name='student_exam_results')
+    op.drop_index('ix_student_exam_results_exam_schedule_id', table_name='student_exam_results')
+    op.drop_index('uq_student_exam_result_active', table_name='student_exam_results')
+    op.drop_table('student_exam_results')
+
     op.drop_index('ix_exam_schedules_subject_id', table_name='exam_schedules')
     op.drop_index('ix_exam_schedules_section_id', table_name='exam_schedules')
     op.drop_index('ix_exam_schedules_search', table_name='exam_schedules')

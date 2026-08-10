@@ -18,6 +18,7 @@ from app.models.student.student import Student
 from app.models.teacher.teacher import Teacher
 from app.models.subject.subject import Subject
 from app.models.exam import Exam, ExamSchedule
+from app.models.exam.student_exam_result import StudentExamResult
 
 # ==========================
 # Identity Models
@@ -47,4 +48,5 @@ __all__ = [
     "IdentityPermission",
     "IdentityUserRole",
     "IdentityRolePermission",
+    "StudentExamResult",
 ]

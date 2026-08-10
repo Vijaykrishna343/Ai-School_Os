@@ -12,6 +12,13 @@ from .exam_schedule import (
     ExamScheduleResponse,
     ExamScheduleUpdate,
 )
+from .student_exam_result import (
+    StudentExamResultCreate,
+    StudentExamResultFilter,
+    StudentExamResultListResponse,
+    StudentExamResultResponse,
+    StudentExamResultUpdate,
+)
 
 __all__ = [
     "ExamCreate",
@@ -24,4 +31,9 @@ __all__ = [
     "ExamScheduleListResponse",
     "ExamScheduleResponse",
     "ExamScheduleUpdate",
+    "StudentExamResultCreate",
+    "StudentExamResultFilter",
+    "StudentExamResultListResponse",
+    "StudentExamResultResponse",
+    "StudentExamResultUpdate",
 ]
