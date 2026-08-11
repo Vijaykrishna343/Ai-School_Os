@@ -76,12 +76,27 @@ from app.services.fee_service import (
     FeeService,
     fee_service,
 )
+from app.repositories.academic_term import academic_term_repository
+from app.services.academic_term_service import (
+    AcademicTermService,
+    academic_term_service,
+)
 from app.repositories.grading import (
+    evaluation_config_repository,
     grade_scale_repository,
+    report_card_repository,
+)
+from app.services.evaluation_config_service import (
+    EvaluationConfigService,
+    evaluation_config_service,
 )
 from app.services.grading_scale_service import (
     GradeScaleService,
     grade_scale_service,
+)
+from app.services.report_card_service import (
+    ReportCardService,
+    report_card_service,
 )
 
 
@@ -104,6 +119,11 @@ def get_parent_repository():
 def get_academic_year_repository():
     """Return the AcademicYearRepository singleton."""
     return academic_year_repository
+
+
+def get_academic_term_repository():
+    """Return the AcademicTermRepository singleton."""
+    return academic_term_repository
 
 
 def get_attendance_repository():
@@ -176,6 +196,16 @@ def get_fee_payment_repository():
     return fee_payment_repository
 
 
+def get_evaluation_config_repository():
+    """Return the EvaluationConfigRepository singleton."""
+    return evaluation_config_repository
+
+
+def get_report_card_repository():
+    """Return the ReportCardRepository singleton."""
+    return report_card_repository
+
+
 # ------------------------------------------------------------------
 # Service Dependencies
 # ------------------------------------------------------------------
@@ -194,6 +224,11 @@ def get_parent_service() -> ParentService:
 def get_academic_year_service() -> AcademicYearService:
     """Return the AcademicYearService singleton."""
     return academic_year_service
+
+
+def get_academic_term_service() -> AcademicTermService:
+    """Return the AcademicTermService singleton."""
+    return academic_term_service
 
 
 def get_attendance_service() -> AttendanceService:
@@ -259,3 +294,13 @@ def get_grade_scale_repository():
 def get_grade_scale_service() -> GradeScaleService:
     """Return the GradeScaleService singleton."""
     return grade_scale_service
+
+
+def get_evaluation_config_service() -> EvaluationConfigService:
+    """Return the EvaluationConfigService singleton."""
+    return evaluation_config_service
+
+
+def get_report_card_service() -> ReportCardService:
+    """Return the ReportCardService singleton."""
+    return report_card_service

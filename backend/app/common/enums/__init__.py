@@ -4,6 +4,12 @@ from .section import SectionStatus
 from .subject import SubjectStatus
 from .attendance import AttendanceStatus
 from .exam import AssessmentType, AttemptType, ExamStatus, parse_legacy_exam_type
+from .report_card import (
+    CalculationMode,
+    ReportCardStatus,
+    RetestPolicy,
+    RoundingMode,
+)
 from .fees import (
     DiscountType,
     FeeCategory,
@@ -31,6 +37,7 @@ __all__ = [
     "AttemptType",
     "AttendanceStatus",
     "BloodGroup",
+    "CalculationMode",
     "DiscountType",
     "EnrollmentStatus",
     "ExamStatus",
@@ -39,6 +46,9 @@ __all__ = [
     "Gender",
     "PaymentMode",
     "PromotionDecision",
+    "ReportCardStatus",
+    "RetestPolicy",
+    "RoundingMode",
     "SchoolClassStatus",
     "SectionStatus",
     "StudentFeeAssignmentStatus",

@@ -3,6 +3,9 @@ from fastapi import APIRouter
 from app.api.v1.endpoints.academic_year import (
     router as academic_year_router,
 )
+from app.api.v1.endpoints.academic_term import (
+    router as academic_term_router,
+)
 from app.api.v1.endpoints.attendance import (
     router as attendance_router,
 )
@@ -32,6 +35,12 @@ from app.api.v1.endpoints.fees import (
 )
 from app.api.v1.endpoints.grading_scale import (
     router as grading_scale_router,
+)
+from app.api.v1.endpoints.evaluation_config import (
+    router as evaluation_config_router,
+)
+from app.api.v1.endpoints.report_card import (
+    router as report_card_router,
 )
 from app.api.student.student_controller import (
     router as student_router,
@@ -86,6 +95,12 @@ api_router.include_router(
     academic_year_router,
     prefix="/academic-years",
     tags=["Academic Years"],
+)
+
+api_router.include_router(
+    academic_term_router,
+    prefix="/academic-terms",
+    tags=["Academic Terms"],
 )
 
 api_router.include_router(
@@ -159,6 +174,18 @@ api_router.include_router(
     grading_scale_router,
     prefix="/grading-scales",
     tags=["Grading Scales"],
+)
+
+api_router.include_router(
+    evaluation_config_router,
+    prefix="/evaluation-configs",
+    tags=["Evaluation Configs"],
+)
+
+api_router.include_router(
+    report_card_router,
+    prefix="/report-cards",
+    tags=["Report Cards"],
 )
 
 

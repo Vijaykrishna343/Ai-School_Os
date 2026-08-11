@@ -9,6 +9,22 @@ from app.schemas.grading.grade_scale import (
     GradeScaleResponse,
     GradeScaleUpdate,
 )
+from app.schemas.grading.evaluation_config import (
+    AssessmentTypeWeightageCreate,
+    AssessmentTypeWeightageResponse,
+    EvaluationConfigCreate,
+    EvaluationConfigListResponse,
+    EvaluationConfigResponse,
+    EvaluationConfigUpdate,
+)
+from app.schemas.grading.report_card import (
+    ReportCardFilter,
+    ReportCardGenerateRequest,
+    ReportCardItemSnapshotResponse,
+    ReportCardListResponse,
+    ReportCardRemarksUpdate,
+    ReportCardResponse,
+)
 
 __all__ = [
     "GradeScaleCreate",
@@ -20,4 +36,16 @@ __all__ = [
     "GradeScaleEntryResponse",
     "GradeMatchRequest",
     "GradeMatchResponse",
+    "EvaluationConfigCreate",
+    "EvaluationConfigUpdate",
+    "EvaluationConfigResponse",
+    "EvaluationConfigListResponse",
+    "AssessmentTypeWeightageCreate",
+    "AssessmentTypeWeightageResponse",
+    "ReportCardGenerateRequest",
+    "ReportCardRemarksUpdate",
+    "ReportCardResponse",
+    "ReportCardListResponse",
+    "ReportCardFilter",
+    "ReportCardItemSnapshotResponse",
 ]

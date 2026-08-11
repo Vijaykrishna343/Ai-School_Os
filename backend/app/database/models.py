@@ -12,6 +12,7 @@ discovered automatically.
 from app.models.school import School
 from app.models.parent import Parent
 from app.models.academic_year import AcademicYear
+from app.models.academic_term import AcademicTerm
 from app.models.school_class import SchoolClass
 from app.models.section.section import Section
 from app.models.student.student import Student
@@ -19,7 +20,14 @@ from app.models.teacher.teacher import Teacher
 from app.models.subject.subject import Subject
 from app.models.exam import Exam, ExamSchedule
 from app.models.exam.student_exam_result import StudentExamResult
-from app.models.grading import GradeScale, GradeScaleEntry
+from app.models.grading import (
+    GradeScale,
+    GradeScaleEntry,
+    EvaluationConfig,
+    AssessmentTypeWeightage,
+    ReportCard,
+    ReportCardItemSnapshot,
+)
 
 # ==========================
 # Identity Models
@@ -37,6 +45,7 @@ __all__ = [
     "School",
     "Parent",
     "AcademicYear",
+    "AcademicTerm",
     "SchoolClass",
     "Section",
     "Student",
@@ -52,4 +61,8 @@ __all__ = [
     "StudentExamResult",
     "GradeScale",
     "GradeScaleEntry",
+    "EvaluationConfig",
+    "AssessmentTypeWeightage",
+    "ReportCard",
+    "ReportCardItemSnapshot",
 ]

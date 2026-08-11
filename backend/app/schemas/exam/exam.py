@@ -16,10 +16,12 @@ class ExamCreate(BaseModel):
     """
     Request payload for creating an Exam.
     Supports assessment_type and attempt_type, with fallback for legacy exam_type.
+    Optionally accepts academic_term_id.
     """
 
     school_id: UUID
     academic_year_id: UUID
+    academic_term_id: UUID | None = None
     name: str = Field(..., min_length=1, max_length=100)
     assessment_type: AssessmentType = Field(default=AssessmentType.OTHER)
     attempt_type: AttemptType = Field(default=AttemptType.REGULAR)
@@ -47,10 +49,11 @@ class ExamCreate(BaseModel):
 class ExamUpdate(BaseModel):
     """
     Request payload for updating an Exam.
-    Supports updating assessment_type, attempt_type, or legacy exam_type.
+    Supports updating assessment_type, attempt_type, academic_term_id, or legacy exam_type.
     Legacy exam_type updates ONLY attempt_type and preserves existing assessment_type.
     """
 
+    academic_term_id: UUID | None = None
     name: str | None = Field(default=None, min_length=1, max_length=100)
     assessment_type: AssessmentType | None = None
     attempt_type: AttemptType | None = None
@@ -81,6 +84,7 @@ class ExamResponse(BaseModel):
     id: UUID
     school_id: UUID
     academic_year_id: UUID
+    academic_term_id: UUID | None = None
     name: str
     assessment_type: AssessmentType
     attempt_type: AttemptType
@@ -112,6 +116,7 @@ class ExamFilter(BaseModel):
 
     school_id: UUID | None = None
     academic_year_id: UUID | None = None
+    academic_term_id: UUID | None = None
     assessment_type: AssessmentType | None = None
     attempt_type: AttemptType | None = None
     exam_type: str | None = Field(default=None, description="Deprecated legacy filter")

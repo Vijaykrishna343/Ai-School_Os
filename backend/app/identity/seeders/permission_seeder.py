@@ -21,6 +21,12 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "academic_year.update", "module": "academic_year", "action": "update", "description": "Update academic year"},
     {"name": "academic_year.delete", "module": "academic_year", "action": "delete", "description": "Delete academic year"},
 
+    # Academic Term
+    {"name": "academic_term.create", "module": "academic_term", "action": "create", "description": "Create academic term"},
+    {"name": "academic_term.view", "module": "academic_term", "action": "view", "description": "View academic term"},
+    {"name": "academic_term.update", "module": "academic_term", "action": "update", "description": "Update academic term"},
+    {"name": "academic_term.delete", "module": "academic_term", "action": "delete", "description": "Delete academic term"},
+
     # Class
     {"name": "class.create", "module": "class", "action": "create", "description": "Create class"},
     {"name": "class.view", "module": "class", "action": "view", "description": "View class"},
@@ -81,9 +87,21 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "exam.update", "module": "exam", "action": "update", "description": "Update exam"},
     {"name": "exam.delete", "module": "exam", "action": "delete", "description": "Delete exam"},
 
-    # Grading
+    # Grading & Evaluation Config
     {"name": "grading.manage", "module": "grading", "action": "manage", "description": "Manage grading configuration"},
     {"name": "grading.view", "module": "grading", "action": "view", "description": "View grading configuration"},
+    {"name": "evaluation_config.create", "module": "evaluation_config", "action": "create", "description": "Create evaluation config"},
+    {"name": "evaluation_config.view", "module": "evaluation_config", "action": "view", "description": "View evaluation config"},
+    {"name": "evaluation_config.update", "module": "evaluation_config", "action": "update", "description": "Update evaluation config"},
+    {"name": "evaluation_config.delete", "module": "evaluation_config", "action": "delete", "description": "Delete evaluation config"},
+
+    # Report Cards
+    {"name": "report_card.generate", "module": "report_card", "action": "generate", "description": "Generate report cards"},
+    {"name": "report_card.view", "module": "report_card", "action": "view", "description": "View report cards"},
+    {"name": "report_card.edit_remarks", "module": "report_card", "action": "edit_remarks", "description": "Edit report card remarks"},
+    {"name": "report_card.finalize", "module": "report_card", "action": "finalize", "description": "Finalize report cards"},
+    {"name": "report_card.publish", "module": "report_card", "action": "publish", "description": "Publish report cards"},
+    {"name": "report_card.reopen", "module": "report_card", "action": "reopen", "description": "Reopen finalized report cards"},
 
 
     # Marks

@@ -23,6 +23,7 @@ from app.common.enums.exam import AssessmentType, AttemptType, ExamStatus
 from app.database.common_model import CommonModel
 
 if TYPE_CHECKING:
+    from app.models.academic_term.academic_term import AcademicTerm
     from app.models.academic_year.academic_year import AcademicYear
     from app.models.exam.exam_schedule import ExamSchedule
     from app.models.school.school import School
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
 class Exam(CommonModel):
     """
     Represents an examination within a school and academic year.
+    Optionally linked to an AcademicTerm.
     """
 
     __tablename__ = "exams"
@@ -47,6 +49,7 @@ class Exam(CommonModel):
         ),
         Index("ix_exams_school_id", "school_id"),
         Index("ix_exams_academic_year_id", "academic_year_id"),
+        Index("ix_exams_academic_term_id", "academic_term_id"),
         Index("ix_exams_assessment_type", "assessment_type"),
         Index("ix_exams_attempt_type", "attempt_type"),
         Index("ix_exams_status", "status"),
@@ -68,6 +71,12 @@ class Exam(CommonModel):
         UUID(as_uuid=True),
         ForeignKey("academic_years.id", ondelete="CASCADE"),
         nullable=False,
+    )
+
+    academic_term_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("academic_terms.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     # ------------------------------------------------------------------
@@ -129,6 +138,10 @@ class Exam(CommonModel):
     school: Mapped["School"] = orm_relationship()
 
     academic_year: Mapped["AcademicYear"] = orm_relationship()
+
+    academic_term: Mapped["AcademicTerm | None"] = orm_relationship(
+        back_populates="exams",
+    )
 
     schedules: Mapped[list["ExamSchedule"]] = orm_relationship(
         back_populates="exam",

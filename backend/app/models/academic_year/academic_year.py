@@ -24,6 +24,7 @@ from app.common.enums import AcademicYearStatus
 from app.database.common_model import CommonModel
 
 if TYPE_CHECKING:
+    from app.models.academic_term.academic_term import AcademicTerm
     from app.models.school.school import School
     from app.models.student.student import Student
 
@@ -128,4 +129,10 @@ class AcademicYear(CommonModel):
 
     students: Mapped[list["Student"]] = orm_relationship(
         back_populates="academic_year",
+    )
+
+    terms: Mapped[list["AcademicTerm"]] = orm_relationship(
+        back_populates="academic_year",
+        cascade="all, delete-orphan",
+        order_by="AcademicTerm.display_order",
     )

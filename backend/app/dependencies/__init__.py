@@ -2,6 +2,7 @@ from .database import get_db
 from .services import (
     # Repository dependencies
     get_academic_year_repository,
+    get_academic_term_repository,
     get_parent_repository,
     get_school_class_repository,
     get_school_repository,
@@ -19,8 +20,11 @@ from .services import (
     get_student_fee_assignment_repository,
     get_fee_payment_repository,
     get_grade_scale_repository,
+    get_evaluation_config_repository,
+    get_report_card_repository,
     # Service dependencies
     get_academic_year_service,
+    get_academic_term_service,
     get_parent_service,
     get_school_class_service,
     get_school_service,
@@ -35,6 +39,8 @@ from .services import (
     get_student_exam_result_service,
     get_fee_service,
     get_grade_scale_service,
+    get_evaluation_config_service,
+    get_report_card_service,
 )
 
 __all__ = [
@@ -42,6 +48,7 @@ __all__ = [
     "get_db",
     # Repository dependencies
     "get_academic_year_repository",
+    "get_academic_term_repository",
     "get_parent_repository",
     "get_school_class_repository",
     "get_school_repository",
@@ -59,8 +66,11 @@ __all__ = [
     "get_student_fee_assignment_repository",
     "get_fee_payment_repository",
     "get_grade_scale_repository",
+    "get_evaluation_config_repository",
+    "get_report_card_repository",
     # Service dependencies
     "get_academic_year_service",
+    "get_academic_term_service",
     "get_parent_service",
     "get_school_class_service",
     "get_school_service",
@@ -75,4 +85,6 @@ __all__ = [
     "get_student_exam_result_service",
     "get_fee_service",
     "get_grade_scale_service",
+    "get_evaluation_config_service",
+    "get_report_card_service",
 ]

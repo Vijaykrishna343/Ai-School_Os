@@ -70,6 +70,9 @@ class ExamRepository(BaseRepository[Exam]):
         if filters.academic_year_id:
             query = query.where(Exam.academic_year_id == filters.academic_year_id)
 
+        if filters.academic_term_id:
+            query = query.where(Exam.academic_term_id == filters.academic_term_id)
+
         if filters.assessment_type:
             query = query.where(Exam.assessment_type == filters.assessment_type)
 

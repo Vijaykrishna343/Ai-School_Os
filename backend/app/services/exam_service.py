@@ -11,6 +11,10 @@ from app.common.exceptions import (
 )
 from app.common.logger.logger import get_logger
 from app.models.exam.exam import Exam
+from app.repositories.academic_term import (
+    AcademicTermRepository,
+    academic_term_repository,
+)
 from app.repositories.academic_year import (
     AcademicYearRepository,
     academic_year_repository,
@@ -41,13 +45,15 @@ class ExamService:
 
     def __init__(
         self,
-        repository: ExamRepository,
-        school_repo: SchoolRepository,
-        academic_year_repo: AcademicYearRepository,
+        repository: ExamRepository = exam_repository,
+        school_repo: SchoolRepository = school_repository,
+        academic_year_repo: AcademicYearRepository = academic_year_repository,
+        academic_term_repo: AcademicTermRepository = academic_term_repository,
     ) -> None:
         self.repository = repository
         self.school_repository = school_repo
         self.academic_year_repository = academic_year_repo
+        self.academic_term_repository = academic_term_repo
 
     def create_exam(
         self,
@@ -87,6 +93,15 @@ class ExamService:
             raise ValidationException(
                 "Academic year must belong to the same school."
             )
+
+        if exam_data.academic_term_id:
+            term = self.academic_term_repository.get(db, exam_data.academic_term_id)
+            if term is None or term.is_deleted:
+                raise NotFoundException("AcademicTerm", str(exam_data.academic_term_id))
+            if term.school_id != exam_data.school_id:
+                raise ValidationException("Academic term must belong to the same school.")
+            if term.academic_year_id != exam_data.academic_year_id:
+                raise ValidationException("Academic term must belong to the specified academic year.")
 
         if exam_data.start_date > exam_data.end_date:
             raise ValidationException(
@@ -169,6 +184,15 @@ class ExamService:
             raise ValidationException(
                 "Exam start_date must be before or equal to end_date."
             )
+
+        if "academic_term_id" in update_data and update_data["academic_term_id"] is not None:
+            term = self.academic_term_repository.get(db, update_data["academic_term_id"])
+            if term is None or term.is_deleted:
+                raise NotFoundException("AcademicTerm", str(update_data["academic_term_id"]))
+            if term.school_id != exam.school_id:
+                raise ValidationException("Academic term must belong to the same school.")
+            if term.academic_year_id != exam.academic_year_id:
+                raise ValidationException("Academic term must belong to the specified academic year.")
 
         if (
             "name" in update_data
