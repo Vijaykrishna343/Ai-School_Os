@@ -76,11 +76,19 @@ from app.services.fee_service import (
     FeeService,
     fee_service,
 )
+from app.repositories.grading import (
+    grade_scale_repository,
+)
+from app.services.grading_scale_service import (
+    GradeScaleService,
+    grade_scale_service,
+)
 
 
 # ------------------------------------------------------------------
 # Repository Dependencies
 # ------------------------------------------------------------------
+
 
 
 def get_school_repository():
@@ -241,3 +249,13 @@ def get_student_exam_result_service() -> StudentExamResultService:
 def get_fee_service() -> FeeService:
     """Return the FeeService singleton."""
     return fee_service
+
+
+def get_grade_scale_repository():
+    """Return the GradeScaleRepository singleton."""
+    return grade_scale_repository
+
+
+def get_grade_scale_service() -> GradeScaleService:
+    """Return the GradeScaleService singleton."""
+    return grade_scale_service

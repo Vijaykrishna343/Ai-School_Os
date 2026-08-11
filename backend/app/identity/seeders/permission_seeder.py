@@ -81,6 +81,11 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "exam.update", "module": "exam", "action": "update", "description": "Update exam"},
     {"name": "exam.delete", "module": "exam", "action": "delete", "description": "Delete exam"},
 
+    # Grading
+    {"name": "grading.manage", "module": "grading", "action": "manage", "description": "Manage grading configuration"},
+    {"name": "grading.view", "module": "grading", "action": "view", "description": "View grading configuration"},
+
+
     # Marks
     {"name": "marks.create", "module": "marks", "action": "create", "description": "Create marks"},
     {"name": "marks.view", "module": "marks", "action": "view", "description": "View marks"},

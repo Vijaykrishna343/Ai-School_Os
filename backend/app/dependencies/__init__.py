@@ -18,6 +18,7 @@ from .services import (
     get_fee_structure_repository,
     get_student_fee_assignment_repository,
     get_fee_payment_repository,
+    get_grade_scale_repository,
     # Service dependencies
     get_academic_year_service,
     get_parent_service,
@@ -33,6 +34,7 @@ from .services import (
     get_exam_schedule_service,
     get_student_exam_result_service,
     get_fee_service,
+    get_grade_scale_service,
 )
 
 __all__ = [
@@ -56,6 +58,7 @@ __all__ = [
     "get_fee_structure_repository",
     "get_student_fee_assignment_repository",
     "get_fee_payment_repository",
+    "get_grade_scale_repository",
     # Service dependencies
     "get_academic_year_service",
     "get_parent_service",
@@ -71,4 +74,5 @@ __all__ = [
     "get_exam_schedule_service",
     "get_student_exam_result_service",
     "get_fee_service",
+    "get_grade_scale_service",
 ]

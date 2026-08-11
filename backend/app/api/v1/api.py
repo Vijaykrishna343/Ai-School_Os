@@ -30,6 +30,9 @@ from app.api.v1.endpoints.student_exam_result import (
 from app.api.v1.endpoints.fees import (
     router as fees_router,
 )
+from app.api.v1.endpoints.grading_scale import (
+    router as grading_scale_router,
+)
 from app.api.student.student_controller import (
     router as student_router,
 )
@@ -151,6 +154,13 @@ api_router.include_router(
     prefix="/fees",
     tags=[APITags.FEES],
 )
+
+api_router.include_router(
+    grading_scale_router,
+    prefix="/grading-scales",
+    tags=["Grading Scales"],
+)
+
 
 
 

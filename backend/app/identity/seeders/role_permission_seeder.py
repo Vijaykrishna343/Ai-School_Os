@@ -32,6 +32,7 @@ ROLE_PERMISSIONS_MATRIX: dict[str, list[str]] = {
         "permission.*",
         "exam.*",
         "marks.*",
+        "grading.*",
         "timetable.*",
         "reports.*",
         "user_role.*",
@@ -44,6 +45,7 @@ ROLE_PERMISSIONS_MATRIX: dict[str, list[str]] = {
         "subject.*",
         "class.*",
         "section.*",
+        "grading.view",
         "reports.*",
     ],
     "Vice Principal": [
@@ -53,6 +55,7 @@ ROLE_PERMISSIONS_MATRIX: dict[str, list[str]] = {
         "subject.*",
         "class.*",
         "section.*",
+        "grading.view",
         "reports.*",
     ],
     "Teacher": [
@@ -64,6 +67,7 @@ ROLE_PERMISSIONS_MATRIX: dict[str, list[str]] = {
         "marks.create",
         "marks.update",
         "marks.view",
+        "grading.view",
     ],
     "Class Teacher": [
         "attendance.create",
@@ -76,6 +80,7 @@ ROLE_PERMISSIONS_MATRIX: dict[str, list[str]] = {
         "marks.view",
         "class.view",
         "section.view",
+        "grading.view",
     ],
     "Receptionist": [
         "student.create",

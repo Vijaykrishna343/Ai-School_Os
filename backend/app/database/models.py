@@ -19,6 +19,7 @@ from app.models.teacher.teacher import Teacher
 from app.models.subject.subject import Subject
 from app.models.exam import Exam, ExamSchedule
 from app.models.exam.student_exam_result import StudentExamResult
+from app.models.grading import GradeScale, GradeScaleEntry
 
 # ==========================
 # Identity Models
@@ -49,4 +50,6 @@ __all__ = [
     "IdentityUserRole",
     "IdentityRolePermission",
     "StudentExamResult",
+    "GradeScale",
+    "GradeScaleEntry",
 ]
