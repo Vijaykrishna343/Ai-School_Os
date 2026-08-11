@@ -101,7 +101,8 @@ class ExamService:
         ):
             raise AlreadyExistsException("Exam", exam_data.name)
 
-        exam = Exam(**exam_data.model_dump())
+        create_dict = exam_data.model_dump(exclude={"exam_type"})
+        exam = Exam(**create_dict)
         created = self.repository.create(db, exam)
         logger.info("Exam '%s' created successfully with ID: %s", created.name, created.id)
         return created
@@ -160,7 +161,7 @@ class ExamService:
         Update an existing exam.
         """
         exam = self.get_exam(db, exam_id, school_id=school_id)
-        update_data = exam_data.model_dump(exclude_unset=True)
+        update_data = exam_data.model_dump(exclude_unset=True, exclude={"exam_type"})
 
         new_start_date = update_data.get("start_date", exam.start_date)
         new_end_date = update_data.get("end_date", exam.end_date)

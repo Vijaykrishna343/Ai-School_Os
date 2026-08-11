@@ -19,7 +19,7 @@ from sqlalchemy.orm import (
     relationship as orm_relationship,
 )
 
-from app.common.enums.exam import ExamStatus, ExamType
+from app.common.enums.exam import AssessmentType, AttemptType, ExamStatus
 from app.database.common_model import CommonModel
 
 if TYPE_CHECKING:
@@ -47,6 +47,8 @@ class Exam(CommonModel):
         ),
         Index("ix_exams_school_id", "school_id"),
         Index("ix_exams_academic_year_id", "academic_year_id"),
+        Index("ix_exams_assessment_type", "assessment_type"),
+        Index("ix_exams_attempt_type", "attempt_type"),
         Index("ix_exams_status", "status"),
         Index("ix_exams_start_date", "start_date"),
         Index("ix_exams_end_date", "end_date"),
@@ -77,13 +79,25 @@ class Exam(CommonModel):
         nullable=False,
     )
 
-    exam_type: Mapped[ExamType] = mapped_column(
+    assessment_type: Mapped[AssessmentType] = mapped_column(
         Enum(
-            ExamType,
-            name="exam_type",
+            AssessmentType,
+            name="assessment_type",
             native_enum=True,
             validate_strings=True,
         ),
+        default=AssessmentType.OTHER,
+        nullable=False,
+    )
+
+    attempt_type: Mapped[AttemptType] = mapped_column(
+        Enum(
+            AttemptType,
+            name="attempt_type",
+            native_enum=True,
+            validate_strings=True,
+        ),
+        default=AttemptType.REGULAR,
         nullable=False,
     )
 

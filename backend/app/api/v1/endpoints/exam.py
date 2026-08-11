@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.common.enums.exam import ExamStatus, ExamType
+from app.common.enums.exam import AssessmentType, AttemptType, ExamStatus
 from app.dependencies import get_db, get_exam_service
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.user import IdentityUser
@@ -50,7 +50,9 @@ def create_exam(
 def get_exams(
     school_id: UUID | None = Query(default=None),
     academic_year_id: UUID | None = Query(default=None),
-    exam_type: ExamType | None = Query(default=None),
+    assessment_type: AssessmentType | None = Query(default=None),
+    attempt_type: AttemptType | None = Query(default=None),
+    exam_type: str | None = Query(default=None, description="Deprecated legacy filter"),
     status: ExamStatus | None = Query(default=None),
     search: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
@@ -66,6 +68,8 @@ def get_exams(
     filters = ExamFilter(
         school_id=effective_school_id,
         academic_year_id=academic_year_id,
+        assessment_type=assessment_type,
+        attempt_type=attempt_type,
         exam_type=exam_type,
         status=status,
         search=search,

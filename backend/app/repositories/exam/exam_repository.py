@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.common.enums.exam import parse_legacy_exam_type
 from app.models.exam.exam import Exam
 from app.repositories.base import BaseRepository
 from app.schemas.exam.exam import ExamFilter
@@ -69,8 +70,19 @@ class ExamRepository(BaseRepository[Exam]):
         if filters.academic_year_id:
             query = query.where(Exam.academic_year_id == filters.academic_year_id)
 
-        if filters.exam_type:
-            query = query.where(Exam.exam_type == filters.exam_type)
+        if filters.assessment_type:
+            query = query.where(Exam.assessment_type == filters.assessment_type)
+
+        if filters.attempt_type:
+            query = query.where(Exam.attempt_type == filters.attempt_type)
+
+        if filters.exam_type and not filters.attempt_type:
+            try:
+                _, legacy_attempt = parse_legacy_exam_type(filters.exam_type)
+                query = query.where(Exam.attempt_type == legacy_attempt)
+            except ValueError:
+                # If invalid legacy exam_type filter provided, return empty
+                query = query.where(False)
 
         if filters.status:
             query = query.where(Exam.status == filters.status)

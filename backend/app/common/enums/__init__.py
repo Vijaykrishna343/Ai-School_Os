@@ -3,7 +3,7 @@ from .school_class import SchoolClassStatus
 from .section import SectionStatus
 from .subject import SubjectStatus
 from .attendance import AttendanceStatus
-from .exam import ExamStatus, ExamType
+from .exam import AssessmentType, AttemptType, ExamStatus, parse_legacy_exam_type
 from .fees import (
     DiscountType,
     FeeCategory,
@@ -27,12 +27,13 @@ from .teacher import (
 __all__ = [
     "AcademicYearStatus",
     "AdmissionType",
+    "AssessmentType",
+    "AttemptType",
     "AttendanceStatus",
     "BloodGroup",
     "DiscountType",
     "EnrollmentStatus",
     "ExamStatus",
-    "ExamType",
     "FeeCategory",
     "FeeStructureStatus",
     "Gender",
@@ -45,4 +46,5 @@ __all__ = [
     "SubjectStatus",
     "TeacherStatus",
     "TransferCertificateStatus",
+    "parse_legacy_exam_type",
 ]

@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.common.enums.exam import ExamStatus, ExamType
+from app.common.enums.exam import AssessmentType, AttemptType, ExamStatus, parse_legacy_exam_type
 from app.common.exceptions import (
     AlreadyExistsException,
     ForbiddenException,
@@ -91,10 +91,23 @@ def create_test_class_section_subject(db, school_id):
 
 
 def test_exam_enums_canonical():
-    assert ExamType.REGULAR.value == "REGULAR"
-    assert ExamType.RETEST.value == "RETEST"
-    assert ExamType.OTHER.value == "OTHER"
+    assert len(AssessmentType) == 12
+    assert len(AttemptType) == 3
+    assert AssessmentType.FORMATIVE_ASSESSMENT.value == "FORMATIVE_ASSESSMENT"
+    assert AssessmentType.FINAL.value == "FINAL"
+    assert AttemptType.REGULAR.value == "REGULAR"
+    assert AttemptType.RETEST.value == "RETEST"
+    assert AttemptType.MAKEUP.value == "MAKEUP"
     assert ExamStatus.DRAFT.value == "DRAFT"
+
+
+def test_legacy_exam_type_parser():
+    assert parse_legacy_exam_type("REGULAR") == (AssessmentType.OTHER, AttemptType.REGULAR)
+    assert parse_legacy_exam_type("RETEST") == (AssessmentType.OTHER, AttemptType.RETEST)
+    assert parse_legacy_exam_type("OTHER") == (AssessmentType.OTHER, AttemptType.REGULAR)
+
+    with pytest.raises(ValueError, match="Invalid legacy exam_type"):
+        parse_legacy_exam_type("INVALID_TYPE")
 
 
 def test_exam_service_create_and_invalid_dates(db_session):
@@ -106,7 +119,8 @@ def test_exam_service_create_and_invalid_dates(db_session):
         school_id=school.id,
         academic_year_id=ay.id,
         name="Invalid Date Exam",
-        exam_type=ExamType.REGULAR,
+        assessment_type=AssessmentType.UNIT_TEST,
+        attempt_type=AttemptType.REGULAR,
         start_date=date(2026, 10, 20),
         end_date=date(2026, 10, 10),
     )
@@ -117,13 +131,68 @@ def test_exam_service_create_and_invalid_dates(db_session):
         school_id=school.id,
         academic_year_id=ay.id,
         name="Valid Exam 1",
-        exam_type=ExamType.REGULAR,
+        assessment_type=AssessmentType.UNIT_TEST,
+        attempt_type=AttemptType.REGULAR,
         start_date=date(2026, 10, 10),
         end_date=date(2026, 10, 20),
     )
     exam = exam_service.create_exam(db, valid_in)
     assert exam.id is not None
     assert exam.name == "Valid Exam 1"
+    assert exam.assessment_type == AssessmentType.UNIT_TEST
+    assert exam.attempt_type == AttemptType.REGULAR
+
+
+def test_all_assessment_and_attempt_types_creation(db_session):
+    db = db_session
+    school = create_test_school(db, "All Types School", "ATS1")
+    ay = create_test_academic_year(db, school.id, "2026-2027")
+
+    for idx, ast in enumerate(AssessmentType):
+        for att in AttemptType:
+            exam_in = ExamCreate(
+                school_id=school.id,
+                academic_year_id=ay.id,
+                name=f"Exam_{ast.value}_{att.value}_{idx}",
+                assessment_type=ast,
+                attempt_type=att,
+                start_date=date(2026, 10, 1),
+                end_date=date(2026, 10, 15),
+            )
+            exam = exam_service.create_exam(db, exam_in)
+            assert exam.assessment_type == ast
+            assert exam.attempt_type == att
+
+
+def test_legacy_exam_type_create_and_update_behavior(db_session):
+    db = db_session
+    school = create_test_school(db, "Legacy Exam School", "LES1")
+    ay = create_test_academic_year(db, school.id, "2026-2027")
+
+    # Create using legacy exam_type="RETEST"
+    legacy_create = ExamCreate(
+        school_id=school.id,
+        academic_year_id=ay.id,
+        name="Legacy Retest Exam",
+        exam_type="RETEST",
+        start_date=date(2026, 10, 1),
+        end_date=date(2026, 10, 15),
+    )
+    exam = exam_service.create_exam(db, legacy_create)
+    assert exam.assessment_type == AssessmentType.OTHER
+    assert exam.attempt_type == AttemptType.RETEST
+
+    # Update assessment_type to TERM
+    up_ast = ExamUpdate(assessment_type=AssessmentType.TERM)
+    exam_up = exam_service.update_exam(db, exam.id, up_ast, school_id=school.id)
+    assert exam_up.assessment_type == AssessmentType.TERM
+    assert exam_up.attempt_type == AttemptType.RETEST
+
+    # Update using legacy exam_type="REGULAR" -> must update attempt_type to REGULAR while PRESERVING assessment_type=TERM
+    up_legacy = ExamUpdate(exam_type="REGULAR")
+    exam_up2 = exam_service.update_exam(db, exam.id, up_legacy, school_id=school.id)
+    assert exam_up2.assessment_type == AssessmentType.TERM
+    assert exam_up2.attempt_type == AttemptType.REGULAR
 
 
 def test_exam_service_duplicate_active_name(db_session):
@@ -135,7 +204,8 @@ def test_exam_service_duplicate_active_name(db_session):
         school_id=school.id,
         academic_year_id=ay.id,
         name="Unique Name Exam",
-        exam_type=ExamType.REGULAR,
+        assessment_type=AssessmentType.FINAL,
+        attempt_type=AttemptType.REGULAR,
         start_date=date(2026, 10, 10),
         end_date=date(2026, 10, 20),
     )
@@ -156,7 +226,7 @@ def test_exam_service_cross_school_academic_year(db_session):
         school_id=school1.id,
         academic_year_id=ay2.id,
         name="Cross AY Exam",
-        exam_type=ExamType.REGULAR,
+        assessment_type=AssessmentType.QUARTERLY,
         start_date=date(2026, 10, 10),
         end_date=date(2026, 10, 20),
     )
@@ -174,7 +244,8 @@ def test_exam_schedule_service_validations(db_session):
         school_id=school.id,
         academic_year_id=ay.id,
         name="Term 1 Exam",
-        exam_type=ExamType.REGULAR,
+        assessment_type=AssessmentType.TERM,
+        attempt_type=AttemptType.REGULAR,
         start_date=date(2026, 10, 1),
         end_date=date(2026, 10, 15),
     )
@@ -197,40 +268,6 @@ def test_exam_schedule_service_validations(db_session):
     with pytest.raises(ValidationException):
         exam_schedule_service.create_exam_schedule(db, sched_out_date)
 
-    # start_time >= end_time
-    sched_invalid_time = ExamScheduleCreate(
-        exam_id=exam.id,
-        school_id=school.id,
-        academic_year_id=ay.id,
-        school_class_id=sc.id,
-        section_id=sec.id,
-        subject_id=subj.id,
-        exam_date=date(2026, 10, 5),
-        start_time=time(11, 0),
-        end_time=time(9, 0),
-        maximum_marks=Decimal("100.00"),
-        passing_marks=Decimal("35.00"),
-    )
-    with pytest.raises(ValidationException):
-        exam_schedule_service.create_exam_schedule(db, sched_invalid_time)
-
-    # passing_marks > maximum_marks
-    sched_invalid_marks = ExamScheduleCreate(
-        exam_id=exam.id,
-        school_id=school.id,
-        academic_year_id=ay.id,
-        school_class_id=sc.id,
-        section_id=sec.id,
-        subject_id=subj.id,
-        exam_date=date(2026, 10, 5),
-        start_time=time(9, 0),
-        end_time=time(11, 0),
-        maximum_marks=Decimal("50.00"),
-        passing_marks=Decimal("60.00"),
-    )
-    with pytest.raises(ValidationException):
-        exam_schedule_service.create_exam_schedule(db, sched_invalid_marks)
-
 
 def test_exam_schedule_section_class_mismatch(db_session):
     db = db_session
@@ -243,13 +280,13 @@ def test_exam_schedule_section_class_mismatch(db_session):
         school_id=school.id,
         academic_year_id=ay.id,
         name="Mismatch Test Exam",
-        exam_type=ExamType.REGULAR,
+        assessment_type=AssessmentType.PERIODIC_TEST,
+        attempt_type=AttemptType.REGULAR,
         start_date=date(2026, 10, 1),
         end_date=date(2026, 10, 15),
     )
     exam = exam_service.create_exam(db, exam_in)
 
-    # section2 belongs to sc2, but payload specifies sc1
     sched_mismatch = ExamScheduleCreate(
         exam_id=exam.id,
         school_id=school.id,

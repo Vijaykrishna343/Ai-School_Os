@@ -960,3 +960,115 @@ def test_29_cross_school_schedule_retrieval_update_delete(client, db_session):
 
     r_del = client.delete(f"/api/v1/exam-schedules/{sched1_id}", headers=headers2)
     assert r_del.status_code == 404
+
+
+def test_assessment_and_attempt_type_api(db_session, client):
+    school, user, headers = create_school_and_user(
+        db_session, "Assessment API School", "AASCH", ["exam.create", "exam.view"]
+    )
+    ay, sc, sec, subj = setup_exam_fixture_data(db_session, school)
+
+    payload = {
+        "school_id": str(school.id),
+        "academic_year_id": str(ay.id),
+        "name": "Unit Test 1 Math",
+        "assessment_type": "UNIT_TEST",
+        "attempt_type": "MAKEUP",
+        "start_date": "2026-10-10",
+        "end_date": "2026-10-20",
+        "status": "DRAFT",
+    }
+    response = client.post("/api/v1/exams", json=payload, headers=headers)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["assessment_type"] == "UNIT_TEST"
+    assert data["attempt_type"] == "MAKEUP"
+
+
+def test_legacy_exam_type_api_compatibility(db_session, client):
+    school, user, headers = create_school_and_user(
+        db_session, "Legacy API School", "LASCH", ["exam.create", "exam.view", "exam.update"]
+    )
+    ay, sc, sec, subj = setup_exam_fixture_data(db_session, school)
+
+    # Legacy POST
+    payload = {
+        "school_id": str(school.id),
+        "academic_year_id": str(ay.id),
+        "name": "Legacy Exam 1",
+        "exam_type": "RETEST",
+        "start_date": "2026-10-10",
+        "end_date": "2026-10-20",
+    }
+    response = client.post("/api/v1/exams", json=payload, headers=headers)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["assessment_type"] == "OTHER"
+    assert data["attempt_type"] == "RETEST"
+    exam_id = data["id"]
+
+    # Update assessment_type to TERM
+    up_res = client.put(f"/api/v1/exams/{exam_id}", json={"assessment_type": "TERM"}, headers=headers)
+    assert up_res.status_code == 200
+    assert up_res.json()["assessment_type"] == "TERM"
+
+    # Legacy PUT with exam_type="REGULAR" -> must update attempt_type to REGULAR while PRESERVING assessment_type=TERM
+    up_legacy = client.put(f"/api/v1/exams/{exam_id}", json={"exam_type": "REGULAR"}, headers=headers)
+    assert up_legacy.status_code == 200
+    assert up_legacy.json()["assessment_type"] == "TERM"
+    assert up_legacy.json()["attempt_type"] == "REGULAR"
+
+
+def test_invalid_legacy_exam_type_rejection(db_session, client):
+    school, user, headers = create_school_and_user(
+        db_session, "Invalid Legacy School", "ILSCH", ["exam.create"]
+    )
+    ay, sc, sec, subj = setup_exam_fixture_data(db_session, school)
+
+    payload = {
+        "school_id": str(school.id),
+        "academic_year_id": str(ay.id),
+        "name": "Invalid Legacy Exam",
+        "exam_type": "UNSUPPORTED_TYPE",
+        "start_date": "2026-10-10",
+        "end_date": "2026-10-20",
+    }
+    response = client.post("/api/v1/exams", json=payload, headers=headers)
+    assert response.status_code == 422
+
+
+def test_filtering_by_assessment_and_attempt_types(db_session, client):
+    school, user, headers = create_school_and_user(
+        db_session, "Filter School", "FLSCH", ["exam.create", "exam.view"]
+    )
+    ay, sc, sec, subj = setup_exam_fixture_data(db_session, school)
+
+    client.post("/api/v1/exams", json={
+        "school_id": str(school.id),
+        "academic_year_id": str(ay.id),
+        "name": "Formative 1",
+        "assessment_type": "FORMATIVE_ASSESSMENT",
+        "attempt_type": "REGULAR",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-05",
+    }, headers=headers)
+
+    client.post("/api/v1/exams", json={
+        "school_id": str(school.id),
+        "academic_year_id": str(ay.id),
+        "name": "Summative 1",
+        "assessment_type": "SUMMATIVE_ASSESSMENT",
+        "attempt_type": "RETEST",
+        "start_date": "2026-10-10",
+        "end_date": "2026-10-15",
+    }, headers=headers)
+
+    res_fa = client.get("/api/v1/exams?assessment_type=FORMATIVE_ASSESSMENT", headers=headers)
+    assert res_fa.status_code == 200
+    assert res_fa.json()["total"] == 1
+    assert res_fa.json()["items"][0]["name"] == "Formative 1"
+
+    res_retest = client.get("/api/v1/exams?attempt_type=RETEST", headers=headers)
+    assert res_retest.status_code == 200
+    assert res_retest.json()["total"] == 1
+    assert res_retest.json()["items"][0]["name"] == "Summative 1"

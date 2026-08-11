@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from app.common.enums import Gender, StudentStatus
-from app.common.enums.exam import ExamStatus, ExamType
+from app.common.enums.exam import AssessmentType, AttemptType, ExamStatus
 from app.common.enums.parent import ParentRelationship
 from app.identity.models import (
     IdentityRole,
@@ -175,7 +175,8 @@ def setup_result_fixture_data(
         school_id=school.id,
         academic_year_id=ay.id,
         name=f"Exam_{uuid.uuid4().hex[:6]}",
-        exam_type=ExamType.REGULAR,
+        assessment_type=AssessmentType.TERM,
+        attempt_type=AttemptType.REGULAR,
         start_date=date(2026, 10, 1),
         end_date=date(2026, 10, 20),
         status=ExamStatus.DRAFT,

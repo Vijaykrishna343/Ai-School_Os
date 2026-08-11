@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 
 from app.common.enums import Gender, StudentStatus
-from app.common.enums.exam import ExamStatus, ExamType
+from app.common.enums.exam import AssessmentType, AttemptType, ExamStatus
 from app.common.enums.parent import ParentRelationship
 from app.common.exceptions import (
     AlreadyExistsException,
@@ -149,7 +149,8 @@ def create_test_exam_and_schedule(
         school_id=school_id,
         academic_year_id=academic_year_id,
         name=f"Exam_{uuid.uuid4().hex[:6]}",
-        exam_type=ExamType.REGULAR,
+        assessment_type=AssessmentType.TERM,
+        attempt_type=AttemptType.REGULAR,
         start_date=date(2026, 10, 1),
         end_date=date(2026, 10, 20),
         status=ExamStatus.DRAFT,
