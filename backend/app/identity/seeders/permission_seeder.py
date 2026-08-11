@@ -38,6 +38,12 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "student.view", "module": "student", "action": "view", "description": "View student"},
     {"name": "student.update", "module": "student", "action": "update", "description": "Update student"},
     {"name": "student.delete", "module": "student", "action": "delete", "description": "Delete student"},
+    {"name": "student.promote", "module": "student", "action": "promote", "description": "Promote student"},
+    {"name": "student.retain", "module": "student", "action": "retain", "description": "Retain student"},
+    {"name": "student.transition", "module": "student", "action": "transition", "description": "Transition academic year"},
+    {"name": "student.tc.create", "module": "student", "action": "tc.create", "description": "Create transfer certificate"},
+    {"name": "student.tc.view", "module": "student", "action": "tc.view", "description": "View transfer certificate"},
+
 
     # Teacher
     {"name": "teacher.create", "module": "teacher", "action": "create", "description": "Create teacher"},

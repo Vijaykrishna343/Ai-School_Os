@@ -31,9 +31,17 @@ from .section.section_repository import (
     SectionRepository,
     section_repository,
 )
+from .student.student_enrollment_history_repository import (
+    StudentEnrollmentHistoryRepository,
+    student_enrollment_history_repository,
+)
 from .student.student_repository import (
     StudentRepository,
     student_repository,
+)
+from .student.transfer_certificate_repository import (
+    TransferCertificateRepository,
+    transfer_certificate_repository,
 )
 from .subject.subject_repository import (
     SubjectRepository,
@@ -57,9 +65,11 @@ __all__ = [
     "SchoolRepository",
     "SchoolClassRepository",
     "SectionRepository",
+    "StudentEnrollmentHistoryRepository",
     "StudentRepository",
     "SubjectRepository",
     "TeacherRepository",
+    "TransferCertificateRepository",
     "AttendanceRepository",
     "FeeStructureRepository",
     "StudentFeeAssignmentRepository",
@@ -70,9 +80,11 @@ __all__ = [
     "school_repository",
     "school_class_repository",
     "section_repository",
+    "student_enrollment_history_repository",
     "student_repository",
     "subject_repository",
     "teacher_repository",
+    "transfer_certificate_repository",
     "attendance_repository",
     "fee_structure_repository",
     "student_fee_assignment_repository",

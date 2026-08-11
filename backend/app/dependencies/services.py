@@ -38,6 +38,10 @@ from app.services.section_service import (
     SectionService,
     section_service,
 )
+from app.services.student.student_promotion_service import (
+    StudentPromotionService,
+    student_promotion_service,
+)
 from app.services.student.student_service import (
     StudentService,
     student_service,
@@ -112,6 +116,16 @@ def get_section_repository():
 def get_student_repository():
     """Return the StudentRepository singleton."""
     return student_repository
+
+
+def get_student_enrollment_history_repository():
+    """Return the StudentEnrollmentHistoryRepository singleton."""
+    return student_enrollment_history_repository
+
+
+def get_transfer_certificate_repository():
+    """Return the TransferCertificateRepository singleton."""
+    return transfer_certificate_repository
 
 
 def get_subject_repository():
@@ -192,6 +206,11 @@ def get_section_service() -> SectionService:
 def get_student_service() -> StudentService:
     """Return the StudentService singleton."""
     return student_service
+
+
+def get_student_promotion_service() -> StudentPromotionService:
+    """Return the StudentPromotionService singleton."""
+    return student_promotion_service
 
 
 def get_subject_service() -> SubjectService:

@@ -75,6 +75,21 @@ class AcademicYearRepository(BaseRepository[AcademicYear]):
             )
         )
 
+    def get_all_current_by_school(
+        self,
+        db: Session,
+        school_id: UUID,
+    ) -> list[AcademicYear]:
+        """
+        Retrieve all academic years currently marked is_current=True for a school.
+        """
+        stmt = select(AcademicYear).where(
+            AcademicYear.school_id == school_id,
+            AcademicYear.is_current.is_(True),
+            AcademicYear.is_deleted.is_(False),
+        )
+        return list(db.scalars(stmt))
+
     def get_by_school(
         self,
         db: Session,

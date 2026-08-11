@@ -1,3 +1,19 @@
+from .promotion_schema import (
+    AcademicYearTransitionRequest,
+    AcademicYearTransitionResponse,
+    BulkPromotionResultResponse,
+    BulkStudentPromotionItem,
+    BulkStudentPromotionRequest,
+    BulkStudentRetentionItem,
+    BulkStudentRetentionRequest,
+    StudentEnrollmentHistoryListResponse,
+    StudentEnrollmentHistoryResponse,
+    StudentPromotionRequest,
+    StudentRetentionRequest,
+    TransferCertificateCreate,
+    TransferCertificateListResponse,
+    TransferCertificateResponse,
+)
 from .student_schema import (
     StudentCreate,
     StudentFilter,
@@ -7,9 +23,23 @@ from .student_schema import (
 )
 
 __all__ = [
+    "AcademicYearTransitionRequest",
+    "AcademicYearTransitionResponse",
+    "BulkPromotionResultResponse",
+    "BulkStudentPromotionItem",
+    "BulkStudentPromotionRequest",
+    "BulkStudentRetentionItem",
+    "BulkStudentRetentionRequest",
     "StudentCreate",
+    "StudentEnrollmentHistoryListResponse",
+    "StudentEnrollmentHistoryResponse",
     "StudentFilter",
     "StudentListResponse",
+    "StudentPromotionRequest",
     "StudentResponse",
+    "StudentRetentionRequest",
     "StudentUpdate",
+    "TransferCertificateCreate",
+    "TransferCertificateListResponse",
+    "TransferCertificateResponse",
 ]

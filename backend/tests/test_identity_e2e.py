@@ -137,11 +137,14 @@ def make_school(db, code="E2ETEST", name="E2E Test School") -> School:
 # Test 1 – Seeding state
 # ===========================================================================
 
+from app.identity.seeders.permission_seeder import DEFAULT_PERMISSIONS
+
+
 def test_01_seed_identity_state(db, client):
     """After seeding, expected number of permissions and system roles exist."""
     summary = seed_identity(db)
 
-    assert summary["permissions_created"] == 74
+    assert summary["permissions_created"] == len(DEFAULT_PERMISSIONS)
     assert summary["roles_created"] == 10
     assert summary["assignments_created"] > 0
 

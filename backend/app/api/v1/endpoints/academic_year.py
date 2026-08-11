@@ -11,7 +11,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.common.responses import ApiResponse
-from app.dependencies import get_academic_year_service, get_db
+from app.dependencies import (
+    get_academic_year_service,
+    get_db,
+    get_student_promotion_service,
+)
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.user import IdentityUser
 from app.schemas.academic_year import (
@@ -20,7 +24,12 @@ from app.schemas.academic_year import (
     AcademicYearResponse,
     AcademicYearUpdate,
 )
+from app.schemas.student.promotion_schema import (
+    AcademicYearTransitionRequest,
+    AcademicYearTransitionResponse,
+)
 from app.services.academic_year_service import AcademicYearService
+from app.services.student.student_promotion_service import StudentPromotionService
 
 router = APIRouter()
 
@@ -174,4 +183,35 @@ def delete_academic_year(
 
     return ApiResponse.success(
         message="Academic year deleted successfully.",
+    )
+
+
+@router.post(
+    "/{academic_year_id}/transition",
+    response_model=dict,
+    summary="Academic Year Transition",
+)
+def transition_academic_year(
+    academic_year_id: UUID,
+    request: AcademicYearTransitionRequest,
+    current_user: IdentityUser = Depends(
+        require_permission("student.transition")
+    ),
+    db: Session = Depends(get_db),
+    service: StudentPromotionService = Depends(get_student_promotion_service),
+) -> dict[str, object]:
+    """
+    Execute transition workflow from source academic year to target academic year.
+    Preserves enrollment history of active students in source year and activates target academic year.
+    """
+    result = service.transition_academic_year(
+        db=db,
+        source_academic_year_id=academic_year_id,
+        data=request,
+        current_school_id=current_user.school_id,
+    )
+
+    return ApiResponse.success(
+        message=result.message,
+        data=result.model_dump(),
     )

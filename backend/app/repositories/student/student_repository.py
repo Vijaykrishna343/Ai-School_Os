@@ -190,6 +190,28 @@ class StudentRepository(BaseRepository[Student]):
 
         return list(db.scalars(stmt))
 
+    def get_all_active_by_school_and_year(
+        self,
+        db: Session,
+        school_id: UUID,
+        academic_year_id: UUID,
+    ) -> list[Student]:
+        """
+        Get all active, non-deleted students for a school and academic year without pagination cap.
+        Used for full academic year transitions.
+        """
+        stmt = (
+            select(Student)
+            .where(
+                Student.school_id == school_id,
+                Student.academic_year_id == academic_year_id,
+                Student.status == StudentStatus.ACTIVE,
+                Student.is_deleted.is_(False),
+            )
+            .order_by(Student.created_at.asc())
+        )
+        return list(db.scalars(stmt))
+
     def get_students(
         self,
         db: Session,

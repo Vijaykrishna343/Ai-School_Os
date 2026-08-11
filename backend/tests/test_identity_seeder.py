@@ -1,4 +1,5 @@
 from app.identity.seeders import seed_identity
+from app.identity.seeders.permission_seeder import DEFAULT_PERMISSIONS
 from app.identity.repositories import (
     permission_repository,
     role_repository,
@@ -9,7 +10,7 @@ from app.identity.repositories import (
 def test_seed_identity_first_run(db_session):
     summary = seed_identity(db_session)
 
-    assert summary["permissions_created"] == 74
+    assert summary["permissions_created"] == len(DEFAULT_PERMISSIONS)
     assert summary["permissions_skipped"] == 0
 
     assert summary["roles_created"] == 10
@@ -20,7 +21,7 @@ def test_seed_identity_first_run(db_session):
 
     # Verify Database Counts
     all_perms = permission_repository.get_all(db_session)
-    assert len(all_perms) == 74
+    assert len(all_perms) == len(DEFAULT_PERMISSIONS)
 
     all_roles = role_repository.get_system_roles(db_session)
     assert len(all_roles) == 10
@@ -29,20 +30,20 @@ def test_seed_identity_first_run(db_session):
     super_admin = role_repository.get_by_name(db_session, None, "Super Admin")
     assert super_admin is not None
     super_admin_perms = role_permission_repository.get_permissions(db_session, super_admin.id)
-    assert len(super_admin_perms) == 74
+    assert len(super_admin_perms) == len(DEFAULT_PERMISSIONS)
 
 
 def test_seed_identity_idempotency(db_session):
     # First execution
     summary_1 = seed_identity(db_session)
-    assert summary_1["permissions_created"] == 74
+    assert summary_1["permissions_created"] == len(DEFAULT_PERMISSIONS)
     assert summary_1["roles_created"] == 10
     assert summary_1["assignments_created"] > 0
 
     # Second execution (must skip all existing)
     summary_2 = seed_identity(db_session)
     assert summary_2["permissions_created"] == 0
-    assert summary_2["permissions_skipped"] == 74
+    assert summary_2["permissions_skipped"] == len(DEFAULT_PERMISSIONS)
 
     assert summary_2["roles_created"] == 0
     assert summary_2["roles_skipped"] == 10

@@ -13,7 +13,10 @@ from .fees import (
 )
 from .student import (
     AdmissionType,
+    EnrollmentStatus,
+    PromotionDecision,
     StudentStatus,
+    TransferCertificateStatus,
 )
 from .teacher import (
     BloodGroup,
@@ -27,16 +30,19 @@ __all__ = [
     "AttendanceStatus",
     "BloodGroup",
     "DiscountType",
+    "EnrollmentStatus",
     "ExamStatus",
     "ExamType",
     "FeeCategory",
     "FeeStructureStatus",
     "Gender",
     "PaymentMode",
+    "PromotionDecision",
     "SchoolClassStatus",
     "SectionStatus",
     "StudentFeeAssignmentStatus",
     "StudentStatus",
     "SubjectStatus",
     "TeacherStatus",
+    "TransferCertificateStatus",
 ]

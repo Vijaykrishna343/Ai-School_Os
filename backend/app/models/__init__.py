@@ -12,7 +12,11 @@ from .parent import Parent
 from .school import School
 from .school_class import SchoolClass
 from .section import Section
-from .student import Student
+from .student import (
+    Student,
+    StudentEnrollmentHistory,
+    TransferCertificate,
+)
 from .subject import Subject
 from .teacher import Teacher
 
@@ -28,8 +32,10 @@ __all__ = [
     "SchoolClass",
     "Section",
     "Student",
+    "StudentEnrollmentHistory",
     "StudentFeeAssignment",
     "StudentFeeItem",
     "Subject",
     "Teacher",
+    "TransferCertificate",
 ]

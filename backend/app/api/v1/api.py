@@ -33,6 +33,9 @@ from app.api.v1.endpoints.fees import (
 from app.api.student.student_controller import (
     router as student_router,
 )
+from app.api.student.student_promotion_controller import (
+    router as student_promotion_router,
+)
 from app.api.section.section_controller import (
     router as section_router,
 )
@@ -99,6 +102,13 @@ api_router.include_router(
     prefix="/students",
     tags=["Students"],
 )
+
+api_router.include_router(
+    student_promotion_router,
+    prefix="/students",
+    tags=["Students"],
+)
+
 
 api_router.include_router(
     section_router,
