@@ -736,11 +736,39 @@ class StudentService(
             student_id,
         )
 
-        update_data = (
-            student_data.model_dump(
-                exclude_unset=True,
+        if isinstance(student_data, dict):
+            update_data = student_data
+        else:
+            update_data = (
+                student_data.model_dump(
+                    exclude_unset=True,
+                )
             )
+
+        # ------------------------------------------------------
+        # Placement Protection (Defense-in-Depth)
+        # ------------------------------------------------------
+
+        protected_placement_fields = {"academic_year_id", "school_class_id", "section_id"}
+        fields_set = getattr(student_data, "__pydantic_fields_set__", set()) or set()
+        pydantic_extra = getattr(student_data, "__pydantic_extra__", {}) or {}
+        raw_dict = getattr(student_data, "__dict__", {}) or {}
+
+        has_placement = (
+            any(f in update_data for f in protected_placement_fields)
+            or any(f in fields_set for f in protected_placement_fields)
+            or any(f in pydantic_extra for f in protected_placement_fields)
+            or any(f in raw_dict for f in protected_placement_fields)
         )
+
+        if isinstance(student_data, dict):
+            has_placement = has_placement or any(f in student_data for f in protected_placement_fields)
+
+        if has_placement:
+            logger.warning("Validation failure: Attempted to update placement fields via update_student")
+            raise ValidationException(
+                "Academic placement (academic year, class, or section) cannot be modified via student profile updates. Use promotion or retention APIs."
+            )
 
         if not update_data:
             return StudentResponse.model_validate(
@@ -756,45 +784,6 @@ class StudentService(
                 db,
                 update_data["parent_id"],
             )
-
-        # ------------------------------------------------------
-        # Validate Class
-        # ------------------------------------------------------
-
-        if "school_class_id" in update_data:
-            school_class = (
-                self._validate_school_class(
-                    db,
-                    update_data["school_class_id"],
-                )
-            )
-
-            if school_class.school_id != student.school_id:
-                logger.warning("Validation failure: Class school mismatch during student update")
-                raise ValidationException(
-                    "School Class does not belong to the student's school."
-                )
-
-        # ------------------------------------------------------
-        # Validate Section
-        # ------------------------------------------------------
-
-        if "section_id" in update_data:
-            section = self._validate_section(
-                db,
-                update_data["section_id"],
-            )
-
-            class_id = update_data.get(
-                "school_class_id",
-                student.school_class_id,
-            )
-
-            if section.school_class_id != class_id:
-                logger.warning("Validation failure: Section class mismatch during student update")
-                raise ValidationException(
-                    "Section does not belong to the selected School Class."
-                )
 
         # ------------------------------------------------------
         # Email Validation
@@ -817,38 +806,6 @@ class StudentService(
                 phone=update_data["phone"],
                 exclude_id=student.id,
             )
-
-        # ------------------------------------------------------
-        # Roll Number Regeneration
-        # ------------------------------------------------------
-
-        regenerate_roll = (
-            "school_class_id" in update_data
-            or "section_id" in update_data
-        )
-
-        if regenerate_roll:
-
-            class_id = update_data.get(
-                "school_class_id",
-                student.school_class_id,
-            )
-
-            section_id = update_data.get(
-                "section_id",
-                student.section_id,
-            )
-
-            new_roll_number = (
-                self._generate_roll_number(
-                    db=db,
-                    academic_year_id=student.academic_year_id,
-                    school_class_id=class_id,
-                    section_id=section_id,
-                )
-            )
-
-            student.roll_number = new_roll_number
 
         # ------------------------------------------------------
         # Update Fields

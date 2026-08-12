@@ -174,3 +174,80 @@ def test_create_student_rollback_transaction_on_history_failure(db_session, setu
     student_in_db = student_repository.get_last_admission_number(db_session)
     if student_in_db:
         assert student_in_db.first_name != "Fail"
+
+
+def test_placement_protection_rejects_class_and_section_updates(db_session, setup_enrollment_test):
+    from app.schemas.student.student_schema import StudentUpdate
+    from app.common.exceptions import ValidationException
+
+    s1 = setup_enrollment_test["s1"]
+    ay1 = setup_enrollment_test["ay1"]
+    sc1 = setup_enrollment_test["sc1"]
+    sec1 = setup_enrollment_test["sec1"]
+    p1 = setup_enrollment_test["p1"]
+
+    service = StudentService(
+        repository=student_repository,
+        school_repository=school_repository,
+        parent_repository=parent_repository,
+        academic_year_repository=academic_year_repository,
+        school_class_repository=school_class_repository,
+        section_repository=section_repository,
+        enrollment_history_repository=student_enrollment_history_repository,
+    )
+
+    student_data = StudentCreate(
+        school_id=s1.id,
+        parent_id=p1.id,
+        academic_year_id=ay1.id,
+        school_class_id=sc1.id,
+        section_id=sec1.id,
+        first_name="Protected",
+        last_name="Student",
+        gender=Gender.MALE,
+        date_of_birth=date(2015, 1, 1),
+        admission_date=date(2026, 4, 1),
+        address_line1="123 Main St",
+        city="Delhi",
+        district="Central",
+        state="Delhi",
+        country="India",
+        postal_code="110001",
+    )
+    student_resp = service.create_student(db_session, student_data)
+
+    # 1. Profile update succeeds
+    profile_update = StudentUpdate(first_name="UpdatedName", remarks="Updated Profile")
+    updated_resp = service.update_student(db_session, student_resp.id, profile_update)
+    assert updated_resp.first_name == "UpdatedName"
+
+    # 2. Attempting service update with placement fields explicitly (dict or override)
+    fake_class_id = uuid.uuid4()
+    with pytest.raises(ValidationException, match="Academic placement"):
+        service.update_student(
+            db_session,
+            student_resp.id,
+            {"school_class_id": fake_class_id},
+        )
+
+    fake_section_id = uuid.uuid4()
+    with pytest.raises(ValidationException, match="Academic placement"):
+        service.update_student(
+            db_session,
+            student_resp.id,
+            {"section_id": fake_section_id},
+        )
+
+    fake_ay_id = uuid.uuid4()
+    with pytest.raises(ValidationException, match="Academic placement"):
+        service.update_student(
+            db_session,
+            student_resp.id,
+            {"academic_year_id": fake_ay_id},
+        )
+
+    # Verify student's DB state remains completely unchanged
+    student_db = student_repository.get(db_session, student_resp.id)
+    assert student_db.school_class_id == sc1.id
+    assert student_db.section_id == sec1.id
+    assert student_db.academic_year_id == ay1.id

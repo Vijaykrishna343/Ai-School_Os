@@ -295,14 +295,10 @@ class StudentUpdate(BaseSchema):
     postal_code: str | None = None
 
     # ------------------------------------------------------
-    # Academic
+    # Academic & Guardian
     # ------------------------------------------------------
 
     parent_id: UUID | None = None
-
-    school_class_id: UUID | None = None
-
-    section_id: UUID | None = None
 
     admission_date: date | None = None
 
