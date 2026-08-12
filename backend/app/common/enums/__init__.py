@@ -11,8 +11,10 @@ from .report_card import (
     RoundingMode,
 )
 from .timetable import (
+    DayOfWeek,
     PeriodType,
     RoomType,
+    TimetableStatus,
 )
 from .fees import (
     DiscountType,
@@ -42,6 +44,7 @@ __all__ = [
     "AttendanceStatus",
     "BloodGroup",
     "CalculationMode",
+    "DayOfWeek",
     "DiscountType",
     "EnrollmentStatus",
     "ExamStatus",
@@ -61,6 +64,7 @@ __all__ = [
     "StudentStatus",
     "SubjectStatus",
     "TeacherStatus",
+    "TimetableStatus",
     "TransferCertificateStatus",
     "parse_legacy_exam_type",
 ]

@@ -28,7 +28,7 @@ from app.models.grading import (
     ReportCard,
     ReportCardItemSnapshot,
 )
-from app.models.timetable import PeriodSlot, Classroom
+from app.models.timetable import PeriodSlot, Classroom, Timetable, TimetableEntry
 
 # ==========================
 # Identity Models
@@ -68,4 +68,6 @@ __all__ = [
     "ReportCardItemSnapshot",
     "PeriodSlot",
     "Classroom",
+    "Timetable",
+    "TimetableEntry",
 ]

@@ -48,6 +48,12 @@ from app.api.v1.endpoints.period_slot import (
 from app.api.v1.endpoints.classroom import (
     router as classroom_router,
 )
+from app.api.v1.endpoints.timetable import (
+    router as timetable_router,
+)
+from app.api.v1.endpoints.timetable_entry import (
+    router as timetable_entry_router,
+)
 from app.api.student.student_controller import (
     router as student_router,
 )
@@ -203,6 +209,18 @@ api_router.include_router(
 api_router.include_router(
     classroom_router,
     prefix="/classrooms",
+    tags=["Timetable"],
+)
+
+api_router.include_router(
+    timetable_router,
+    prefix="/timetables",
+    tags=["Timetable"],
+)
+
+api_router.include_router(
+    timetable_entry_router,
+    prefix="/timetable-entries",
     tags=["Timetable"],
 )
 

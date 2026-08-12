@@ -24,6 +24,8 @@ from .services import (
     get_report_card_repository,
     get_period_slot_repository,
     get_classroom_repository,
+    get_timetable_repository,
+    get_timetable_entry_repository,
     # Service dependencies
     get_academic_year_service,
     get_academic_term_service,
@@ -45,6 +47,9 @@ from .services import (
     get_report_card_service,
     get_period_slot_service,
     get_classroom_service,
+    get_timetable_service,
+    get_timetable_entry_service,
+    get_timetable_conflict_service,
 )
 
 __all__ = [
@@ -74,6 +79,8 @@ __all__ = [
     "get_report_card_repository",
     "get_period_slot_repository",
     "get_classroom_repository",
+    "get_timetable_repository",
+    "get_timetable_entry_repository",
     # Service dependencies
     "get_academic_year_service",
     "get_academic_term_service",
@@ -95,4 +102,7 @@ __all__ = [
     "get_report_card_service",
     "get_period_slot_service",
     "get_classroom_service",
+    "get_timetable_service",
+    "get_timetable_entry_service",
+    "get_timetable_conflict_service",
 ]

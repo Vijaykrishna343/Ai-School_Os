@@ -21,3 +21,27 @@ class RoomType(str, Enum):
     LABORATORY = "LABORATORY"
     AUDITORIUM = "AUDITORIUM"
     SPORTS_GROUND = "SPORTS_GROUND"
+
+
+class TimetableStatus(str, Enum):
+    """
+    Status of a timetable.
+    """
+
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+    ARCHIVED = "ARCHIVED"
+
+
+class DayOfWeek(str, Enum):
+    """
+    Days of the week.
+    """
+
+    MONDAY = "MONDAY"
+    TUESDAY = "TUESDAY"
+    WEDNESDAY = "WEDNESDAY"
+    THURSDAY = "THURSDAY"
+    FRIDAY = "FRIDAY"
+    SATURDAY = "SATURDAY"
+    SUNDAY = "SUNDAY"

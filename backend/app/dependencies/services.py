@@ -101,6 +101,8 @@ from app.services.report_card_service import (
 from app.repositories.timetable import (
     period_slot_repository,
     classroom_repository,
+    timetable_repository,
+    timetable_entry_repository,
 )
 from app.services.period_slot_service import (
     PeriodSlotService,
@@ -109,6 +111,18 @@ from app.services.period_slot_service import (
 from app.services.classroom_service import (
     ClassroomService,
     classroom_service,
+)
+from app.services.timetable_service import (
+    TimetableService,
+    timetable_service,
+)
+from app.services.timetable_entry_service import (
+    TimetableEntryService,
+    timetable_entry_service,
+)
+from app.services.timetable_conflict_service import (
+    TimetableConflictService,
+    timetable_conflict_service,
 )
 
 
@@ -336,3 +350,28 @@ def get_period_slot_service() -> PeriodSlotService:
 def get_classroom_service() -> ClassroomService:
     """Return the ClassroomService singleton."""
     return classroom_service
+
+
+def get_timetable_repository():
+    """Return the TimetableRepository singleton."""
+    return timetable_repository
+
+
+def get_timetable_entry_repository():
+    """Return the TimetableEntryRepository singleton."""
+    return timetable_entry_repository
+
+
+def get_timetable_service() -> TimetableService:
+    """Return the TimetableService singleton."""
+    return timetable_service
+
+
+def get_timetable_entry_service() -> TimetableEntryService:
+    """Return the TimetableEntryService singleton."""
+    return timetable_entry_service
+
+
+def get_timetable_conflict_service() -> TimetableConflictService:
+    """Return the TimetableConflictService singleton."""
+    return timetable_conflict_service
