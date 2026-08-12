@@ -42,6 +42,12 @@ from app.api.v1.endpoints.evaluation_config import (
 from app.api.v1.endpoints.report_card import (
     router as report_card_router,
 )
+from app.api.v1.endpoints.period_slot import (
+    router as period_slot_router,
+)
+from app.api.v1.endpoints.classroom import (
+    router as classroom_router,
+)
 from app.api.student.student_controller import (
     router as student_router,
 )
@@ -186,6 +192,18 @@ api_router.include_router(
     report_card_router,
     prefix="/report-cards",
     tags=["Report Cards"],
+)
+
+api_router.include_router(
+    period_slot_router,
+    prefix="/period-slots",
+    tags=["Timetable"],
+)
+
+api_router.include_router(
+    classroom_router,
+    prefix="/classrooms",
+    tags=["Timetable"],
 )
 
 

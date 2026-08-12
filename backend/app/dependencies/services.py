@@ -98,6 +98,18 @@ from app.services.report_card_service import (
     ReportCardService,
     report_card_service,
 )
+from app.repositories.timetable import (
+    period_slot_repository,
+    classroom_repository,
+)
+from app.services.period_slot_service import (
+    PeriodSlotService,
+    period_slot_service,
+)
+from app.services.classroom_service import (
+    ClassroomService,
+    classroom_service,
+)
 
 
 # ------------------------------------------------------------------
@@ -206,6 +218,16 @@ def get_report_card_repository():
     return report_card_repository
 
 
+def get_period_slot_repository():
+    """Return the PeriodSlotRepository singleton."""
+    return period_slot_repository
+
+
+def get_classroom_repository():
+    """Return the ClassroomRepository singleton."""
+    return classroom_repository
+
+
 # ------------------------------------------------------------------
 # Service Dependencies
 # ------------------------------------------------------------------
@@ -304,3 +326,13 @@ def get_evaluation_config_service() -> EvaluationConfigService:
 def get_report_card_service() -> ReportCardService:
     """Return the ReportCardService singleton."""
     return report_card_service
+
+
+def get_period_slot_service() -> PeriodSlotService:
+    """Return the PeriodSlotService singleton."""
+    return period_slot_service
+
+
+def get_classroom_service() -> ClassroomService:
+    """Return the ClassroomService singleton."""
+    return classroom_service

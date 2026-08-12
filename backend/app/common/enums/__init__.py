@@ -10,6 +10,10 @@ from .report_card import (
     RetestPolicy,
     RoundingMode,
 )
+from .timetable import (
+    PeriodType,
+    RoomType,
+)
 from .fees import (
     DiscountType,
     FeeCategory,
@@ -46,8 +50,10 @@ __all__ = [
     "Gender",
     "PaymentMode",
     "PromotionDecision",
+    "PeriodType",
     "ReportCardStatus",
     "RetestPolicy",
+    "RoomType",
     "RoundingMode",
     "SchoolClassStatus",
     "SectionStatus",

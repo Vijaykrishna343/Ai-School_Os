@@ -22,6 +22,8 @@ from .services import (
     get_grade_scale_repository,
     get_evaluation_config_repository,
     get_report_card_repository,
+    get_period_slot_repository,
+    get_classroom_repository,
     # Service dependencies
     get_academic_year_service,
     get_academic_term_service,
@@ -41,6 +43,8 @@ from .services import (
     get_grade_scale_service,
     get_evaluation_config_service,
     get_report_card_service,
+    get_period_slot_service,
+    get_classroom_service,
 )
 
 __all__ = [
@@ -68,6 +72,8 @@ __all__ = [
     "get_grade_scale_repository",
     "get_evaluation_config_repository",
     "get_report_card_repository",
+    "get_period_slot_repository",
+    "get_classroom_repository",
     # Service dependencies
     "get_academic_year_service",
     "get_academic_term_service",
@@ -87,4 +93,6 @@ __all__ = [
     "get_grade_scale_service",
     "get_evaluation_config_service",
     "get_report_card_service",
+    "get_period_slot_service",
+    "get_classroom_service",
 ]
