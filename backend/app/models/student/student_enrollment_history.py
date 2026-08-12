@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    Date,
     Enum,
     ForeignKey,
     Index,
@@ -111,6 +113,21 @@ class StudentEnrollmentHistory(CommonModel):
         ),
         default=PromotionDecision.PENDING,
         nullable=False,
+    )
+
+    start_date: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
+    end_date: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
+    reason: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
     )
 
     remarks: Mapped[str | None] = mapped_column(

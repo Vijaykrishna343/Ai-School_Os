@@ -5,6 +5,10 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.common.enums import (
+    EnrollmentStatus,
+    PromotionDecision,
+)
 from app.common.exceptions import (
     AlreadyExistsException,
     NotFoundException,
@@ -12,6 +16,7 @@ from app.common.exceptions import (
 )
 from app.common.logger.logger import get_logger
 from app.models.student import Student
+from app.models.student.student_enrollment_history import StudentEnrollmentHistory
 from app.repositories.academic_year import (
     AcademicYearRepository,
     academic_year_repository,
@@ -33,7 +38,9 @@ from app.repositories.section import (
     section_repository,
 )
 from app.repositories.student import (
+    StudentEnrollmentHistoryRepository,
     StudentRepository,
+    student_enrollment_history_repository,
     student_repository,
 )
 from app.schemas.student.student_schema import (
@@ -84,6 +91,7 @@ class StudentService(
         academic_year_repository: AcademicYearRepository,
         school_class_repository: SchoolClassRepository,
         section_repository: SectionRepository,
+        enrollment_history_repository: StudentEnrollmentHistoryRepository = student_enrollment_history_repository,
     ) -> None:
         super().__init__(repository)
 
@@ -92,6 +100,7 @@ class StudentService(
         self.academic_year_repository = academic_year_repository
         self.school_class_repository = school_class_repository
         self.section_repository = section_repository
+        self.enrollment_history_repository = enrollment_history_repository
 
     # ==========================================================
     # Private Validation Helpers
@@ -551,12 +560,37 @@ class StudentService(
             status=student_data.status,
         )
 
-        created_student = (
-            self.repository.create(
+        try:
+            created_student = self.repository.create(
                 db,
                 student,
             )
-        )
+
+            try:
+                initial_history = StudentEnrollmentHistory(
+                    school_id=created_student.school_id,
+                    student_id=created_student.id,
+                    academic_year_id=created_student.academic_year_id,
+                    school_class_id=created_student.school_class_id,
+                    section_id=created_student.section_id,
+                    roll_number=created_student.roll_number,
+                    enrollment_status=EnrollmentStatus.ENROLLED,
+                    promotion_decision=PromotionDecision.PENDING,
+                    start_date=created_student.admission_date,
+                    end_date=None,
+                    reason="Initial Admission",
+                    remarks="Initial admission record",
+                )
+                self.enrollment_history_repository.create(db, initial_history)
+            except Exception as history_exc:
+                db.delete(created_student)
+                db.commit()
+                raise history_exc
+        except Exception as exc:
+            logger.error(
+                "Failed to create student and initial enrollment history: %s", exc
+            )
+            raise
 
         logger.info(
             "Student '%s %s' created successfully with ID: %s (Admission No: %s)",

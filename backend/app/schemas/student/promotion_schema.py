@@ -146,6 +146,9 @@ class StudentEnrollmentHistoryResponse(BaseModel):
     roll_number: str
     enrollment_status: EnrollmentStatus
     promotion_decision: PromotionDecision
+    start_date: date | None = None
+    end_date: date | None = None
+    reason: str | None = None
     remarks: str | None = None
     created_at: datetime
     updated_at: datetime
