@@ -14,6 +14,10 @@ from app.repositories.timetable.timetable_entry_repository import (
     TimetableEntryRepository,
     timetable_entry_repository,
 )
+from app.repositories.timetable.teacher_substitution_repository import (
+    TeacherSubstitutionRepository,
+    teacher_substitution_repository,
+)
 
 __all__ = [
     "PeriodSlotRepository",
@@ -24,4 +28,6 @@ __all__ = [
     "timetable_repository",
     "TimetableEntryRepository",
     "timetable_entry_repository",
+    "TeacherSubstitutionRepository",
+    "teacher_substitution_repository",
 ]

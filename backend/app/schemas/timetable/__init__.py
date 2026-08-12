@@ -27,6 +27,14 @@ from app.schemas.timetable.timetable_entry import (
     TimetableEntryResponse,
     TimetableEntryUpdate,
 )
+from app.schemas.timetable.teacher_substitution import (
+    TeacherSubstitutionCreate,
+    TeacherSubstitutionDetailResponse,
+    TeacherSubstitutionFilter,
+    TeacherSubstitutionListResponse,
+    TeacherSubstitutionResponse,
+    TeacherSubstitutionUpdate,
+)
 
 __all__ = [
     "PeriodSlotCreate",
@@ -50,4 +58,10 @@ __all__ = [
     "TimetableEntryDetailResponse",
     "TimetableEntryResponse",
     "TimetableEntryUpdate",
+    "TeacherSubstitutionCreate",
+    "TeacherSubstitutionDetailResponse",
+    "TeacherSubstitutionFilter",
+    "TeacherSubstitutionListResponse",
+    "TeacherSubstitutionResponse",
+    "TeacherSubstitutionUpdate",
 ]

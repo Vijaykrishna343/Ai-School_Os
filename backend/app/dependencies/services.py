@@ -103,6 +103,7 @@ from app.repositories.timetable import (
     classroom_repository,
     timetable_repository,
     timetable_entry_repository,
+    teacher_substitution_repository,
 )
 from app.services.period_slot_service import (
     PeriodSlotService,
@@ -123,6 +124,10 @@ from app.services.timetable_entry_service import (
 from app.services.timetable_conflict_service import (
     TimetableConflictService,
     timetable_conflict_service,
+)
+from app.services.teacher_substitution_service import (
+    TeacherSubstitutionService,
+    teacher_substitution_service,
 )
 
 
@@ -375,3 +380,13 @@ def get_timetable_entry_service() -> TimetableEntryService:
 def get_timetable_conflict_service() -> TimetableConflictService:
     """Return the TimetableConflictService singleton."""
     return timetable_conflict_service
+
+
+def get_teacher_substitution_repository():
+    """Return the TeacherSubstitutionRepository singleton."""
+    return teacher_substitution_repository
+
+
+def get_teacher_substitution_service() -> TeacherSubstitutionService:
+    """Return the TeacherSubstitutionService singleton."""
+    return teacher_substitution_service

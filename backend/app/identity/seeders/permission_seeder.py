@@ -115,6 +115,14 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "timetable.view", "module": "timetable", "action": "view", "description": "View timetable"},
     {"name": "timetable.update", "module": "timetable", "action": "update", "description": "Update timetable"},
     {"name": "timetable.delete", "module": "timetable", "action": "delete", "description": "Delete timetable"},
+    {"name": "timetable.publish", "module": "timetable", "action": "publish", "description": "Publish timetable"},
+    {"name": "timetable.archive", "module": "timetable", "action": "archive", "description": "Archive timetable"},
+
+    # Teacher Substitution
+    {"name": "substitution.create", "module": "substitution", "action": "create", "description": "Create teacher substitution"},
+    {"name": "substitution.view", "module": "substitution", "action": "view", "description": "View teacher substitution"},
+    {"name": "substitution.update", "module": "substitution", "action": "update", "description": "Update teacher substitution"},
+    {"name": "substitution.delete", "module": "substitution", "action": "delete", "description": "Delete teacher substitution"},
 
     # User
     {"name": "user.create", "module": "user", "action": "create", "description": "Create user"},

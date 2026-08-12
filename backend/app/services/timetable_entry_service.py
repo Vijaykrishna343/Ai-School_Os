@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.common.enums.timetable import TimetableStatus
 from app.common.exceptions import (
     NotFoundException,
     ValidationException,
@@ -58,6 +59,9 @@ class TimetableEntryService:
         )
         if timetable is None:
             raise NotFoundException("Timetable", str(timetable_id))
+
+        if timetable.status != TimetableStatus.DRAFT:
+            raise ValidationException(f"Cannot modify entries of a {timetable.status.value} timetable. Structure is immutable.")
 
         self.conflict_service.validate_entry(
             db,
@@ -137,6 +141,9 @@ class TimetableEntryService:
         if entry is None:
             raise NotFoundException("TimetableEntry", str(entry_id))
 
+        if entry.timetable.status != TimetableStatus.DRAFT:
+            raise ValidationException(f"Cannot modify entries of a {entry.timetable.status.value} timetable. Structure is immutable.")
+
         new_day = entry_data.day_of_week if entry_data.day_of_week is not None else entry.day_of_week
         new_slot_id = entry_data.period_slot_id if entry_data.period_slot_id is not None else entry.period_slot_id
         new_subject_id = entry_data.subject_id if entry_data.subject_id is not None else entry.subject_id
@@ -179,6 +186,9 @@ class TimetableEntryService:
         entry = self.repository.get_by_id_and_school(db, entry_id, current_school_id)
         if entry is None:
             raise NotFoundException("TimetableEntry", str(entry_id))
+
+        if entry.timetable.status != TimetableStatus.DRAFT:
+            raise ValidationException(f"Cannot modify entries of a {entry.timetable.status.value} timetable. Structure is immutable.")
 
         self.repository.delete(db, entry)
 

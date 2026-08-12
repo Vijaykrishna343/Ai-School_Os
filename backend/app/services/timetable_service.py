@@ -227,6 +227,69 @@ class TimetableService:
         self.repository.update(db, timetable)
         return self.get_timetable(db, timetable_id, current_school_id)
 
+    def publish_timetable(
+        self,
+        db: Session,
+        timetable_id: UUID,
+        current_school_id: UUID | None = None,
+    ) -> TimetableDetailResponse:
+        """
+        Publish a DRAFT timetable after validating entry existence and single active published constraint.
+        """
+        if current_school_id is None:
+            raise ValidationException("School context is required.")
+
+        timetable = self.repository.get_with_entries(db, timetable_id, current_school_id)
+        if timetable is None:
+            raise NotFoundException("Timetable", str(timetable_id))
+
+        if timetable.status != TimetableStatus.DRAFT:
+            raise ValidationException(f"Only DRAFT timetables can be published. Current status is {timetable.status.value}.")
+
+        active_entries = [e for e in timetable.entries if not e.is_deleted]
+        if not active_entries:
+            raise ValidationException("Cannot publish an empty timetable with no entries.")
+
+        existing_published = self.repository.get_active_published_by_section(
+            db,
+            school_id=current_school_id,
+            section_id=timetable.section_id,
+            academic_year_id=timetable.academic_year_id,
+            academic_term_id=timetable.academic_term_id,
+        )
+        if existing_published and existing_published.id != timetable.id:
+            raise AlreadyExistsException(
+                "Active PUBLISHED timetable for section", str(timetable.section_id)
+            )
+
+        timetable.status = TimetableStatus.PUBLISHED
+        self.repository.update(db, timetable)
+        return self.get_timetable(db, timetable_id, current_school_id)
+
+    def archive_timetable(
+        self,
+        db: Session,
+        timetable_id: UUID,
+        current_school_id: UUID | None = None,
+    ) -> TimetableDetailResponse:
+        """
+        Archive a PUBLISHED timetable.
+        """
+        if current_school_id is None:
+            raise ValidationException("School context is required.")
+
+        timetable = self.repository.get_by_id_and_school(db, timetable_id, current_school_id)
+        if timetable is None:
+            raise NotFoundException("Timetable", str(timetable_id))
+
+        if timetable.status != TimetableStatus.PUBLISHED:
+            raise ValidationException(f"Only PUBLISHED timetables can be archived. Current status is {timetable.status.value}.")
+
+        timetable.status = TimetableStatus.ARCHIVED
+        timetable.is_active = False
+        self.repository.update(db, timetable)
+        return self.get_timetable(db, timetable_id, current_school_id)
+
     def get_section_timetable(
         self,
         db: Session,

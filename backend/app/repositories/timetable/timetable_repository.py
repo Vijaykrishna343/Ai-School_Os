@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
+from app.common.enums.timetable import TimetableStatus
 from app.models.timetable.timetable import Timetable
 from app.models.timetable.timetable_entry import TimetableEntry
 from app.repositories.base import BaseRepository
@@ -109,6 +110,31 @@ class TimetableRepository(BaseRepository[Timetable]):
         query = query.order_by(Timetable.created_at.desc())
         return db.scalar(query)
 
+    def get_active_published_by_section(
+        self,
+        db: Session,
+        school_id: UUID,
+        section_id: UUID,
+        academic_year_id: UUID | None = None,
+        academic_term_id: UUID | None = None,
+    ) -> Timetable | None:
+        """
+        Retrieve the active PUBLISHED timetable for a section.
+        """
+        query = select(Timetable).where(
+            Timetable.school_id == school_id,
+            Timetable.section_id == section_id,
+            Timetable.status == TimetableStatus.PUBLISHED,
+            Timetable.is_active.is_(True),
+            Timetable.is_deleted.is_(False),
+        )
+        if academic_year_id:
+            query = query.where(Timetable.academic_year_id == academic_year_id)
+        if academic_term_id:
+            query = query.where(Timetable.academic_term_id == academic_term_id)
+
+        return db.scalar(query)
+
     def exists_by_section_and_year(
         self,
         db: Session,
@@ -116,6 +142,7 @@ class TimetableRepository(BaseRepository[Timetable]):
         academic_year_id: UUID,
         section_id: UUID,
         academic_term_id: UUID | None = None,
+        status: TimetableStatus | None = TimetableStatus.DRAFT,
         exclude_id: UUID | None = None,
     ) -> bool:
         """
@@ -127,6 +154,8 @@ class TimetableRepository(BaseRepository[Timetable]):
             Timetable.section_id == section_id,
             Timetable.is_deleted.is_(False),
         )
+        if status is not None:
+            query = query.where(Timetable.status == status)
         if academic_term_id:
             query = query.where(Timetable.academic_term_id == academic_term_id)
         if exclude_id:

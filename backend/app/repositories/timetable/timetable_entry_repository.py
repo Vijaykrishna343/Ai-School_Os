@@ -143,6 +143,7 @@ class TimetableEntryRepository(BaseRepository[TimetableEntry]):
                 TimetableEntry.period_slot_id == period_slot_id,
                 TimetableEntry.is_deleted.is_(False),
                 Timetable.is_deleted.is_(False),
+                Timetable.is_active.is_(True),
             )
         )
         if exclude_entry_id:
@@ -181,6 +182,7 @@ class TimetableEntryRepository(BaseRepository[TimetableEntry]):
                 TimetableEntry.period_slot_id == period_slot_id,
                 TimetableEntry.is_deleted.is_(False),
                 Timetable.is_deleted.is_(False),
+                Timetable.is_active.is_(True),
             )
         )
         if exclude_entry_id:

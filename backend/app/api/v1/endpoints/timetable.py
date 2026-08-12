@@ -156,6 +156,46 @@ def get_timetable(
 
 
 @router.post(
+    "/{timetable_id}/publish",
+    response_model=TimetableDetailResponse,
+)
+def publish_timetable(
+    timetable_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: IdentityUser = Depends(require_permission("timetable.publish")),
+    service: TimetableService = Depends(get_timetable_service),
+) -> TimetableDetailResponse:
+    """
+    Publish a DRAFT timetable after validating entries and single active published constraint.
+    """
+    return service.publish_timetable(
+        db,
+        timetable_id=timetable_id,
+        current_school_id=current_user.school_id,
+    )
+
+
+@router.post(
+    "/{timetable_id}/archive",
+    response_model=TimetableDetailResponse,
+)
+def archive_timetable(
+    timetable_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: IdentityUser = Depends(require_permission("timetable.archive")),
+    service: TimetableService = Depends(get_timetable_service),
+) -> TimetableDetailResponse:
+    """
+    Archive a PUBLISHED timetable.
+    """
+    return service.archive_timetable(
+        db,
+        timetable_id=timetable_id,
+        current_school_id=current_user.school_id,
+    )
+
+
+@router.post(
     "/{timetable_id}/entries",
     response_model=TimetableEntryDetailResponse,
     status_code=status.HTTP_201_CREATED,
