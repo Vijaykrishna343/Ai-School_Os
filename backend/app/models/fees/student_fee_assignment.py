@@ -61,6 +61,7 @@ class StudentFeeAssignment(CommonModel):
         Index("ix_student_fee_assignments_student_id", "student_id"),
         Index("ix_student_fee_assignments_fee_structure_id", "fee_structure_id"),
         Index("ix_student_fee_assignments_status", "status"),
+        Index("ix_fee_assignments_school_year_student", "school_id", "academic_year_id", "student_id"),
     )
 
     school_id: Mapped[uuid.UUID] = mapped_column(

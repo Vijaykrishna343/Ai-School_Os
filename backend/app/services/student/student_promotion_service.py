@@ -22,7 +22,9 @@ from app.models.student.student_enrollment_history import StudentEnrollmentHisto
 from app.models.student.transfer_certificate import TransferCertificate
 from app.repositories.academic_year import (
     AcademicYearRepository,
+    ClassProgressionRuleRepository,
     academic_year_repository,
+    class_progression_rule_repository,
 )
 from app.repositories.school import (
     SchoolRepository,
@@ -76,6 +78,7 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
         school_class_repo: SchoolClassRepository = school_class_repository,
         section_repo: SectionRepository = section_repository,
         school_repo: SchoolRepository = school_repository,
+        progression_rule_repo: ClassProgressionRuleRepository = class_progression_rule_repository,
     ) -> None:
         super().__init__(repository)
         self.student_repository = student_repo
@@ -84,6 +87,7 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
         self.school_class_repository = school_class_repo
         self.section_repository = section_repo
         self.school_repository = school_repo
+        self.progression_rule_repository = progression_rule_repo
 
     # ------------------------------------------------------------------
     # Validation Helpers
@@ -204,6 +208,20 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
         self._get_valid_academic_year(db, data.target_academic_year_id, school_id)
         target_class = self._get_valid_class(db, data.target_class_id, school_id)
         self._get_valid_section(db, data.target_section_id, target_class.id, school_id)
+
+        # Validate progression matrix rule if configured for source class
+        rule = self.progression_rule_repository.get_by_source_class(
+            db, school_id, student.school_class_id
+        )
+        if rule is not None:
+            if rule.is_terminal:
+                raise ValidationException(
+                    "Class is configured as terminal in the progression matrix. Students cannot be promoted to a higher class."
+                )
+            if rule.target_class_id != data.target_class_id:
+                raise ValidationException(
+                    "Target class violates the configured class progression rule matrix."
+                )
 
         # Idempotency check: verify student isn't already enrolled in target year
         existing_target_history = self.repository.get_by_student_and_year(

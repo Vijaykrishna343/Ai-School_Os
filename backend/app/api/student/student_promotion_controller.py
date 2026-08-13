@@ -69,7 +69,8 @@ def get_student_enrollments(
     "/{student_id}/promote",
     response_model=dict,
     status_code=status.HTTP_201_CREATED,
-    summary="Promote Single Student",
+    summary="Promote Single Student (Legacy)",
+    deprecated=True,
 )
 def promote_student(
     request: StudentPromotionRequest,
@@ -100,7 +101,8 @@ def promote_student(
     "/{student_id}/retain",
     response_model=dict,
     status_code=status.HTTP_201_CREATED,
-    summary="Retain Single Student",
+    summary="Retain Single Student (Legacy)",
+    deprecated=True,
 )
 def retain_student(
     request: StudentRetentionRequest,
@@ -131,7 +133,8 @@ def retain_student(
     "/promote/bulk",
     response_model=dict,
     status_code=status.HTTP_200_OK,
-    summary="Bulk Promote Students",
+    summary="Bulk Promote Students (Legacy)",
+    deprecated=True,
 )
 def bulk_promote_students(
     request: BulkStudentPromotionRequest,
@@ -158,7 +161,8 @@ def bulk_promote_students(
     "/retain/bulk",
     response_model=dict,
     status_code=status.HTTP_200_OK,
-    summary="Bulk Retain Students",
+    summary="Bulk Retain Students (Legacy)",
+    deprecated=True,
 )
 def bulk_retain_students(
     request: BulkStudentRetentionRequest,

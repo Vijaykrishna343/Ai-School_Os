@@ -9,7 +9,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
-    UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (
@@ -42,10 +42,13 @@ class Section(CommonModel):
     __tablename__ = "sections"
 
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "uq_sections_class_name_active",
             "school_class_id",
             "name",
-            name="uq_sections_school_class_id_name",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
+            sqlite_where=text("is_deleted = 0"),
         ),
         Index(
             "ix_sections_school_class_id",

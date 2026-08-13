@@ -10,7 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (
@@ -43,11 +43,14 @@ class StudentEnrollmentHistory(CommonModel):
     __tablename__ = "student_enrollment_histories"
 
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "uq_enrollment_history_year_active",
             "school_id",
             "student_id",
             "academic_year_id",
-            name="uq_student_enrollment_history_year",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
+            sqlite_where=text("is_deleted = 0"),
         ),
         Index("ix_enrollment_history_school_id", "school_id"),
         Index("ix_enrollment_history_student_id", "student_id"),

@@ -11,7 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (
@@ -43,10 +43,13 @@ class AcademicYear(CommonModel):
     __tablename__ = "academic_years"
 
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "uq_academic_years_school_name_active",
             "school_id",
             "name",
-            name="uq_academic_year_school_name",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
+            sqlite_where=text("is_deleted = 0"),
         ),
         Index(
             "ix_academic_year_school_id",

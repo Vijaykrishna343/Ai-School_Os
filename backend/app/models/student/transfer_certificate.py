@@ -10,7 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (
@@ -36,10 +36,13 @@ class TransferCertificate(CommonModel):
     __tablename__ = "transfer_certificates"
 
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "uq_tc_school_number_active",
             "school_id",
             "tc_number",
-            name="uq_tc_school_number",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
+            sqlite_where=text("is_deleted = 0"),
         ),
         Index("ix_tc_school_id", "school_id"),
         Index("ix_tc_student_id", "student_id"),

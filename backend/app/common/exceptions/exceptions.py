@@ -16,7 +16,7 @@ class BadRequestException(APIException):
 class ValidationException(APIException):
     def __init__(self, message: str):
         super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=ErrorCode.VALIDATION_ERROR,
             message=message,
         )

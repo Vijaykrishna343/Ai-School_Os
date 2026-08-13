@@ -53,11 +53,16 @@ app = FastAPI(
 # Middleware
 # -------------------------------------------------------
 
-allowed_origins = (
-    ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000"]
-    if settings.DEBUG
-    else ["https://app.schoolos.com"]
-)
+if isinstance(settings.ALLOWED_ORIGINS, list):
+    allowed_origins = settings.ALLOWED_ORIGINS
+elif isinstance(settings.ALLOWED_ORIGINS, str):
+    allowed_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+else:
+    allowed_origins = (
+        ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000"]
+        if settings.DEBUG
+        else ["https://app.schoolos.com"]
+    )
 
 app.add_middleware(
     CORSMiddleware,
