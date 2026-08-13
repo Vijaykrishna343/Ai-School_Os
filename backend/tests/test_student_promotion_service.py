@@ -615,3 +615,120 @@ def test_transition_academic_year_multiple_orphan_active_years(db_session, test_
     assert ay_source.is_current is False
     assert orphan_ay.is_current is False
     assert ay_target.is_current is True
+
+
+# ===========================================================================
+# SEC-02 Tenant Isolation Regression Tests
+# ===========================================================================
+
+def test_cross_tenant_class_assignment_rejected(db_session, test_data):
+    """
+    SEC-02: Promoting student into a class belonging to another school/tenant must be rejected.
+    """
+    school = test_data["school"]
+    student = test_data["student"]
+    ay_target = test_data["ay_target"]
+
+    # Create another school and a class under that other school
+    other_school = School(
+        name="Other School",
+        code=f"OTH-{uuid4().hex[:6]}",
+        address_line1="456 Other St",
+        city="OtherCity",
+        district="OtherDistrict",
+        state="OtherState",
+        postal_code="654321",
+        phone="+9876543210",
+        email=f"admin-{uuid4().hex[:6]}@other.com",
+    )
+    db_session.add(other_school)
+    db_session.commit()
+
+    other_class = SchoolClass(
+        school_id=other_school.id,
+        name="Class 3 Other",
+        display_order=3,
+    )
+    db_session.add(other_class)
+    db_session.commit()
+
+    other_section = Section(
+        school_class_id=other_class.id,
+        name="A",
+        capacity=30,
+    )
+    db_session.add(other_section)
+    db_session.commit()
+
+    req = StudentPromotionRequest(
+        target_academic_year_id=ay_target.id,
+        target_class_id=other_class.id,
+        target_section_id=other_section.id,
+    )
+
+    with pytest.raises(ValidationException) as exc_info:
+        student_promotion_service.promote_student(
+            db=db_session,
+            student_id=student.id,
+            data=req,
+            current_school_id=school.id,
+        )
+    assert "School class must belong to the user's school." in str(exc_info.value)
+
+
+def test_cross_tenant_section_assignment_rejected(db_session, test_data):
+    """
+    SEC-02: Promoting student into a section belonging to a class of another school must be rejected.
+    """
+    school = test_data["school"]
+    student = test_data["student"]
+    class_2 = test_data["class_2"]
+    ay_target = test_data["ay_target"]
+
+    # Create another school, a class under that school, and a section under that class
+    other_school = School(
+        name="Other School Sec",
+        code=f"OTHSEC-{uuid4().hex[:6]}",
+        address_line1="789 Sec St",
+        city="SecCity",
+        district="SecDistrict",
+        state="SecState",
+        postal_code="654322",
+        phone="+9876543211",
+        email=f"admin-{uuid4().hex[:6]}@othersec.com",
+    )
+    db_session.add(other_school)
+    db_session.commit()
+
+    other_class = SchoolClass(
+        school_id=other_school.id,
+        name="Class Other Sec",
+        display_order=5,
+    )
+    db_session.add(other_class)
+    db_session.commit()
+
+    other_section = Section(
+        school_class_id=other_class.id,
+        name="B",
+        capacity=30,
+    )
+    db_session.add(other_section)
+    db_session.commit()
+
+    # Pass class_2 (which belongs to school) but target_section_id=other_section.id (which belongs to other_school's class)
+    req = StudentPromotionRequest(
+        target_academic_year_id=ay_target.id,
+        target_class_id=class_2.id,
+        target_section_id=other_section.id,
+    )
+
+    with pytest.raises(ValidationException) as exc_info:
+        student_promotion_service.promote_student(
+            db=db_session,
+            student_id=student.id,
+            data=req,
+            current_school_id=school.id,
+        )
+    assert "Target section does not belong to target class." in str(exc_info.value)
+

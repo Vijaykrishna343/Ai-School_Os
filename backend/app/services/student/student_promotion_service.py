@@ -147,6 +147,9 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
             raise NotFoundException("Section", str(section_id))
         if sec.school_class_id != class_id:
             raise ValidationException("Target section does not belong to target class.")
+        parent_class = self.school_class_repository.get(db, sec.school_class_id)
+        if parent_class is None or parent_class.is_deleted or parent_class.school_id != school_id:
+            raise ValidationException("Target section must belong to the user's school.")
         return sec
 
     # ------------------------------------------------------------------

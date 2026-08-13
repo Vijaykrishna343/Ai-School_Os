@@ -52,7 +52,7 @@ def get_current_user(
         user_id,
     )
 
-    if user is None:
+    if user is None or user.is_deleted:
         raise UnauthorizedException(
             "User not found."
         )

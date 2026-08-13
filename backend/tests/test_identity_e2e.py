@@ -653,3 +653,35 @@ def test_17_seed_identity_api_endpoint(db, client):
     data = res_seed.json()
     assert "permissions_created" in data
     assert "roles_created" in data
+
+
+# ===========================================================================
+# Test 18 – Soft-Deleted User Token Rejection (SEC-01)
+# ===========================================================================
+
+def test_18_soft_deleted_user_token_rejected(db, client):
+    """Soft-deleted users must be rejected in get_current_user even with valid JWT access token."""
+    if S.school is None:
+        S.school = make_school(db)
+    user_data = UserCreate(
+        school_id=S.school.id,
+        email="softdelete@e2etest.edu",
+        password="Str0ng!Pass1",
+        first_name="Soft",
+        last_name="Deleted",
+    )
+    user = identity_user_service.create_user(db, user_data)
+    token = jwt_manager.create_access_token(user_id=user.id, school_id=S.school.id)
+
+    headers = {"Authorization": f"Bearer {token}"}
+    resp_before = client.get("/api/v1/auth/me", headers=headers)
+    assert resp_before.status_code == 200
+
+    # Soft-delete the user
+    user.is_deleted = True
+    db.commit()
+
+    resp_after = client.get("/api/v1/auth/me", headers=headers)
+    assert resp_after.status_code == 401
+    assert "User not found." in resp_after.json()["error"]["message"]
+
