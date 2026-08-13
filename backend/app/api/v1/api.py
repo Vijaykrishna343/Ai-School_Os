@@ -6,6 +6,9 @@ from app.api.v1.endpoints.academic_year import (
 from app.api.v1.endpoints.academic_term import (
     router as academic_term_router,
 )
+from app.api.v1.endpoints.class_progression_rule import (
+    router as class_progression_rule_router,
+)
 from app.api.v1.endpoints.attendance import (
     router as attendance_router,
 )
@@ -116,6 +119,12 @@ api_router.include_router(
     academic_term_router,
     prefix="/academic-terms",
     tags=["Academic Terms"],
+)
+
+api_router.include_router(
+    class_progression_rule_router,
+    prefix="/progression-matrix",
+    tags=["Progression Matrix"],
 )
 
 api_router.include_router(

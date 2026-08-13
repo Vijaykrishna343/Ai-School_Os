@@ -307,20 +307,20 @@ class StudentService(
         db: Session,
         academic_year_id: UUID,
         school_class_id: UUID,
-        section_id: UUID,
         roll_number: str,
+        section_id: UUID | None = None,
         exclude_id: UUID | None = None,
     ):
         """
-        Validate roll number uniqueness.
+        Validate roll number uniqueness at Class level (matching uq_student_roll_number).
         """
 
         if self.repository.exists_by_roll_number(
             db=db,
             academic_year_id=academic_year_id,
             school_class_id=school_class_id,
-            section_id=section_id,
             roll_number=roll_number,
+            section_id=section_id,
             exclude_id=exclude_id,
         ):
             logger.warning("Validation failure: Roll number '%s' already exists", roll_number)
@@ -328,6 +328,7 @@ class StudentService(
                 "Roll Number",
                 roll_number,
             )
+
     def _validate_admission_number(
         self,
         db: Session,
@@ -385,10 +386,10 @@ class StudentService(
         db: Session,
         academic_year_id: UUID,
         school_class_id: UUID,
-        section_id: UUID,
+        section_id: UUID | None = None,
     ) -> str:
         """
-        Generate the next roll number.
+        Generate the next roll number within Academic Year + Class.
         """
 
         last_student = (
@@ -410,10 +411,9 @@ class StudentService(
             db=db,
             academic_year_id=academic_year_id,
             school_class_id=school_class_id,
-            section_id=section_id,
             roll_number=roll_number,
+            section_id=section_id,
         )
-
         return roll_number
 
     # ==========================================================

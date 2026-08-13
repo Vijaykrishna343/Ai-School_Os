@@ -243,8 +243,8 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
                             db,
                             data.target_academic_year_id,
                             data.target_class_id,
-                            data.target_section_id,
                             data.roll_number,
+                            section_id=data.target_section_id,
                         ):
                             raise AlreadyExistsException("Roll Number", data.roll_number)
                         new_roll_number = data.roll_number
@@ -253,7 +253,7 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
                             db,
                             data.target_academic_year_id,
                             data.target_class_id,
-                            data.target_section_id,
+                            section_id=data.target_section_id,
                         )
                         new_roll_number = RollNumberGenerator.generate(last_student)
 
@@ -363,8 +363,8 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
                             db,
                             data.target_academic_year_id,
                             target_class_id,
-                            target_section_id,
                             data.roll_number,
+                            section_id=target_section_id,
                         ):
                             raise AlreadyExistsException("Roll Number", data.roll_number)
                         new_roll_number = data.roll_number
@@ -373,7 +373,7 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
                             db,
                             data.target_academic_year_id,
                             target_class_id,
-                            target_section_id,
+                            section_id=target_section_id,
                         )
                         new_roll_number = RollNumberGenerator.generate(last_student)
 

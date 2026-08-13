@@ -18,6 +18,18 @@ from app.services.academic_year_service import (
     AcademicYearService,
     academic_year_service,
 )
+from app.services.class_progression_rule_service import (
+    ClassProgressionRuleService,
+    class_progression_rule_service,
+)
+from app.services.student.progression_preview_service import (
+    ProgressionPreviewService,
+    progression_preview_service,
+)
+from app.services.student.progression_planner import (
+    ProgressionPlanner,
+    progression_planner,
+)
 from app.services.attendance_service import (
     AttendanceService,
     attendance_service,
@@ -265,6 +277,21 @@ def get_parent_service() -> ParentService:
 def get_academic_year_service() -> AcademicYearService:
     """Return the AcademicYearService singleton."""
     return academic_year_service
+
+
+def get_class_progression_rule_service() -> ClassProgressionRuleService:
+    """Return the ClassProgressionRuleService singleton."""
+    return class_progression_rule_service
+
+
+def get_progression_preview_service() -> ProgressionPreviewService:
+    """Return the ProgressionPreviewService singleton."""
+    return progression_preview_service
+
+
+def get_progression_planner() -> ProgressionPlanner:
+    """Return the ProgressionPlanner singleton."""
+    return progression_planner
 
 
 def get_academic_term_service() -> AcademicTermService:

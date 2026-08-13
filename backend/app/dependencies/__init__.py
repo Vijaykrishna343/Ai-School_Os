@@ -29,6 +29,9 @@ from .services import (
     get_teacher_substitution_repository,
     # Service dependencies
     get_academic_year_service,
+    get_class_progression_rule_service,
+    get_progression_preview_service,
+    get_progression_planner,
     get_academic_term_service,
     get_parent_service,
     get_school_class_service,
@@ -86,6 +89,9 @@ __all__ = [
     "get_teacher_substitution_repository",
     # Service dependencies
     "get_academic_year_service",
+    "get_class_progression_rule_service",
+    "get_progression_preview_service",
+    "get_progression_planner",
     "get_academic_term_service",
     "get_parent_service",
     "get_school_class_service",

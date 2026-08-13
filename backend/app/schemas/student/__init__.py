@@ -1,3 +1,9 @@
+from .progression_preview_schema import (
+    ProgressionPreviewRequest,
+    ProgressionPreviewResponse,
+    ProgressionPreviewSummary,
+    StudentProgressionPreviewItem,
+)
 from .promotion_schema import (
     AcademicYearTransitionRequest,
     AcademicYearTransitionResponse,
@@ -30,11 +36,15 @@ __all__ = [
     "BulkStudentPromotionRequest",
     "BulkStudentRetentionItem",
     "BulkStudentRetentionRequest",
+    "ProgressionPreviewRequest",
+    "ProgressionPreviewResponse",
+    "ProgressionPreviewSummary",
     "StudentCreate",
     "StudentEnrollmentHistoryListResponse",
     "StudentEnrollmentHistoryResponse",
     "StudentFilter",
     "StudentListResponse",
+    "StudentProgressionPreviewItem",
     "StudentPromotionRequest",
     "StudentResponse",
     "StudentRetentionRequest",

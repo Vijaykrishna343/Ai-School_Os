@@ -58,18 +58,18 @@ class StudentRepository(BaseRepository[Student]):
         db: Session,
         academic_year_id: UUID,
         school_class_id: UUID,
-        section_id: UUID,
         roll_number: str,
+        section_id: UUID | None = None,
     ) -> Student | None:
         """
-        Get active student by roll number within academic year, class, and section.
+        Get active student by roll number within academic year and class.
+        (Scope matches database constraint uq_student_roll_number).
         """
         stmt = (
             select(Student)
             .where(
                 Student.academic_year_id == academic_year_id,
                 Student.school_class_id == school_class_id,
-                Student.section_id == section_id,
                 Student.roll_number == roll_number,
                 Student.is_deleted.is_(False),
             )
@@ -138,17 +138,17 @@ class StudentRepository(BaseRepository[Student]):
         db: Session,
         academic_year_id: UUID,
         school_class_id: UUID,
-        section_id: UUID,
+        section_id: UUID | None = None,
     ) -> Student | None:
         """
-        Get the latest active student record by roll number order within Academic Year + Class + Section.
+        Get the latest active student record by roll number order within Academic Year + Class.
+        (Scope matches database constraint uq_student_roll_number).
         """
         stmt = (
             select(Student)
             .where(
                 Student.academic_year_id == academic_year_id,
                 Student.school_class_id == school_class_id,
-                Student.section_id == section_id,
                 Student.is_deleted.is_(False),
             )
             .order_by(
@@ -332,19 +332,19 @@ class StudentRepository(BaseRepository[Student]):
         db: Session,
         academic_year_id: UUID,
         school_class_id: UUID,
-        section_id: UUID,
         roll_number: str,
+        section_id: UUID | None = None,
         exclude_id: UUID | None = None,
     ) -> bool:
         """
-        Check whether an active student exists with the specified roll number in the given class and section.
+        Check whether an active student exists with the specified roll number in the given class.
+        (Scope matches database constraint uq_student_roll_number).
         """
         stmt = (
             select(Student.id)
             .where(
                 Student.academic_year_id == academic_year_id,
                 Student.school_class_id == school_class_id,
-                Student.section_id == section_id,
                 Student.roll_number == roll_number,
                 Student.is_deleted.is_(False),
             )

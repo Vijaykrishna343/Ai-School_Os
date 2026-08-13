@@ -5,6 +5,14 @@ from .academic_year import (
     AcademicYearResponse,
     AcademicYearUpdate,
 )
+from .class_progression_rule_schema import (
+    ClassProgressionRuleBase,
+    ClassProgressionRuleCreate,
+    ClassProgressionRuleFilter,
+    ClassProgressionRuleListResponse,
+    ClassProgressionRuleResponse,
+    ClassProgressionRuleUpdate,
+)
 
 __all__ = [
     "AcademicYearBase",
@@ -12,4 +20,10 @@ __all__ = [
     "AcademicYearListResponse",
     "AcademicYearResponse",
     "AcademicYearUpdate",
+    "ClassProgressionRuleBase",
+    "ClassProgressionRuleCreate",
+    "ClassProgressionRuleFilter",
+    "ClassProgressionRuleListResponse",
+    "ClassProgressionRuleResponse",
+    "ClassProgressionRuleUpdate",
 ]

@@ -6,7 +6,6 @@ student roll numbers within a specific:
 
 - Academic Year
 - Class
-- Section
 
 Format:
     001
@@ -14,7 +13,7 @@ Format:
     003
     ...
 
-Roll numbers restart for every Academic Year + Class + Section.
+Roll numbers restart for every Academic Year + Class.
 """
 
 from app.common.utils.sequence_generator import SequenceCodeGenerator
@@ -38,7 +37,7 @@ class RollNumberGenerator:
 
         Args:
             last_student:
-                Latest student in the same Academic Year + Class + Section.
+                Latest student in the same Academic Year + Class.
 
         Returns:
             Next roll number.

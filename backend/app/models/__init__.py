@@ -1,4 +1,4 @@
-from .academic_year import AcademicYear
+from .academic_year import AcademicYear, ClassProgressionRule
 from .attendance import Attendance
 from .fees import (
     FeeDiscount,
@@ -23,6 +23,7 @@ from .teacher import Teacher
 __all__ = [
     "AcademicYear",
     "Attendance",
+    "ClassProgressionRule",
     "FeeDiscount",
     "FeeItem",
     "FeePayment",

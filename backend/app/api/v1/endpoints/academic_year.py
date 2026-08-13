@@ -14,6 +14,7 @@ from app.common.responses import ApiResponse
 from app.dependencies import (
     get_academic_year_service,
     get_db,
+    get_progression_preview_service,
     get_student_promotion_service,
 )
 from app.identity.dependencies.require_permission import require_permission
@@ -24,11 +25,16 @@ from app.schemas.academic_year import (
     AcademicYearResponse,
     AcademicYearUpdate,
 )
+from app.schemas.student.progression_preview_schema import (
+    ProgressionPreviewRequest,
+    ProgressionPreviewResponse,
+)
 from app.schemas.student.promotion_schema import (
     AcademicYearTransitionRequest,
     AcademicYearTransitionResponse,
 )
 from app.services.academic_year_service import AcademicYearService
+from app.services.student.progression_preview_service import ProgressionPreviewService
 from app.services.student.student_promotion_service import StudentPromotionService
 
 router = APIRouter()
@@ -213,5 +219,36 @@ def transition_academic_year(
 
     return ApiResponse.success(
         message=result.message,
+        data=result.model_dump(),
+    )
+
+
+@router.post(
+    "/{academic_year_id}/progression-preview",
+    response_model=dict,
+    summary="Academic Year Progression Preview",
+)
+def generate_progression_preview(
+    academic_year_id: UUID,
+    request: ProgressionPreviewRequest,
+    current_user: IdentityUser = Depends(
+        require_permission("progression.preview")
+    ),
+    db: Session = Depends(get_db),
+    service: ProgressionPreviewService = Depends(get_progression_preview_service),
+) -> dict[str, object]:
+    """
+    READ-ONLY calculation of prospective student progression outcomes
+    from source academic year to target academic year.
+    """
+    result = service.generate_preview(
+        db=db,
+        source_academic_year_id=academic_year_id,
+        request=request,
+        current_school_id=current_user.school_id,
+    )
+
+    return ApiResponse.success(
+        message="Academic progression preview generated successfully.",
         data=result.model_dump(),
     )

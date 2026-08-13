@@ -50,6 +50,11 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "student.tc.create", "module": "student", "action": "tc.create", "description": "Create transfer certificate"},
     {"name": "student.tc.view", "module": "student", "action": "tc.view", "description": "View transfer certificate"},
 
+    # Academic Progression Matrix & Preview
+    {"name": "progression_matrix.view", "module": "progression_matrix", "action": "view", "description": "View class progression rules"},
+    {"name": "progression_matrix.manage", "module": "progression_matrix", "action": "manage", "description": "Manage class progression rules"},
+    {"name": "progression.preview", "module": "progression", "action": "preview", "description": "Preview academic year progression"},
+
 
     # Teacher
     {"name": "teacher.create", "module": "teacher", "action": "create", "description": "Create teacher"},
