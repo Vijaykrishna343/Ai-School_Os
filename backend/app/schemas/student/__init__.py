@@ -1,3 +1,9 @@
+from .progression_execution_schema import (
+    ProgressionExecutionData,
+    ProgressionExecutionRequest,
+    ProgressionExecutionResponse,
+    ProgressionExecutionSummaryResponse,
+)
 from .progression_preview_schema import (
     ProgressionPreviewRequest,
     ProgressionPreviewResponse,
@@ -36,6 +42,10 @@ __all__ = [
     "BulkStudentPromotionRequest",
     "BulkStudentRetentionItem",
     "BulkStudentRetentionRequest",
+    "ProgressionExecutionData",
+    "ProgressionExecutionRequest",
+    "ProgressionExecutionResponse",
+    "ProgressionExecutionSummaryResponse",
     "ProgressionPreviewRequest",
     "ProgressionPreviewResponse",
     "ProgressionPreviewSummary",

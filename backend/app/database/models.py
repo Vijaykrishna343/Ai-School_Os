@@ -11,7 +11,12 @@ discovered automatically.
 
 from app.models.school import School
 from app.models.parent import Parent
-from app.models.academic_year import AcademicYear
+from app.models.academic_year import (
+    AcademicYear,
+    ClassProgressionRule,
+    ProgressionExecution,
+    ProgressionExecutionItem,
+)
 from app.models.academic_term import AcademicTerm
 from app.models.school_class import SchoolClass
 from app.models.section.section import Section
@@ -46,6 +51,9 @@ __all__ = [
     "School",
     "Parent",
     "AcademicYear",
+    "ClassProgressionRule",
+    "ProgressionExecution",
+    "ProgressionExecutionItem",
     "AcademicTerm",
     "SchoolClass",
     "Section",

@@ -7,13 +7,14 @@ Provides HTTP routes for creating, retrieving, updating, and deleting AcademicYe
 from http import HTTPStatus
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.orm import Session
 
 from app.common.responses import ApiResponse
 from app.dependencies import (
     get_academic_year_service,
     get_db,
+    get_progression_execution_service,
     get_progression_preview_service,
     get_student_promotion_service,
 )
@@ -25,6 +26,10 @@ from app.schemas.academic_year import (
     AcademicYearResponse,
     AcademicYearUpdate,
 )
+from app.schemas.student.progression_execution_schema import (
+    ProgressionExecutionRequest,
+    ProgressionExecutionResponse,
+)
 from app.schemas.student.progression_preview_schema import (
     ProgressionPreviewRequest,
     ProgressionPreviewResponse,
@@ -34,6 +39,7 @@ from app.schemas.student.promotion_schema import (
     AcademicYearTransitionResponse,
 )
 from app.services.academic_year_service import AcademicYearService
+from app.services.student.progression_execution_service import ProgressionExecutionService
 from app.services.student.progression_preview_service import ProgressionPreviewService
 from app.services.student.student_promotion_service import StudentPromotionService
 
@@ -251,4 +257,41 @@ def generate_progression_preview(
     return ApiResponse.success(
         message="Academic progression preview generated successfully.",
         data=result.model_dump(),
+    )
+
+
+@router.post(
+    "/{academic_year_id}/progression-execute",
+    response_model=dict,
+    status_code=HTTPStatus.OK,
+    summary="Academic Year Progression Execution / Rollover",
+)
+def execute_progression_rollover(
+    academic_year_id: UUID,
+    request: ProgressionExecutionRequest,
+    idempotency_key: str = Header(..., alias="Idempotency-Key"),
+    current_user: IdentityUser = Depends(
+        require_permission("progression.execute")
+    ),
+    db: Session = Depends(get_db),
+    service: ProgressionExecutionService = Depends(get_progression_execution_service),
+) -> dict[str, object]:
+    """
+    ATOMIC EXECUTION of academic year progression rollover for a school.
+
+    Evaluates live progression plan, verifies SHA-256 execution_plan_hash matching,
+    promotes/graduates active students, updates enrollment histories, and transitions
+    academic year status atomically.
+    """
+    result = service.execute_progression(
+        db=db,
+        source_academic_year_id=academic_year_id,
+        request=request,
+        idempotency_key=idempotency_key,
+        current_user=current_user,
+    )
+
+    return ApiResponse.success(
+        message=result.message,
+        data=result.data.model_dump(),
     )

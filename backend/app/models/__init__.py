@@ -1,4 +1,10 @@
-from .academic_year import AcademicYear, ClassProgressionRule
+from .academic_year import (
+    AcademicYear,
+    ClassProgressionRule,
+    ProgressionExecution,
+    ProgressionExecutionItem,
+    ProgressionExecutionStatus,
+)
 from .attendance import Attendance
 from .fees import (
     FeeDiscount,
@@ -24,6 +30,9 @@ __all__ = [
     "AcademicYear",
     "Attendance",
     "ClassProgressionRule",
+    "ProgressionExecution",
+    "ProgressionExecutionItem",
+    "ProgressionExecutionStatus",
     "FeeDiscount",
     "FeeItem",
     "FeePayment",

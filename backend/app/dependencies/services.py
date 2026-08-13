@@ -30,6 +30,10 @@ from app.services.student.progression_planner import (
     ProgressionPlanner,
     progression_planner,
 )
+from app.services.student.progression_execution_service import (
+    ProgressionExecutionService,
+    progression_execution_service,
+)
 from app.services.attendance_service import (
     AttendanceService,
     attendance_service,
@@ -292,6 +296,11 @@ def get_progression_preview_service() -> ProgressionPreviewService:
 def get_progression_planner() -> ProgressionPlanner:
     """Return the ProgressionPlanner singleton."""
     return progression_planner
+
+
+def get_progression_execution_service() -> ProgressionExecutionService:
+    """Return the ProgressionExecutionService singleton."""
+    return progression_execution_service
 
 
 def get_academic_term_service() -> AcademicTermService:

@@ -6,6 +6,10 @@ from .academic_year.class_progression_rule_repository import (
     ClassProgressionRuleRepository,
     class_progression_rule_repository,
 )
+from .academic_year.progression_execution_repository import (
+    ProgressionExecutionRepository,
+    progression_execution_repository,
+)
 from .base import BaseRepository
 from .fees.fee_payment_repository import (
     FeePaymentRepository,
@@ -66,6 +70,7 @@ __all__ = [
     # Repository classes
     "AcademicYearRepository",
     "ClassProgressionRuleRepository",
+    "ProgressionExecutionRepository",
     "ParentRepository",
     "SchoolRepository",
     "SchoolClassRepository",
@@ -82,6 +87,7 @@ __all__ = [
     # Singleton instances
     "academic_year_repository",
     "class_progression_rule_repository",
+    "progression_execution_repository",
     "parent_repository",
     "school_repository",
     "school_class_repository",
