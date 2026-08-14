@@ -56,29 +56,35 @@ export const MobileNav = ({
   return (
     <div className="fixed inset-0 z-50 md:hidden flex">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-stone-950/70" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="relative flex-1 max-w-xs w-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-10 animate-in slide-in-from-left duration-200">
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-600 text-white font-bold shadow-md shadow-brand-500/20">
-              <Building2 className="w-5 h-5" />
+      <div className="relative flex-1 max-w-[240px] w-full bg-paper-dim dark:bg-stone-900 border-r border-divider dark:border-stone-800 flex flex-col z-10">
+        {/* Brand Header */}
+        <div className="flex items-center justify-between h-14 px-3 border-b border-divider dark:border-stone-800">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-7 h-7 bg-brand-500 text-white shrink-0">
+              <Building2 className="w-4 h-4" />
             </div>
-            <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-slate-100">
-              AI SCHOOL OS
-            </span>
+            <div className="flex flex-col">
+              <span className="font-serif font-bold text-[11px] tracking-tight text-brand-500 dark:text-stone-100 leading-none">
+                AI School OS
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/50 leading-none mt-0.5">
+                Academic OS · v1.0
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="p-1 text-ink-muted/50 hover:text-ink-muted dark:hover:text-stone-200"
             aria-label="Close mobile menu"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-1 py-3 overflow-y-auto space-y-px">
           {filteredNav.map((item) => (
             <NavLink
               key={item.path}
@@ -86,18 +92,25 @@ export const MobileNav = ({
               onClick={onClose}
               className={({ isActive }) =>
                 clsx(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                  'flex items-center gap-3 px-3 py-2.5 text-xs font-medium transition-colors border-l-2',
                   isActive
-                    ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 font-semibold'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200'
+                    ? 'bg-paper text-brand-500 dark:bg-stone-800 dark:text-brand-300 border-brand-500 font-semibold'
+                    : 'border-transparent text-ink-muted hover:bg-paper hover:text-ink dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-200'
                 )
               }
             >
-              <span>{item.icon}</span>
-              <span>{item.name}</span>
+              <span className="text-ink-muted/70">{item.icon}</span>
+              <span className="tracking-tight">{item.name}</span>
             </NavLink>
           ))}
         </nav>
+
+        {/* Footer */}
+        <div className="px-3 py-3 border-t border-divider dark:border-stone-800">
+          <p className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/40 leading-none">
+            Vijaykrishna343 · Academic OS
+          </p>
+        </div>
       </div>
     </div>
   );

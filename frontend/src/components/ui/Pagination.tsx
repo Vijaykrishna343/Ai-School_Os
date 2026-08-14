@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from './Button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface PaginationProps {
   page: number;
@@ -23,43 +23,66 @@ export const Pagination: React.FC<PaginationProps> = ({
   const startItem = (page - 1) * (pageSize || 10) + 1;
   const endItem = Math.min(page * (pageSize || 10), totalItems || page * (pageSize || 10));
 
+  const navBtn = (
+    label: string,
+    icon: React.ReactNode,
+    disabled: boolean,
+    onClick: () => void
+  ) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className={
+        'inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium border border-divider ' +
+        'text-ink-muted transition-colors ' +
+        'hover:bg-paper-dim hover:text-ink hover:border-ink-muted/30 ' +
+        'dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200 ' +
+        'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-muted ' +
+        'focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500'
+      }
+    >
+      {icon}
+    </button>
+  );
+
   return (
-    <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-3 border-t border-slate-200 dark:border-slate-800 ${className}`}>
-      <div className="text-xs text-slate-500 dark:text-slate-400">
+    <div
+      className={`flex flex-col sm:flex-row items-center justify-between gap-3 py-2.5 border-t border-divider dark:border-stone-800 ${className}`}
+    >
+      {/* Registry record count */}
+      <p className="text-[10px] font-mono text-ink-muted dark:text-stone-500 leading-none">
         {totalItems !== undefined ? (
           <>
-            Showing <span className="font-semibold text-slate-700 dark:text-slate-200">{startItem}</span> to{' '}
-            <span className="font-semibold text-slate-700 dark:text-slate-200">{endItem}</span> of{' '}
-            <span className="font-semibold text-slate-700 dark:text-slate-200">{totalItems}</span> results
+            Records{' '}
+            <span className="text-ink dark:text-stone-300">{startItem}</span>
+            {' '}–{' '}
+            <span className="text-ink dark:text-stone-300">{endItem}</span>
+            {' '}of{' '}
+            <span className="text-ink dark:text-stone-300">{totalItems}</span>
           </>
         ) : (
           <>
-            Page <span className="font-semibold text-slate-700 dark:text-slate-200">{page}</span> of{' '}
-            <span className="font-semibold text-slate-700 dark:text-slate-200">{totalPages}</span>
+            Page{' '}
+            <span className="text-ink dark:text-stone-300">{page}</span>
+            {' '}of{' '}
+            <span className="text-ink dark:text-stone-300">{totalPages}</span>
           </>
         )}
-      </div>
+      </p>
 
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
-        >
-          Previous
-        </Button>
-        <span className="text-xs font-medium px-2 text-slate-600 dark:text-slate-400">
-          {page} / {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}
-        >
-          Next
-        </Button>
+      {/* Registry navigation controls */}
+      <div className="flex items-center gap-0">
+        {navBtn('Previous page', <ChevronLeft className="w-3.5 h-3.5" />, page <= 1, () => onPageChange(page - 1))}
+
+        {/* Current page indicator: solid brand-dim block */}
+        <div className="inline-flex items-center px-3 py-1.5 border-y border-divider bg-paper-dim dark:border-stone-700 dark:bg-stone-900">
+          <span className="text-[11px] font-mono font-semibold text-brand-500 dark:text-stone-200 leading-none">
+            {page}
+          </span>
+        </div>
+
+        {navBtn('Next page', <ChevronRight className="w-3.5 h-3.5" />, page >= totalPages, () => onPageChange(page + 1))}
       </div>
     </div>
   );

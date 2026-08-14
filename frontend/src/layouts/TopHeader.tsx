@@ -44,84 +44,82 @@ export const TopHeader = ({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   }, []);
 
   return (
-    <header className="h-16 px-4 md:px-6 border-b border-slate-200 bg-[#fcf9f8] dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between shrink-0 select-none">
+    <header className="h-12 px-4 md:px-5 border-b border-divider bg-paper dark:border-stone-800 dark:bg-stone-950 flex items-center justify-between shrink-0 select-none">
       {/* Left: Mobile Toggle & Page Title */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onOpenMobileNav}
-          className="md:hidden p-2 rounded-sm text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="md:hidden p-1 text-ink-muted hover:text-ink dark:hover:text-stone-200"
           aria-label="Open mobile menu"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
-        <h1 className="text-lg font-bold font-serif text-slate-900 dark:text-slate-100 tracking-tight">
+        {/* Structural left border rule on desktop */}
+        <h1 className="text-sm font-serif font-semibold text-brand-500 dark:text-stone-100 tracking-tight truncate">
           {getPageTitle()}
         </h1>
       </div>
 
       {/* Right: Tenant Indicator, Theme Toggle & User Menu */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 shrink-0">
         {/* Tenant School Indicator */}
         {user?.school_id && (
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-sm border border-slate-200 text-slate-700 text-xs font-mono dark:bg-slate-800 dark:text-slate-300">
-            <Building className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
-            <span className="truncate max-w-[150px]">SCHOOL_ID: {user.school_id.slice(0, 8)}</span>
+          <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 border border-divider dark:border-stone-700 text-ink-muted dark:text-stone-400">
+            <Building className="w-3 h-3 text-brand-500/60" />
+            <span className="font-mono text-[10px] tracking-wider uppercase truncate max-w-[120px]">
+              {user.school_id.slice(0, 8)}
+            </span>
           </div>
         )}
 
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 text-ink-muted hover:text-ink dark:text-stone-400 dark:hover:text-stone-200 transition-colors"
           aria-label="Toggle dark mode"
         >
-          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
         </button>
 
         {/* User Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 p-1.5 rounded-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none"
+            className="flex items-center gap-2 py-1 px-1.5 hover:bg-paper-dim dark:hover:bg-stone-800 transition-colors focus:outline-none border border-transparent hover:border-divider"
           >
-            <div className="w-8 h-8 rounded-sm bg-brand-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+            <div className="w-6 h-6 bg-brand-500 text-white flex items-center justify-center font-bold text-[10px]">
               {user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
             </div>
             <div className="hidden sm:flex flex-col text-left">
-              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+              <span className="text-[11px] font-semibold text-ink dark:text-stone-100 leading-none">
                 {user?.first_name} {user?.last_name || ''}
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[120px]">
+              <span className="text-[9px] font-mono text-ink-muted dark:text-stone-400 truncate max-w-[100px] leading-none mt-0.5">
                 {user?.email}
               </span>
             </div>
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-sm shadow-sm border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+            <div className="absolute right-0 mt-1 w-52 bg-paper dark:bg-stone-900 border border-divider dark:border-stone-700 py-1 z-50 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+              <div className="px-3 py-2 border-b border-divider dark:border-stone-800">
+                <p className="text-[11px] font-semibold text-ink dark:text-stone-100 leading-none">
                   {user?.first_name} {user?.last_name || ''}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+                <p className="text-[10px] font-mono text-ink-muted dark:text-stone-400 truncate mt-0.5">{user?.email}</p>
               </div>
               <div className="py-1">
                 <button
-                  onClick={() => {
-                    setDropdownOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                  onClick={() => { setDropdownOpen(false); }}
+                  className="w-full text-left px-3 py-1.5 text-[11px] text-ink dark:text-stone-300 hover:bg-paper-dim dark:hover:bg-stone-800 flex items-center gap-2"
                 >
-                  <UserIcon className="w-4 h-4 text-slate-400" /> User Profile
+                  <UserIcon className="w-3.5 h-3.5 text-ink-muted" /> User Profile
                 </button>
                 <button
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    logout();
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-medium"
+                  onClick={() => { setDropdownOpen(false); logout(); }}
+                  className="w-full text-left px-3 py-1.5 text-[11px] text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-medium"
                 >
-                  <LogOut className="w-4 h-4 text-red-500" /> Sign Out
+                  <LogOut className="w-3.5 h-3.5 text-red-500" /> Sign Out
                 </button>
               </div>
             </div>

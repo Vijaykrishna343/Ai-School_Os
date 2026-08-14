@@ -1,3 +1,4 @@
+import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from './Button';
 
@@ -8,25 +9,33 @@ export interface ErrorStateProps {
 }
 
 export const ErrorState = ({
-  title = 'Something went wrong',
-  message = 'An unexpected error occurred while processing your request.',
+  title = 'Request Could Not Be Completed',
+  message = 'The server returned an error while retrieving this register. Please try again.',
   onRetry,
 }: ErrorStateProps) => (
-  <div className="flex flex-col items-center justify-center p-8 text-center bg-red-50/50 dark:bg-red-950/20 rounded-2xl border border-red-100 dark:border-red-900/50">
-    <div className="p-3 bg-red-100 dark:bg-red-900/50 rounded-2xl mb-4 text-red-600 dark:text-red-400">
-      <AlertTriangle className="w-8 h-8" />
-    </div>
-    <h3 className="text-base font-semibold text-red-900 dark:text-red-200">{title}</h3>
-    <p className="mt-1 text-sm text-red-600 dark:text-red-300 max-w-md">{message}</p>
+  // Desaturated error panel — flat, muted, institutional
+  <div className="flex flex-col items-center justify-center py-10 px-6 text-center border border-red-200/60 dark:border-red-900/40 bg-red-50/30 dark:bg-red-950/10">
+    {/* Compact icon — no rounded bubble wrapper */}
+    <AlertTriangle className="w-7 h-7 text-red-600/70 dark:text-red-500/70 mb-4" />
+
+    {/* Institutional error label */}
+    <h3 className="text-[10px] font-mono font-semibold uppercase tracking-widest text-red-800 dark:text-red-300 leading-none">
+      {title}
+    </h3>
+
+    <p className="mt-2 text-xs text-red-700/80 dark:text-red-300/70 max-w-md leading-relaxed">
+      {message}
+    </p>
+
     {onRetry && (
       <Button
         onClick={onRetry}
         variant="outline"
         size="sm"
-        className="mt-4 border-red-300 text-red-700 hover:bg-red-100/50 dark:border-red-800 dark:text-red-200"
+        className="mt-5 border-red-300 text-red-700 hover:bg-red-100/40 dark:border-red-800 dark:text-red-300"
         leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
       >
-        Try Again
+        Retry Request
       </Button>
     )}
   </div>

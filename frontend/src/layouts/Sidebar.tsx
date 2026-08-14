@@ -81,30 +81,31 @@ export const Sidebar = ({
     if (filteredItems.length === 0) return null;
 
     return (
-      <div key={group.title} className="space-y-1">
+      <div key={group.title} className="space-y-0">
         {!collapsed && (
-          <h3 className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mt-4 mb-2">
+          <h3 className="px-3 text-[9px] font-mono uppercase tracking-widest text-ink-muted/60 dark:text-stone-600 mt-5 mb-1 select-none">
             {group.title}
           </h3>
         )}
-        <div className="space-y-0.5">
+        <div className="space-y-px">
           {filteredItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
+              title={collapsed ? item.name : undefined}
               className={({ isActive }) =>
                 clsx(
-                  'flex items-center gap-3 px-3 py-2 rounded-sm text-xs font-medium transition-all group border-l-2',
+                  'flex items-center gap-3 px-3 py-2 text-xs font-medium transition-colors border-l-2',
                   isActive
-                    ? 'bg-slate-100 dark:bg-slate-800 text-brand-500 dark:text-brand-400 border-brand-500 font-semibold'
-                    : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200'
+                    ? 'bg-paper text-brand-500 dark:bg-stone-800 dark:text-brand-300 border-brand-500 font-semibold'
+                    : 'border-transparent text-ink-muted hover:bg-paper hover:text-ink dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-200'
                 )
               }
             >
-              <span className="shrink-0 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200">
+              <span className="shrink-0 text-ink-muted/70">
                 {item.icon}
               </span>
-              {!collapsed && <span className="truncate">{item.name}</span>}
+              {!collapsed && <span className="truncate tracking-tight">{item.name}</span>}
             </NavLink>
           ))}
         </div>
@@ -115,45 +116,47 @@ export const Sidebar = ({
   return (
     <aside
       className={clsx(
-        'hidden md:flex flex-col border-r border-slate-200 bg-[#fcf9f8] dark:border-slate-800 dark:bg-slate-900 transition-all duration-300 select-none shrink-0',
-        collapsed ? 'w-20' : 'w-64'
+        'hidden md:flex flex-col border-r border-divider bg-paper-dim dark:border-stone-800 dark:bg-stone-900 transition-all duration-300 select-none shrink-0',
+        collapsed ? 'w-[52px]' : 'w-60'
       )}
     >
       {/* Brand Header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="flex items-center justify-center w-8 h-8 rounded-sm bg-brand-500 text-white shrink-0">
-            <Building2 className="w-5 h-5" />
+      <div className="flex items-center justify-between h-14 px-3 border-b border-divider dark:border-stone-800">
+        <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
+          <div className="flex items-center justify-center w-7 h-7 rounded-none bg-brand-500 text-white shrink-0">
+            <Building2 className="w-4 h-4" />
           </div>
           {!collapsed && (
-            <div className="flex flex-col truncate">
-              <span className="font-bold text-xs tracking-tight text-slate-900 dark:text-slate-100">
-                AI SCHOOL OS
+            <div className="flex flex-col truncate min-w-0">
+              <span className="font-serif font-bold text-[11px] tracking-tight text-brand-500 dark:text-stone-100 leading-none">
+                AI School OS
               </span>
-              <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
-                Academic OS
+              <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/50 leading-none mt-0.5">
+                Academic OS · v1.0
               </span>
             </div>
           )}
         </div>
         <button
           onClick={onToggle}
-          className="p-1 rounded-sm text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          className="p-1 text-ink-muted/50 hover:text-ink-muted dark:hover:text-stone-200 shrink-0"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
         </button>
       </div>
 
       {/* Nav Menu */}
-      <nav className="flex-1 px-2 py-4 space-y-4 overflow-y-auto">
+      <nav className="flex-1 px-1 py-3 overflow-y-auto">
         {navGroups.map(renderGroup)}
       </nav>
 
       {/* Footer info */}
       {!collapsed && (
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-400 text-center font-mono">
-          SYSTEM_VER_1.0.0
+        <div className="px-3 py-3 border-t border-divider dark:border-stone-800">
+          <p className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/40 leading-none">
+            Vijaykrishna343 · Academic OS
+          </p>
         </div>
       )}
     </aside>

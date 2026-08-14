@@ -9,7 +9,7 @@ export const AppLayout = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen w-screen overflow-hidden bg-paper dark:bg-paper-dark">
       {/* Desktop Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}

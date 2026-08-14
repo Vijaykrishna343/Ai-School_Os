@@ -30,13 +30,15 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={title}
+      size="sm"
       footer={
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={isLoading}>
             {cancelText}
           </Button>
           <Button
             variant={isDanger ? 'danger' : 'primary'}
+            size="sm"
             onClick={onConfirm}
             isLoading={isLoading}
           >
@@ -45,7 +47,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         </div>
       }
     >
-      <p className="text-sm text-slate-600 dark:text-slate-300">{message}</p>
+      {/* Concise consequence description — no generic "Oops!" copy */}
+      <p className="text-xs text-ink dark:text-stone-300 leading-relaxed">{message}</p>
     </Modal>
   );
 };

@@ -6,18 +6,54 @@
   html, body {
     background-color: #fcf9f8;
     color: #1c1917;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: "Hanken Grotesk", "Inter", system-ui, -apple-system, sans-serif;
   }
 
+  /* Scholarly Display Headings */
   h1, h2, h3, .font-editorial {
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: "Source Serif 4", Georgia, serif;
     color: #1a365d;
+  }
+
+  /* Carbon typography active styles */
+  .dark html, .dark body {
+    background-color: #1c1917;
+    color: #fcf9f8;
+  }
+
+  .dark h1, .dark h2, .dark h3 {
+    color: #ffffff;
   }
 
   /* Custom thin separators and borders */
   .border-thin {
     border-width: 1px;
-    border-color: #e2e8f0;
+    border-color: #e5e2da;
+  }
+
+  .dark .border-thin {
+    border-color: #383530;
+  }
+
+  /* Input fields transition defaults */
+  input, select, textarea {
+    transition: all 150ms ease-in-out;
+  }
+
+  /* Density & Registrar Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #e5e2da;
+    border-radius: 3px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: #383530;
   }
 }
 

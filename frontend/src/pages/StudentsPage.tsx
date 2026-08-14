@@ -14,7 +14,6 @@ import {
 } from '@/types/models';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Table, Column } from '@/components/ui/Table';
@@ -23,6 +22,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Drawer } from '@/components/ui/Drawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Alert } from '@/components/ui/Alert';
+import { Building2 } from 'lucide-react';
 
 export const StudentsPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -243,17 +243,17 @@ export const StudentsPage: React.FC = () => {
     {
       key: 'admission_number',
       header: 'Adm No',
-      render: (row) => <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{row.admission_number}</span>,
+      render: (row) => <span className="font-mono text-xs font-bold text-brand-500 dark:text-brand-350">{row.admission_number}</span>,
     },
     {
       key: 'name',
       header: 'Student Name',
       render: (row) => (
         <div>
-          <p className="font-semibold text-slate-900 dark:text-white">
+          <p className="font-semibold text-ink dark:text-stone-100">
             {row.first_name} {row.last_name}
           </p>
-          <p className="text-xs text-slate-400">{row.gender}</p>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted/60 dark:text-stone-500">{row.gender}</p>
         </div>
       ),
     },
@@ -261,7 +261,7 @@ export const StudentsPage: React.FC = () => {
       key: 'class',
       header: 'Class & Section',
       render: (row) => (
-        <span className="font-medium text-slate-700 dark:text-slate-200">
+        <span className="font-medium text-ink dark:text-stone-200">
           {row.school_class?.name || 'Class'} - Section {row.section?.name || 'A'}
         </span>
       ),
@@ -269,7 +269,7 @@ export const StudentsPage: React.FC = () => {
     {
       key: 'roll_number',
       header: 'Roll No',
-      render: (row) => <span className="text-slate-600 dark:text-slate-400 font-mono">#{row.roll_number}</span>,
+      render: (row) => <span className="text-ink-muted dark:text-stone-400 font-mono">#{row.roll_number}</span>,
     },
     {
       key: 'status',
@@ -284,8 +284,8 @@ export const StudentsPage: React.FC = () => {
       key: 'parent',
       header: 'Parent/Guardian',
       render: (row) => (
-        <span className="text-xs text-slate-600 dark:text-slate-300">
-          {row.parent ? row.parent.father_name || row.parent.mother_name || row.parent.guardian_name : 'N/A'}
+        <span className="text-xs text-ink-muted dark:text-stone-300">
+          {row.parent ? row.parent.father_name || row.parent.mother_name || row.parent.guardian_name : '—'}
         </span>
       ),
     },
@@ -293,14 +293,14 @@ export const StudentsPage: React.FC = () => {
       key: 'actions',
       header: 'Actions',
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setViewingStudent(row)}>
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => setViewingStudent(row)}>
             View
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleOpenEditModal(row)}>
+          <Button variant="outline" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => handleOpenEditModal(row)}>
             Edit
           </Button>
-          <Button variant="danger" size="sm" onClick={() => setDeleteTarget(row)}>
+          <Button variant="danger" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => setDeleteTarget(row)}>
             Delete
           </Button>
         </div>
@@ -309,25 +309,27 @@ export const StudentsPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto bg-[#fcf9f8]">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto bg-paper dark:bg-stone-950 select-none">
       {/* Editorial Header */}
-      <div className="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="border-b border-divider dark:border-stone-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
-            OFFICE OF THE REGISTRAR
+          <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">
+            OFFICE OF THE REGISTRAR // RECORDS INDEX
           </p>
-          <h1 className="text-2xl font-bold font-serif text-brand-500 dark:text-white mt-1">
+          <h1 className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100 mt-1 tracking-tight">
             Student Registry
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-ink-muted dark:text-stone-400 mt-1">
             Institutional database of student records, academic placements, and history ledgers.
           </p>
         </div>
-        <Button onClick={handleOpenCreateModal}>+ Enroll New Student</Button>
+        <Button onClick={handleOpenCreateModal} size="sm">
+          + Enroll New Student
+        </Button>
       </div>
 
       {/* Filter Bar */}
-      <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white rounded-none flex flex-col md:flex-row items-center gap-4">
+      <div className="p-4 border border-divider dark:border-stone-850 bg-paper flex flex-col md:flex-row items-center gap-4">
         <div className="flex-1 w-full">
           <Input
             placeholder="Search registry by name or admission number..."
@@ -339,7 +341,7 @@ export const StudentsPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
           <select
             value={selectedClassFilter}
             onChange={(e) => {
@@ -347,7 +349,7 @@ export const StudentsPage: React.FC = () => {
               setSelectedSectionFilter('');
               setPage(1);
             }}
-            className="px-3 py-1.5 text-xs rounded-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 font-mono"
+            className="px-3 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 font-mono"
           >
             <option value="">ALL_CLASSES</option>
             {classesData?.items?.map((c) => (
@@ -362,7 +364,7 @@ export const StudentsPage: React.FC = () => {
               setPage(1);
             }}
             disabled={!selectedClassFilter}
-            className="px-3 py-1.5 text-xs rounded-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 disabled:opacity-50 font-mono"
+            className="px-3 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 disabled:opacity-40 font-mono"
           >
             <option value="">ALL_SECTIONS</option>
             {filterSectionsData?.items?.map((s: import('@/types/models').Section) => (
@@ -372,8 +374,8 @@ export const StudentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Table & Pagination */}
-      <div className="border border-slate-200 dark:border-slate-800 bg-white p-4 space-y-4 rounded-none">
+      {/* Table & Pagination Grid */}
+      <div className="space-y-4">
         <Table
           columns={studentColumns}
           data={studentsData?.items || []}
@@ -397,11 +399,12 @@ export const StudentsPage: React.FC = () => {
         onClose={() => setIsStudentModalOpen(false)}
         title={editingStudent ? `Edit Student Record — ${editingStudent.admission_number}` : 'Enroll New Student'}
         footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsStudentModalOpen(false)}>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsStudentModalOpen(false)}>
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={handleSubmitStudent}
               isLoading={createStudentMutation.isPending || updateStudentMutation.isPending}
             >
@@ -431,13 +434,13 @@ export const StudentsPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
                 Gender *
               </label>
               <select
                 value={studentForm.gender || 'MALE'}
                 onChange={(e) => setStudentForm({ ...studentForm, gender: e.target.value as any })}
-                className="w-full px-3 py-2 text-sm rounded-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250"
               >
                 <option value="MALE">MALE</option>
                 <option value="FEMALE">FEMALE</option>
@@ -476,13 +479,13 @@ export const StudentsPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
                 School Class *
               </label>
               <select
                 value={studentForm.school_class_id || ''}
                 onChange={(e) => setStudentForm({ ...studentForm, school_class_id: e.target.value, section_id: '' })}
-                className="w-full px-3 py-2 text-sm rounded-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250"
               >
                 <option value="">Select Class</option>
                 {classesData?.items?.map((c) => (
@@ -492,14 +495,14 @@ export const StudentsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
                 Section *
               </label>
               <select
                 value={studentForm.section_id || ''}
                 onChange={(e) => setStudentForm({ ...studentForm, section_id: e.target.value })}
                 disabled={!studentForm.school_class_id}
-                className="w-full px-3 py-2 text-sm rounded-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-50"
+                className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250 disabled:opacity-40"
               >
                 <option value="">Select Section</option>
                 {formSectionsData?.items?.map((s: import('@/types/models').Section) => (
@@ -511,13 +514,13 @@ export const StudentsPage: React.FC = () => {
 
           {!editingStudent && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
                 Link Parent/Guardian *
               </label>
               <select
                 value={studentForm.parent_id || ''}
                 onChange={(e) => setStudentForm({ ...studentForm, parent_id: e.target.value })}
-                className="w-full px-3 py-2 text-sm rounded-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250"
               >
                 <option value="">Select Parent</option>
                 {parentsData?.items?.map((p) => (
@@ -581,71 +584,78 @@ export const StudentsPage: React.FC = () => {
         width="lg"
       >
         {viewingStudent && (
-          <div className="space-y-6 text-slate-800 dark:text-slate-350">
+          <div className="space-y-6 text-ink dark:text-stone-300">
             {/* Academic Placement Dossier Card */}
-            <div className="p-4 border border-slate-200 dark:border-slate-800 bg-[#fcf9f8] rounded-none flex items-center justify-between">
+            <div className="p-4 border border-divider dark:border-stone-800 bg-paper-dim dark:bg-stone-900/60 rounded-none flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">ACADEMIC_PLACEMENT</p>
-                <p className="text-base font-bold font-serif text-slate-900 dark:text-white mt-1">
+                <p className="text-[9px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">ACADEMIC_PLACEMENT</p>
+                <p className="text-sm font-serif font-bold text-brand-500 dark:text-stone-100 mt-1">
                   {viewingStudent.school_class?.name || 'Class'} // Section {viewingStudent.section?.name || 'A'}
                 </p>
-                <p className="text-[10px] font-mono text-slate-500 mt-0.5">ROLL_NO: #{viewingStudent.roll_number}</p>
+                <p className="text-[10px] font-mono text-ink-muted/80 mt-0.5">ROLL_NO: #{viewingStudent.roll_number}</p>
               </div>
-              <Badge variant="success">{viewingStudent.status}</Badge>
+              <Badge variant={viewingStudent.status === 'ACTIVE' ? 'success' : 'default'}>{viewingStudent.status}</Badge>
             </div>
 
             {/* Identity Dossier Section */}
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1.5 mb-2">IDENTITY_RECORD</h3>
-              <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs font-mono">
-                <div><span className="text-slate-400">FULL_NAME:</span> {viewingStudent.first_name} {viewingStudent.last_name || ''}</div>
-                <div><span className="text-slate-400">GENDER:</span> {viewingStudent.gender}</div>
-                <div><span className="text-slate-400">DATE_OF_BIRTH:</span> {viewingStudent.date_of_birth}</div>
-                <div><span className="text-slate-400">ADMISSION_DATE:</span> {viewingStudent.admission_date}</div>
-                <div><span className="text-slate-400">PHONE_CONTACT:</span> {viewingStudent.phone || 'N/A'}</div>
-                <div><span className="text-slate-400">EMAIL_ADDRESS:</span> {viewingStudent.email || 'N/A'}</div>
-                <div className="col-span-2"><span className="text-slate-400">RESIDENCE:</span> {viewingStudent.address_line1}, {viewingStudent.city}, {viewingStudent.state}</div>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                IDENTITY_RECORD
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">FULL_NAME:</span> <span className="font-medium">{viewingStudent.first_name} {viewingStudent.last_name || ''}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">GENDER:</span> <span>{viewingStudent.gender}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">DATE_OF_BIRTH:</span> <span className="font-mono">{viewingStudent.date_of_birth}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">ADMISSION_DATE:</span> <span className="font-mono">{viewingStudent.admission_date}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">PHONE_CONTACT:</span> <span className="font-mono">{viewingStudent.phone || '—'}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EMAIL_ADDRESS:</span> <span className="font-mono">{viewingStudent.email || '—'}</span></div>
+                <div className="md:col-span-2"><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">RESIDENCE:</span> <span>{viewingStudent.address_line1}, {viewingStudent.city}, {viewingStudent.state}</span></div>
               </div>
             </div>
 
             {/* Guardian Dossier Section */}
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1.5 mb-2">GUARDIAN_LINKAGE</h3>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                GUARDIAN_LINKAGE
+              </h3>
               {viewingStudent.parent ? (
-                <div className="p-3 border border-slate-100 dark:border-slate-800 bg-slate-50/50 rounded-none text-xs font-mono space-y-1">
-                  <p><span className="text-slate-400">FATHER_NAME:</span> {viewingStudent.parent.father_name}</p>
-                  {viewingStudent.parent.mother_name && <p><span className="text-slate-400">MOTHER_NAME:</span> {viewingStudent.parent.mother_name}</p>}
-                  <p><span className="text-slate-400">PRIMARY_PHONE:</span> {viewingStudent.parent.primary_phone}</p>
-                  <p><span className="text-slate-400">RELATIONSHIP:</span> {viewingStudent.parent.relationship}</p>
+                <div className="p-3 border border-divider/60 dark:border-stone-800 bg-paper-dim/40 rounded-none text-xs space-y-1">
+                  <p><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">FATHER_NAME:</span> <span className="font-medium">{viewingStudent.parent.father_name}</span></p>
+                  {viewingStudent.parent.mother_name && (
+                    <p><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">MOTHER_NAME:</span> <span className="font-medium">{viewingStudent.parent.mother_name}</span></p>
+                  )}
+                  <p><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">PRIMARY_PHONE:</span> <span className="font-mono">{viewingStudent.parent.primary_phone}</span></p>
+                  <p><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">RELATIONSHIP:</span> <span>{viewingStudent.parent.relationship}</span></p>
                 </div>
               ) : (
-                <p className="text-xs text-slate-400">NO_GUARDIAN_RECORD_LINKED</p>
+                <p className="text-xs text-ink-muted/50 dark:text-stone-600 font-mono">NO_GUARDIAN_RECORD_LINKED</p>
               )}
             </div>
 
             {/* Enrollment History longitudinal ledger */}
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1.5 mb-3">
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-3">
                 LONGITUDINAL_ACADEMIC_LEDGER
               </h3>
               {isHistoryLoading ? (
-                <p className="text-xs text-slate-400">Retrieving ledger timeline...</p>
+                <p className="text-xs text-ink-muted/60 font-mono">Retrieving registry history...</p>
               ) : enrollmentHistoryData && enrollmentHistoryData.length > 0 ? (
-                <div className="space-y-4 relative pl-4 border-l border-slate-200 dark:border-slate-800 font-mono">
+                <div className="space-y-4 relative pl-3 border-l border-brand-500/35 dark:border-stone-850 font-mono text-xs">
                   {enrollmentHistoryData.map((item) => (
                     <div key={item.id} className="relative">
-                      <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-none bg-brand-500" />
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {/* Square timeline anchor */}
+                      <div className="absolute -left-[16px] top-1 w-1.5 h-1.5 rounded-none bg-brand-500" />
+                      <p className="font-semibold text-brand-500 dark:text-stone-250 text-xs">
                         {item.school_class?.name || 'Class'} (Section {item.section?.name || 'A'})
                       </p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
+                      <p className="text-[10px] text-ink-muted mt-0.5">
                         STATUS: {item.enrollment_status} | ROLL_NUM: {item.roll_number}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400">NO_PREVIOUS_LEDGER_ENTRIES_FOUND</p>
+                <p className="text-xs text-ink-muted/50 dark:text-stone-600 font-mono">NO_PREVIOUS_LEDGER_ENTRIES_FOUND</p>
               )}
             </div>
           </div>
@@ -657,7 +667,7 @@ export const StudentsPage: React.FC = () => {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteStudentMutation.mutate(deleteTarget.id)}
-        title={`Soft Delete Student dossier`}
+        title="Soft Delete Student dossier"
         message={`Are you sure you want to soft delete student registry dossier "${deleteTarget?.admission_number}"? This record will be archived.`}
         isLoading={deleteStudentMutation.isPending}
       />

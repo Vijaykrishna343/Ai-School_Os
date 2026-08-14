@@ -38,30 +38,48 @@ export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+    // Backdrop: dark ink overlay, no blur — flat institutional overlay
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-stone-950/70"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {/* Administrative Decision Sheet: flat paper surface, no shadow, thin border */}
       <div
         className={clsx(
-          'w-full bg-white dark:bg-slate-900 rounded-sm shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden transform transition-all',
+          'w-full bg-paper dark:bg-stone-950 border border-divider dark:border-stone-700 overflow-hidden',
+          'shadow-[0_2px_8px_rgba(0,0,0,0.10)]',
           sizes[size]
         )}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+        onClick={(e) => e.stopPropagation()}
       >
+        {/* Header: paper-dim tint, serif title, flat close button */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-[#fcf9f8] dark:bg-slate-900">
-            <h3 className="text-sm font-bold font-serif text-brand-500 dark:text-slate-100">{title}</h3>
+          <div className="flex items-center justify-between px-5 py-3 border-b border-divider dark:border-stone-800 bg-paper-dim dark:bg-stone-900">
+            <h3
+              id="modal-title"
+              className="text-sm font-serif font-semibold text-brand-500 dark:text-stone-100 tracking-tight"
+            >
+              {title}
+            </h3>
             <button
               onClick={onClose}
-              className="p-1 rounded-sm text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-              aria-label="Close modal"
+              className="p-1 text-ink-muted/60 hover:text-ink-muted dark:hover:text-stone-200 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+              aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}
-        <div className="p-6">{children}</div>
+
+        {/* Body: standard padding */}
+        <div className="p-5">{children}</div>
+
+        {/* Footer: dim-paper strip, right-aligned actions, thin top rule */}
         {footer && (
-          <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+          <div className="px-5 py-3 bg-paper-dim dark:bg-stone-900/60 border-t border-divider dark:border-stone-800 flex justify-end gap-2">
             {footer}
           </div>
         )}

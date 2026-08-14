@@ -4,14 +4,15 @@ import { parentsApi } from '@/services/api';
 import { Parent, ParentCreate, ParentUpdate } from '@/types/models';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Table, Column } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
 import { Modal } from '@/components/ui/Modal';
+import { Drawer } from '@/components/ui/Drawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Alert } from '@/components/ui/Alert';
+import { Building2 } from 'lucide-react';
 
 export const ParentsPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -138,11 +139,13 @@ export const ParentsPage: React.FC = () => {
       header: 'Parent / Guardian',
       render: (row) => (
         <div>
-          <p className="font-semibold text-slate-900 dark:text-white">
+          <p className="font-semibold text-ink dark:text-stone-100">
             {row.father_name || row.mother_name || row.guardian_name}
           </p>
           {row.mother_name && row.father_name && (
-            <p className="text-xs text-slate-400">Mother: {row.mother_name}</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-ink-muted/60 dark:text-stone-500">
+              MOTHER: {row.mother_name}
+            </p>
           )}
         </div>
       ),
@@ -150,12 +153,12 @@ export const ParentsPage: React.FC = () => {
     {
       key: 'primary_phone',
       header: 'Primary Phone',
-      render: (row) => <span className="font-mono text-xs text-slate-700 dark:text-slate-300">{row.primary_phone}</span>,
+      render: (row) => <span className="font-mono text-xs text-ink dark:text-stone-300">{row.primary_phone}</span>,
     },
     {
       key: 'city',
       header: 'City & State',
-      render: (row) => <span className="text-xs">{row.city}, {row.state}</span>,
+      render: (row) => <span className="text-xs text-ink-muted dark:text-stone-350">{row.city}, {row.state}</span>,
     },
     {
       key: 'is_active',
@@ -170,14 +173,14 @@ export const ParentsPage: React.FC = () => {
       key: 'actions',
       header: 'Actions',
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setViewingParent(row)}>
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => setViewingParent(row)}>
             Details
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleOpenEditModal(row)}>
+          <Button variant="outline" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => handleOpenEditModal(row)}>
             Edit
           </Button>
-          <Button variant="danger" size="sm" onClick={() => setDeleteTarget(row)}>
+          <Button variant="danger" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => setDeleteTarget(row)}>
             Delete
           </Button>
         </div>
@@ -186,35 +189,41 @@ export const ParentsPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto bg-[#fcf9f8]">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto bg-paper dark:bg-stone-950 select-none">
       {/* Editorial Header */}
-      <div className="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="border-b border-divider dark:border-stone-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
-            OFFICE OF THE REGISTRAR
+          <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">
+            OFFICE OF THE REGISTRAR // FAMILY CONTACT RECORD
           </p>
-          <h1 className="text-2xl font-bold font-serif text-brand-500 dark:text-white mt-1">
+          <h1 className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100 mt-1 tracking-tight">
             Guardian Directory
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-ink-muted dark:text-stone-400 mt-1">
             Directory of parents and guardians linked to enrolled student profiles.
           </p>
         </div>
-        <Button onClick={handleOpenCreateModal}>+ Add Parent / Guardian</Button>
+        <Button onClick={handleOpenCreateModal} size="sm">
+          + Add Parent / Guardian
+        </Button>
       </div>
 
-      <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white rounded-none">
-        <Input
-          placeholder="Search by parent name or phone number..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
+      {/* Search Filter Box */}
+      <div className="p-4 border border-divider dark:border-stone-850 bg-paper flex flex-col md:flex-row items-center gap-4">
+        <div className="flex-1 w-full">
+          <Input
+            placeholder="Search by parent name or phone number..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
       </div>
 
-      <div className="border border-slate-200 dark:border-slate-800 bg-white p-4 space-y-4 rounded-none">
+      {/* Table & Pagination Grid */}
+      <div className="space-y-4">
         <Table
           columns={columns}
           data={parentsData?.items || []}
@@ -238,11 +247,12 @@ export const ParentsPage: React.FC = () => {
         onClose={() => setIsParentModalOpen(false)}
         title={editingParent ? 'Edit Parent Profile' : 'Add New Parent / Guardian'}
         footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsParentModalOpen(false)}>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsParentModalOpen(false)}>
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={handleSubmitParent}
               isLoading={createParentMutation.isPending || updateParentMutation.isPending}
             >
@@ -324,32 +334,88 @@ export const ParentsPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Viewing Parent Modal */}
-      <Modal
+      {/* Guardian Dossier Detail Drawer */}
+      <Drawer
         isOpen={!!viewingParent}
         onClose={() => setViewingParent(null)}
-        title="Parent Details"
-        footer={<Button variant="outline" onClick={() => setViewingParent(null)}>Close</Button>}
+        title="GUARDIAN DOSSIER"
+        subtitle={viewingParent ? `RELATION: ${viewingParent.relationship}` : ''}
+        width="lg"
       >
         {viewingParent && (
-          <div className="space-y-4 text-xs">
-            <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg space-y-1">
-              <p><span className="font-semibold text-slate-500">Father Name:</span> {viewingParent.father_name}</p>
-              {viewingParent.mother_name && <p><span className="font-semibold text-slate-500">Mother Name:</span> {viewingParent.mother_name}</p>}
-              <p><span className="font-semibold text-slate-500">Primary Phone:</span> {viewingParent.primary_phone}</p>
-              <p><span className="font-semibold text-slate-500">Address:</span> {viewingParent.address_line1}, {viewingParent.city}, {viewingParent.state} - {viewingParent.postal_code}</p>
+          <div className="space-y-6 text-ink dark:text-stone-300">
+            {/* Primary Representative context card */}
+            <div className="p-4 border border-divider dark:border-stone-800 bg-paper-dim dark:bg-stone-900/60 rounded-none flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">PRIMARY_REPRESENTATIVE</p>
+                <p className="text-sm font-serif font-bold text-brand-500 dark:text-stone-100 mt-1">
+                  {viewingParent.father_name || viewingParent.mother_name || viewingParent.guardian_name}
+                </p>
+                <p className="text-[10px] font-mono text-ink-muted/80 mt-0.5">RELATION: {viewingParent.relationship}</p>
+              </div>
+              <Badge variant={viewingParent.is_active ? 'success' : 'default'}>
+                {viewingParent.is_active ? 'Active' : 'Inactive'}
+              </Badge>
             </div>
+
+            {/* Identity section */}
+            <div>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                IDENTITY_RECORD
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">FATHER_NAME:</span> <span className="font-medium">{viewingParent.father_name || '—'}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">MOTHER_NAME:</span> <span className="font-medium">{viewingParent.mother_name || '—'}</span></div>
+                {viewingParent.guardian_name && (
+                  <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">GUARDIAN_NAME:</span> <span className="font-medium">{viewingParent.guardian_name}</span></div>
+                )}
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">OCCUPATION:</span> <span>{viewingParent.occupation || '—'}</span></div>
+              </div>
+            </div>
+
+            {/* Contact registry section */}
+            <div>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                CONTACT_REGISTER
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">PRIMARY_PHONE:</span> <span className="font-mono">{viewingParent.primary_phone}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">SECONDARY_PHONE:</span> <span className="font-mono">{viewingParent.secondary_phone || '—'}</span></div>
+                <div className="md:col-span-2"><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EMAIL_ADDRESS:</span> <span className="font-mono">{viewingParent.email || '—'}</span></div>
+                <div className="md:col-span-2"><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">POSTAL_RESIDENCE:</span> <span>{viewingParent.address_line1}, {viewingParent.city}, {viewingParent.state} - {viewingParent.postal_code}</span></div>
+              </div>
+            </div>
+
+            {/* Associated children list */}
+            {viewingParent.students && viewingParent.students.length > 0 && (
+              <div>
+                <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                  LINKED_STUDENT_RECORDS
+                </h3>
+                <div className="space-y-2">
+                  {viewingParent.students.map((student) => (
+                    <div key={student.id} className="p-2.5 border border-divider/60 bg-paper-dim/40 rounded-none text-xs flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold text-ink dark:text-stone-100">{student.first_name} {student.last_name}</p>
+                        <p className="text-[9px] font-mono text-ink-muted/80 uppercase">ADM_NO: {student.admission_number}</p>
+                      </div>
+                      <Badge variant="default">Section {student.section?.name || 'A'}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
-      </Modal>
+      </Drawer>
 
-      {/* Delete Confirm */}
+      {/* Delete Confirm dialog */}
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteParentMutation.mutate(deleteTarget.id)}
-        title={`Soft Delete Parent Profile`}
-        message={`Are you sure you want to delete parent "${deleteTarget?.father_name}"?`}
+        title="Soft Delete Parent Profile"
+        message={`Are you sure you want to delete parent registry profile "${deleteTarget?.father_name}"?`}
         isLoading={deleteParentMutation.isPending}
       />
     </div>

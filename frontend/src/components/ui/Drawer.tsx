@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 
 export interface DrawerProps {
   isOpen: boolean;
@@ -39,35 +40,46 @@ export const Drawer: React.FC<DrawerProps> = ({
   }[width];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true">
+      {/* Backdrop: dark ink overlay, no blur */}
       <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-stone-950/60 transition-opacity"
         onClick={onClose}
+        aria-hidden="true"
       />
 
+      {/* Dossier Panel: slides from right, plain vertical border, no shadow */}
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
-        <div className={`w-screen ${widthClasses} bg-white dark:bg-slate-950 shadow-sm border-l border-slate-200 dark:border-slate-800 flex flex-col`}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-[#fcf9f8] dark:bg-slate-900">
-            <div>
-              <h2 className="text-sm font-bold font-serif text-brand-500 dark:text-white">{title}</h2>
+        <div
+          className={`w-screen ${widthClasses} bg-paper dark:bg-stone-950 border-l border-divider dark:border-stone-800 flex flex-col`}
+        >
+          {/* Dossier Header: paper-dim, serif title, mono subtitle */}
+          <div className="flex items-start justify-between px-5 py-4 border-b border-divider dark:border-stone-800 bg-paper-dim dark:bg-stone-900 shrink-0">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-serif font-semibold text-brand-500 dark:text-stone-100 tracking-tight leading-tight">
+                {title}
+              </h2>
               {subtitle && (
-                <p className="text-[10px] uppercase font-mono tracking-wider text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 mt-0.5 leading-none">
+                  {subtitle}
+                </p>
               )}
             </div>
             <button
               onClick={onClose}
-              className="p-1 rounded-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
+              className="ml-4 p-1 text-ink-muted/60 hover:text-ink-muted dark:hover:text-stone-200 shrink-0 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+              aria-label="Close dossier"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6">{children}</div>
+          {/* Dossier Body: scrollable content area */}
+          <div className="flex-1 overflow-y-auto p-5">{children}</div>
 
+          {/* Dossier Footer: dim tint, thin top rule */}
           {footer && (
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-[#fcf9f8] dark:bg-slate-900/50">
+            <div className="px-5 py-4 border-t border-divider dark:border-stone-800 bg-paper-dim dark:bg-stone-900/50 shrink-0">
               {footer}
             </div>
           )}

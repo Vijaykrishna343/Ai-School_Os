@@ -23,26 +23,32 @@ export default {
         },
         paper: {
           DEFAULT: '#fcf9f8',
+          dim: '#f4f1ef',
           dark: '#1c1917',
         },
         ink: {
           muted: '#625b57',
-          DEFAULT: '#1c1917', // warm black / deep near-black ink
+          DEFAULT: '#1c1917', // warm black / carbon ink
           dark: '#0c0a09',
+        },
+        divider: {
+          DEFAULT: '#e5e2da',
+          warm: '#e5e2da',
         },
       },
       fontFamily: {
         serif: ['"Source Serif 4"', 'Georgia', 'serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Hanken Grotesk"', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['"Geist Mono"', 'monospace'],
       },
       borderRadius: {
         none: '0px',
         xs: '1px',
         sm: '2px',
-        DEFAULT: '3px',
+        DEFAULT: '2px',
         md: '4px',
-        lg: '6px',
-        xl: '8px',
+        lg: '4px',
+        xl: '4px',
       },
     },
   },

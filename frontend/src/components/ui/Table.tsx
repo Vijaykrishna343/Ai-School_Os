@@ -21,6 +21,22 @@ export interface TableProps<T> {
   className?: string;
 }
 
+const TableHead = ({ columns }: { columns: Column<unknown>[] }) => (
+  <thead>
+    <tr className="bg-paper-dim dark:bg-stone-900/80 border-b border-divider dark:border-stone-800">
+      {columns.map((col) => (
+        <th
+          key={col.key}
+          scope="col"
+          className={`px-3 py-2 text-left text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-500 whitespace-nowrap ${col.headerClassName || ''}`}
+        >
+          {col.header}
+        </th>
+      ))}
+    </tr>
+  </thead>
+);
+
 export function Table<T>({
   columns,
   data,
@@ -33,23 +49,15 @@ export function Table<T>({
 }: TableProps<T>) {
   if (isLoading) {
     return (
-      <div className="w-full overflow-x-auto rounded-none border border-slate-200 dark:border-slate-800">
-        <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
-          <thead className="bg-[#fcf9f8] text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-900/50 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-            <tr>
-              {columns.map((col) => (
-                <th key={col.key} className={`px-3 py-2 ${col.headerClassName || ''}`}>
-                  {col.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-            {Array.from({ length: 5 }).map((_, idx) => (
-              <tr key={idx}>
+      <div className={`w-full overflow-x-auto border border-divider dark:border-stone-800 ${className}`}>
+        <table className="w-full text-left min-w-full">
+          <TableHead columns={columns as Column<unknown>[]} />
+          <tbody className="bg-paper dark:bg-stone-950">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <tr key={idx} className="border-b border-divider/60 dark:border-stone-800/60">
                 {columns.map((col) => (
                   <td key={col.key} className="px-3 py-2">
-                    <Skeleton className="h-3 w-full max-w-[100px]" />
+                    <Skeleton className="h-3 w-full max-w-[140px]" />
                   </td>
                 ))}
               </tr>
@@ -62,37 +70,32 @@ export function Table<T>({
 
   if (!data || data.length === 0) {
     return (
-      <div className="rounded-none border border-slate-200 p-6 dark:border-slate-800 bg-white">
-        <EmptyState title={emptyText} description="There is no data to display right now." icon={emptyIcon} />
+      <div className={`border border-divider dark:border-stone-800 bg-paper dark:bg-stone-950 ${className}`}>
+        <EmptyState title={emptyText} description="No records match the current registry filters." icon={emptyIcon} />
       </div>
     );
   }
 
   return (
-    <div className={`w-full overflow-x-auto rounded-none border border-slate-200 dark:border-slate-800 ${className}`}>
-      <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
-        <thead className="bg-[#fcf9f8] text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-900/50 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-          <tr>
-            {columns.map((col) => (
-              <th key={col.key} className={`px-3 py-2 ${col.headerClassName || ''}`}>
-                {col.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-150 bg-white dark:divide-slate-800 dark:bg-slate-950">
+    <div className={`w-full overflow-x-auto border border-divider dark:border-stone-800 ${className}`}>
+      <table className="w-full text-left min-w-full">
+        <TableHead columns={columns as Column<unknown>[]} />
+        <tbody className="bg-paper dark:bg-stone-950 divide-y divide-divider/60 dark:divide-stone-800/60">
           {data.map((row, idx) => {
             const key = rowKey ? rowKey(row, idx) : ((row as any).id || idx.toString());
             return (
               <tr
                 key={key}
                 onClick={() => onRowClick?.(row)}
-                className={`transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-900/50 ${
+                className={`transition-colors hover:bg-paper-dim/70 dark:hover:bg-stone-900/60 ${
                   onRowClick ? 'cursor-pointer' : ''
                 }`}
               >
                 {columns.map((col) => (
-                  <td key={col.key} className={`px-3 py-2 whitespace-nowrap ${col.className || ''}`}>
+                  <td
+                    key={col.key}
+                    className={`px-3 py-2 text-xs text-ink dark:text-stone-300 whitespace-nowrap ${col.className || ''}`}
+                  >
                     {col.render ? col.render(row, idx) : (row as any)[col.key] ?? '—'}
                   </td>
                 ))}
