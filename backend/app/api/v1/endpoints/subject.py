@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_subject_service
 from app.identity.dependencies.require_permission import require_permission
+from app.identity.models import IdentityUser
 from app.models.subject.subject import Subject
 from app.schemas.subject import (
     SubjectCreate,
@@ -29,19 +30,23 @@ router = APIRouter()
     response_model=SubjectResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create Subject",
-    dependencies=[Depends(require_permission("subject.create"))],
 )
 def create_subject(
     subject: SubjectCreate,
+    current_user: IdentityUser = Depends(require_permission("subject.create")),
     db: Session = Depends(get_db),
     service: SubjectService = Depends(get_subject_service),
 ) -> Subject:
     """
     Create a new subject.
     """
+    # Enforce authoritative tenant boundary
+    subject.school_id = current_user.school_id
+
     return service.create_subject(
         db=db,
         subject_data=subject,
+        current_school_id=current_user.school_id,
     )
 
 
@@ -49,16 +54,15 @@ def create_subject(
     "",
     response_model=SubjectListResponse,
     summary="Get Subjects",
-    dependencies=[Depends(require_permission("subject.view"))],
 )
 def get_subjects(
-    school_id: UUID | None = Query(default=None),
     subject_code: str | None = Query(default=None),
     subject_name: str | None = Query(default=None),
     status: str | None = Query(default=None),
     is_optional: bool | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
+    current_user: IdentityUser = Depends(require_permission("subject.view")),
     db: Session = Depends(get_db),
     service: SubjectService = Depends(get_subject_service),
 ) -> SubjectListResponse:
@@ -66,7 +70,7 @@ def get_subjects(
     Retrieve paginated subjects matching query parameters.
     """
     filters = SubjectFilter(
-        school_id=school_id,
+        school_id=current_user.school_id,
         subject_code=subject_code,
         subject_name=subject_name,
         status=status,
@@ -85,10 +89,10 @@ def get_subjects(
     "/{subject_id}",
     response_model=SubjectResponse,
     summary="Get Subject by ID",
-    dependencies=[Depends(require_permission("subject.view"))],
 )
 def get_subject(
     subject_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("subject.view")),
     db: Session = Depends(get_db),
     service: SubjectService = Depends(get_subject_service),
 ) -> Subject:
@@ -98,6 +102,7 @@ def get_subject(
     return service.get_subject(
         db=db,
         subject_id=subject_id,
+        current_school_id=current_user.school_id,
     )
 
 
@@ -105,11 +110,11 @@ def get_subject(
     "/{subject_id}",
     response_model=SubjectResponse,
     summary="Update Subject",
-    dependencies=[Depends(require_permission("subject.update"))],
 )
 def update_subject(
     subject_id: UUID,
     subject: SubjectUpdate,
+    current_user: IdentityUser = Depends(require_permission("subject.update")),
     db: Session = Depends(get_db),
     service: SubjectService = Depends(get_subject_service),
 ) -> Subject:
@@ -120,6 +125,7 @@ def update_subject(
         db=db,
         subject_id=subject_id,
         subject_data=subject,
+        current_school_id=current_user.school_id,
     )
 
 
@@ -127,10 +133,10 @@ def update_subject(
     "/{subject_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete Subject",
-    dependencies=[Depends(require_permission("subject.delete"))],
 )
 def delete_subject(
     subject_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("subject.delete")),
     db: Session = Depends(get_db),
     service: SubjectService = Depends(get_subject_service),
 ) -> None:
@@ -140,4 +146,5 @@ def delete_subject(
     service.delete_subject(
         db=db,
         subject_id=subject_id,
+        current_school_id=current_user.school_id,
     )

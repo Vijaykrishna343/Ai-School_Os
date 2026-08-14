@@ -45,6 +45,7 @@ class ParentService:
         self,
         db: Session,
         parent_data: ParentCreate,
+        current_school_id: UUID | None = None,
     ) -> Parent:
         """
         Create a new parent record after validating school existence and phone uniqueness.
@@ -55,6 +56,9 @@ class ParentService:
             parent_data.guardian_name or "",
             parent_data.school_id,
         )
+
+        if current_school_id is not None and parent_data.school_id != current_school_id:
+            raise NotFoundException("School", str(parent_data.school_id))
 
         school = self.school_repository.get(
             db,
@@ -98,13 +102,14 @@ class ParentService:
         self,
         db: Session,
         parent_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> Parent:
         """
         Retrieve a parent record by ID or raise NotFoundException.
         """
         parent = self.repository.get(db, parent_id)
 
-        if parent is None:
+        if parent is None or (current_school_id is not None and parent.school_id != current_school_id):
             logger.warning("Validation failure: Parent ID '%s' not found", parent_id)
             raise NotFoundException(
                 "Parent",
@@ -116,10 +121,19 @@ class ParentService:
     def get_all_parents(
         self,
         db: Session,
+        current_school_id: UUID | None = None,
     ) -> list[Parent]:
         """
         Retrieve all active parent records.
         """
+        if current_school_id is not None:
+            from sqlalchemy import select
+            return list(db.scalars(
+                select(Parent).where(
+                    Parent.school_id == current_school_id,
+                    Parent.is_deleted.is_(False),
+                )
+            ))
         return self.repository.get_all(db)
 
     # ------------------------------------------------------------------
@@ -131,12 +145,13 @@ class ParentService:
         db: Session,
         parent_id: UUID,
         parent_data: ParentUpdate,
+        current_school_id: UUID | None = None,
     ) -> Parent:
         """
         Update an existing parent record.
         """
         logger.info("Updating parent ID: %s", parent_id)
-        parent = self.get_parent(db, parent_id)
+        parent = self.get_parent(db, parent_id, current_school_id)
 
         update_data = parent_data.model_dump(
             exclude_unset=True,
@@ -160,12 +175,13 @@ class ParentService:
         self,
         db: Session,
         parent_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> None:
         """
         Soft delete a parent record.
         """
         logger.info("Soft deleting parent ID: %s", parent_id)
-        parent = self.get_parent(db, parent_id)
+        parent = self.get_parent(db, parent_id, current_school_id)
 
         self.repository.delete(
             db,

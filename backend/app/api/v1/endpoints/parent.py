@@ -17,6 +17,7 @@ from app.dependencies import (
     get_parent_service,
 )
 from app.identity.dependencies.require_permission import require_permission
+from app.identity.models import IdentityUser
 from app.schemas.parent import (
     ParentCreate,
     ParentListResponse,
@@ -33,17 +34,20 @@ router = APIRouter()
     response_model=dict,
     status_code=HTTPStatus.CREATED,
     summary="Create Parent",
-    dependencies=[Depends(require_permission("parent.create"))],
 )
 def create_parent(
     parent: ParentCreate,
+    current_user: IdentityUser = Depends(require_permission("parent.create")),
     db: Session = Depends(get_db),
     service: ParentService = Depends(get_parent_service),
 ) -> dict[str, object]:
     """
     Create a new parent record.
     """
-    created_parent = service.create_parent(db, parent)
+    # Enforce authoritative tenant boundary
+    parent.school_id = current_user.school_id
+
+    created_parent = service.create_parent(db, parent, current_school_id=current_user.school_id)
 
     return ApiResponse.success(
         message="Parent created successfully.",
@@ -57,18 +61,18 @@ def create_parent(
     "/",
     response_model=dict,
     summary="Get All Parents",
-    dependencies=[Depends(require_permission("parent.view"))],
 )
 def get_all_parents(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
+    current_user: IdentityUser = Depends(require_permission("parent.view")),
     db: Session = Depends(get_db),
     service: ParentService = Depends(get_parent_service),
 ) -> dict[str, object]:
     """
     Get paginated list of active parents.
     """
-    parents = service.get_all_parents(db)
+    parents = service.get_all_parents(db, current_school_id=current_user.school_id)
     total = len(parents)
 
     start = (page - 1) * page_size
@@ -97,17 +101,17 @@ def get_all_parents(
     "/{parent_id}",
     response_model=dict,
     summary="Get Parent",
-    dependencies=[Depends(require_permission("parent.view"))],
 )
 def get_parent(
     parent_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("parent.view")),
     db: Session = Depends(get_db),
     service: ParentService = Depends(get_parent_service),
 ) -> dict[str, object]:
     """
     Retrieve a parent by ID.
     """
-    parent = service.get_parent(db, parent_id)
+    parent = service.get_parent(db, parent_id, current_school_id=current_user.school_id)
 
     return ApiResponse.success(
         message="Parent fetched successfully.",
@@ -121,11 +125,11 @@ def get_parent(
     "/{parent_id}",
     response_model=dict,
     summary="Update Parent",
-    dependencies=[Depends(require_permission("parent.update"))],
 )
 def update_parent(
     parent_id: UUID,
     parent: ParentUpdate,
+    current_user: IdentityUser = Depends(require_permission("parent.update")),
     db: Session = Depends(get_db),
     service: ParentService = Depends(get_parent_service),
 ) -> dict[str, object]:
@@ -136,6 +140,7 @@ def update_parent(
         db,
         parent_id,
         parent,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -150,10 +155,10 @@ def update_parent(
     "/{parent_id}",
     response_model=dict,
     summary="Delete Parent",
-    dependencies=[Depends(require_permission("parent.delete"))],
 )
 def delete_parent(
     parent_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("parent.delete")),
     db: Session = Depends(get_db),
     service: ParentService = Depends(get_parent_service),
 ) -> dict[str, object]:
@@ -163,6 +168,7 @@ def delete_parent(
     service.delete_parent(
         db,
         parent_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(

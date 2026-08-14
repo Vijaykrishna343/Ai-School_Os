@@ -67,10 +67,13 @@ class TeacherService(
         self,
         db: Session,
         school_id: UUID,
+        current_school_id: UUID | None = None,
     ):
         """
         Validate school existence.
         """
+        if current_school_id is not None and school_id != current_school_id:
+            raise NotFoundException("School", str(school_id))
 
         school = self.school_repository.get(
             db,
@@ -90,6 +93,7 @@ class TeacherService(
         self,
         db: Session,
         teacher_id: UUID,
+        school_id: UUID | None = None,
     ) -> Teacher:
         """
         Get a teacher by ID or raise NotFoundException.
@@ -100,7 +104,7 @@ class TeacherService(
             teacher_id,
         )
 
-        if teacher is None:
+        if teacher is None or (school_id is not None and teacher.school_id != school_id):
             logger.warning("Validation failure: Teacher ID '%s' not found", teacher_id)
             raise NotFoundException(
                 "Teacher",
@@ -221,6 +225,7 @@ class TeacherService(
         self,
         db: Session,
         teacher_data: TeacherCreate,
+        current_school_id: UUID | None = None,
     ) -> TeacherResponse:
         """
         Create a new teacher.
@@ -235,6 +240,7 @@ class TeacherService(
         self._validate_school(
             db,
             teacher_data.school_id,
+            current_school_id,
         )
 
         self._validate_email(
@@ -305,6 +311,7 @@ class TeacherService(
         self,
         db: Session,
         teacher_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> TeacherResponse:
         """
         Get a teacher by ID.
@@ -312,6 +319,7 @@ class TeacherService(
         teacher = self._get_teacher_or_raise(
             db,
             teacher_id,
+            current_school_id,
         )
 
         return TeacherResponse.model_validate(
@@ -326,10 +334,14 @@ class TeacherService(
         self,
         db: Session,
         filters: TeacherFilter,
+        current_school_id: UUID | None = None,
     ) -> TeacherListResponse:
         """
         Get paginated teachers with filters.
         """
+        if current_school_id is not None:
+            filters.school_id = current_school_id
+
         teachers, total = self.repository.get_teachers(
             db=db,
             school_id=filters.school_id,
@@ -396,6 +408,7 @@ class TeacherService(
         db: Session,
         teacher_id: UUID,
         teacher_data: TeacherUpdate,
+        current_school_id: UUID | None = None,
     ) -> TeacherResponse:
         """
         Update an existing teacher.
@@ -404,6 +417,7 @@ class TeacherService(
         teacher = self._get_teacher_or_raise(
             db,
             teacher_id,
+            current_school_id,
         )
 
         self._validate_email(
@@ -443,6 +457,7 @@ class TeacherService(
         self,
         db: Session,
         teacher_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> bool:
         """
         Soft delete a teacher.
@@ -451,6 +466,7 @@ class TeacherService(
         teacher = self._get_teacher_or_raise(
             db,
             teacher_id,
+            current_school_id,
         )
 
         self.repository.delete(

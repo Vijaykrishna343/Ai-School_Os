@@ -8,6 +8,7 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
+    Body,
     Depends,
     Path,
 )
@@ -23,6 +24,7 @@ from app.dependencies.database import (
     get_db,
 )
 from app.identity.dependencies.require_permission import require_permission
+from app.identity.models import IdentityUser
 from app.schemas.student.student_schema import (
     StudentCreate,
     StudentFilter,
@@ -40,19 +42,23 @@ router = APIRouter()
     "",
     response_model=dict,
     summary="Create Student",
-    dependencies=[Depends(require_permission("student.create"))],
 )
 def create_student(
     student: StudentCreate,
+    current_user: IdentityUser = Depends(require_permission("student.create")),
     db: Session = Depends(get_db),
     service: StudentService = Depends(get_student_service),
 ) -> dict[str, object]:
     """
     Create a new student.
     """
+    # Enforce authoritative tenant boundary
+    student.school_id = current_user.school_id
+
     created_student = service.create_student(
         db=db,
         student_data=student,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -69,19 +75,23 @@ def create_student(
     "",
     response_model=dict,
     summary="Get Students",
-    dependencies=[Depends(require_permission("student.view"))],
 )
 def get_students(
     filters: StudentFilter = Depends(),
+    current_user: IdentityUser = Depends(require_permission("student.view")),
     db: Session = Depends(get_db),
     service: StudentService = Depends(get_student_service),
 ) -> dict[str, object]:
     """
     Retrieve students with filtering and pagination.
     """
+    # Enforce authoritative tenant boundary
+    filters.school_id = current_user.school_id
+
     result = service.get_students(
         db=db,
         filters=filters,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -94,13 +104,13 @@ def get_students(
     "/{student_id}",
     response_model=dict,
     summary="Get Student by ID",
-    dependencies=[Depends(require_permission("student.view"))],
 )
 def get_student(
     student_id: UUID = Path(
         ...,
         description="Student ID",
     ),
+    current_user: IdentityUser = Depends(require_permission("student.view")),
     db: Session = Depends(get_db),
     service: StudentService = Depends(get_student_service),
 ) -> dict[str, object]:
@@ -110,6 +120,7 @@ def get_student(
     student = service.get_student(
         db=db,
         student_id=student_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -126,14 +137,14 @@ def get_student(
     "/{student_id}",
     response_model=dict,
     summary="Update Student",
-    dependencies=[Depends(require_permission("student.update"))],
 )
 def update_student(
     student_id: UUID = Path(
         ...,
         description="Student ID",
     ),
-    student: StudentUpdate = ...,
+    student: StudentUpdate = Body(...),
+    current_user: IdentityUser = Depends(require_permission("student.update")),
     db: Session = Depends(get_db),
     service: StudentService = Depends(get_student_service),
 ) -> dict[str, object]:
@@ -144,6 +155,7 @@ def update_student(
         db=db,
         student_id=student_id,
         student_data=student,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -160,13 +172,13 @@ def update_student(
     "/{student_id}",
     response_model=dict,
     summary="Delete Student",
-    dependencies=[Depends(require_permission("student.delete"))],
 )
 def delete_student(
     student_id: UUID = Path(
         ...,
         description="Student ID",
     ),
+    current_user: IdentityUser = Depends(require_permission("student.delete")),
     db: Session = Depends(get_db),
     service: StudentService = Depends(get_student_service),
 ) -> dict[str, object]:
@@ -176,6 +188,7 @@ def delete_student(
     service.delete_student(
         db=db,
         student_id=student_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(

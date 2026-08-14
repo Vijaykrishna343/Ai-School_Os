@@ -64,7 +64,7 @@ def get_exam_schedules(
     """
     Retrieve paginated exam schedules matching query parameters.
     """
-    effective_school_id = school_id or current_user.school_id
+    effective_school_id = current_user.school_id
     filters = ExamScheduleFilter(
         exam_id=exam_id,
         school_id=effective_school_id,

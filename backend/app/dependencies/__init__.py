@@ -56,9 +56,11 @@ from .services import (
     get_timetable_entry_service,
     get_timetable_conflict_service,
     get_teacher_substitution_service,
+    get_dashboard_service,
 )
 
 __all__ = [
+
     # Database
     "get_db",
     # Repository dependencies
@@ -117,4 +119,5 @@ __all__ = [
     "get_timetable_entry_service",
     "get_timetable_conflict_service",
     "get_teacher_substitution_service",
+    "get_dashboard_service",
 ]

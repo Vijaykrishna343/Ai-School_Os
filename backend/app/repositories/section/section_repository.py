@@ -25,6 +25,27 @@ class SectionRepository(BaseRepository[Section]):
     # Read / Query Methods
     # ------------------------------------------------------------------
 
+    def get_by_id_and_school(
+        self,
+        db: Session,
+        section_id: UUID,
+        school_id: UUID,
+    ) -> Section | None:
+        """
+        Get active section by ID and school ID of its parent class.
+        """
+        from app.models.school_class import SchoolClass
+        return db.scalar(
+            select(Section)
+            .join(SchoolClass, Section.school_class_id == SchoolClass.id)
+            .where(
+                Section.id == section_id,
+                SchoolClass.school_id == school_id,
+                Section.is_deleted.is_(False),
+                SchoolClass.is_deleted.is_(False),
+            )
+        )
+
     def get_by_name(
         self,
         db: Session,

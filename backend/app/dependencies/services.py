@@ -145,6 +145,11 @@ from app.services.teacher_substitution_service import (
     TeacherSubstitutionService,
     teacher_substitution_service,
 )
+from app.services.dashboard_service import (
+    DashboardService,
+    dashboard_service,
+)
+
 
 
 # ------------------------------------------------------------------
@@ -426,3 +431,8 @@ def get_teacher_substitution_repository():
 def get_teacher_substitution_service() -> TeacherSubstitutionService:
     """Return the TeacherSubstitutionService singleton."""
     return teacher_substitution_service
+
+
+def get_dashboard_service() -> DashboardService:
+    """Return the DashboardService singleton."""
+    return dashboard_service

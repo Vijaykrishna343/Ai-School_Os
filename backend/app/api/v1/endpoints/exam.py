@@ -64,7 +64,7 @@ def get_exams(
     """
     Retrieve paginated exams matching query parameters, scoped to user's school if applicable.
     """
-    effective_school_id = school_id or current_user.school_id
+    effective_school_id = current_user.school_id
     filters = ExamFilter(
         school_id=effective_school_id,
         academic_year_id=academic_year_id,

@@ -16,6 +16,7 @@ from app.api.section.section_dependency import (
 from app.common.responses.api_response import ApiResponse
 from app.dependencies.database import get_db
 from app.identity.dependencies.require_permission import require_permission
+from app.identity.models import IdentityUser
 from app.schemas.section.section import (
     SectionCreate,
     SectionListResponse,
@@ -31,17 +32,21 @@ router = APIRouter()
     "",
     response_model=dict,
     summary="Create Section",
-    dependencies=[Depends(require_permission("section.create"))],
 )
 def create_section(
     section: SectionCreate,
+    current_user: IdentityUser = Depends(require_permission("section.create")),
     db: Session = Depends(get_db),
     service: SectionService = Depends(get_section_service),
 ) -> dict[str, object]:
     """
     Create a new section.
     """
-    created_section = service.create_section(db, section)
+    created_section = service.create_section(
+        db,
+        section,
+        current_school_id=current_user.school_id,
+    )
 
     return ApiResponse.success(
         message="Section created successfully.",
@@ -55,12 +60,12 @@ def create_section(
     "/class/{school_class_id}",
     response_model=dict,
     summary="Get Sections By Class",
-    dependencies=[Depends(require_permission("section.view"))],
 )
 def get_sections(
     school_class_id: UUID,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
+    current_user: IdentityUser = Depends(require_permission("section.view")),
     db: Session = Depends(get_db),
     service: SectionService = Depends(get_section_service),
 ) -> dict[str, object]:
@@ -70,6 +75,7 @@ def get_sections(
     sections = service.get_sections(
         db,
         school_class_id,
+        current_school_id=current_user.school_id,
     )
     total = len(sections)
 
@@ -99,10 +105,10 @@ def get_sections(
     "/{section_id}",
     response_model=dict,
     summary="Get Section",
-    dependencies=[Depends(require_permission("section.view"))],
 )
 def get_section(
     section_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("section.view")),
     db: Session = Depends(get_db),
     service: SectionService = Depends(get_section_service),
 ) -> dict[str, object]:
@@ -112,6 +118,7 @@ def get_section(
     section = service.get_section(
         db,
         section_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -126,11 +133,11 @@ def get_section(
     "/{section_id}",
     response_model=dict,
     summary="Update Section",
-    dependencies=[Depends(require_permission("section.update"))],
 )
 def update_section(
     section_id: UUID,
     section: SectionUpdate,
+    current_user: IdentityUser = Depends(require_permission("section.update")),
     db: Session = Depends(get_db),
     service: SectionService = Depends(get_section_service),
 ) -> dict[str, object]:
@@ -141,6 +148,7 @@ def update_section(
         db,
         section_id,
         section,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -155,10 +163,10 @@ def update_section(
     "/{section_id}",
     response_model=dict,
     summary="Delete Section",
-    dependencies=[Depends(require_permission("section.delete"))],
 )
 def delete_section(
     section_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("section.delete")),
     db: Session = Depends(get_db),
     service: SectionService = Depends(get_section_service),
 ) -> dict[str, object]:
@@ -168,6 +176,7 @@ def delete_section(
     service.delete_section(
         db,
         section_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(

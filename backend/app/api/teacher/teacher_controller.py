@@ -24,6 +24,7 @@ from app.dependencies.database import (
     get_db,
 )
 from app.identity.dependencies.require_permission import require_permission
+from app.identity.models import IdentityUser
 from app.schemas.teacher import (
     TeacherCreate,
     TeacherFilter,
@@ -40,19 +41,23 @@ router = APIRouter()
     "",
     response_model=dict,
     summary="Create Teacher",
-    dependencies=[Depends(require_permission("teacher.create"))],
 )
 def create_teacher(
     teacher: TeacherCreate,
+    current_user: IdentityUser = Depends(require_permission("teacher.create")),
     db: Session = Depends(get_db),
     service: TeacherService = Depends(get_teacher_service),
 ) -> dict[str, object]:
     """
     Create a new teacher.
     """
+    # Enforce authoritative tenant boundary
+    teacher.school_id = current_user.school_id
+
     created_teacher = service.create_teacher(
         db=db,
         teacher_data=teacher,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -65,19 +70,23 @@ def create_teacher(
     "",
     response_model=dict,
     summary="Get Teachers",
-    dependencies=[Depends(require_permission("teacher.view"))],
 )
 def get_teachers(
     filters: TeacherFilter = Depends(),
+    current_user: IdentityUser = Depends(require_permission("teacher.view")),
     db: Session = Depends(get_db),
     service: TeacherService = Depends(get_teacher_service),
 ) -> dict[str, object]:
     """
     Retrieve teachers with filtering and pagination.
     """
+    # Enforce authoritative tenant boundary
+    filters.school_id = current_user.school_id
+
     result = service.get_teachers(
         db=db,
         filters=filters,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -90,13 +99,13 @@ def get_teachers(
     "/{teacher_id}",
     response_model=dict,
     summary="Get Teacher by ID",
-    dependencies=[Depends(require_permission("teacher.view"))],
 )
 def get_teacher(
     teacher_id: UUID = Path(
         ...,
         description="Teacher ID",
     ),
+    current_user: IdentityUser = Depends(require_permission("teacher.view")),
     db: Session = Depends(get_db),
     service: TeacherService = Depends(get_teacher_service),
 ) -> dict[str, object]:
@@ -106,6 +115,7 @@ def get_teacher(
     teacher = service.get_teacher(
         db=db,
         teacher_id=teacher_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -118,7 +128,6 @@ def get_teacher(
     "/{teacher_id}",
     response_model=dict,
     summary="Update Teacher",
-    dependencies=[Depends(require_permission("teacher.update"))],
 )
 def update_teacher(
     teacher: TeacherUpdate = Body(...),
@@ -126,6 +135,7 @@ def update_teacher(
         ...,
         description="Teacher ID",
     ),
+    current_user: IdentityUser = Depends(require_permission("teacher.update")),
     db: Session = Depends(get_db),
     service: TeacherService = Depends(get_teacher_service),
 ) -> dict[str, object]:
@@ -136,6 +146,7 @@ def update_teacher(
         db=db,
         teacher_id=teacher_id,
         teacher_data=teacher,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -148,13 +159,13 @@ def update_teacher(
     "/{teacher_id}",
     response_model=dict,
     summary="Delete Teacher",
-    dependencies=[Depends(require_permission("teacher.delete"))],
 )
 def delete_teacher(
     teacher_id: UUID = Path(
         ...,
         description="Teacher ID",
     ),
+    current_user: IdentityUser = Depends(require_permission("teacher.delete")),
     db: Session = Depends(get_db),
     service: TeacherService = Depends(get_teacher_service),
 ) -> dict[str, object]:
@@ -164,6 +175,7 @@ def delete_teacher(
     service.delete_teacher(
         db=db,
         teacher_id=teacher_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(

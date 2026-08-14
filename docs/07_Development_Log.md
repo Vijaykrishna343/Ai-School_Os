@@ -33,3 +33,15 @@
 ### Phase 4C.6 & 4C.7: Test Expansion & Documentation Restoration
 - **Completed**: Added regression test suites: `test_db_hardening.py`, `test_legacy_promotion_hardening.py`, `test_production_config.py`.
 - **Completed**: Restored all empty documentation files in `docs/` and `backend/README.md`.
+
+### Phase 5.3: Academic Progression Workspace & Rollover Console
+- **Completed**: Exposed class-level rules registry matrix mapping (`/api/v1/progression-matrix`).
+- **Completed**: Implemented read-only prospective dry-run preview panel showing decision outcomes (PROMOTED, RETAINED, GRADUATED, BLOCKED, WARNINGS).
+- **Completed**: Integrated secure, multi-step rollover verification dialog requiring SHA-256 plan hash input.
+- **Completed**: Enforced header-based `Idempotency-Key` tracking and stale plan validation.
+- **Completed**: Created frontend unit test suites in `progression.test.tsx` verifying validation alerts, permission controls, and workflow execution.
+
+### Phase 5 — Critical Tenant Isolation Remediation
+- **Completed**: Patched multi-tenancy security checks (`SEC-IDOR-01` to `SEC-IDOR-04`) for Student, Teacher, Parent, School Class, and Section endpoints.
+- **Completed**: Refactored services to accept `current_school_id` from route controllers and enforce tenant boundaries on CRUD and relationship queries.
+- **Completed**: Written dedicated integration test suite `test_tenant_isolation.py` verifying 28 security boundary scenarios in both attack directions.

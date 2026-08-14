@@ -52,6 +52,7 @@ class SectionService(BaseService[SectionRepository]):
         self,
         db: Session,
         school_class_id: UUID,
+        current_school_id: UUID | None = None,
     ):
         """
         Ensure the School Class exists or raise NotFoundException.
@@ -61,7 +62,7 @@ class SectionService(BaseService[SectionRepository]):
             school_class_id,
         )
 
-        if school_class is None:
+        if school_class is None or (current_school_id is not None and school_class.school_id != current_school_id):
             logger.warning(
                 "Validation failure: School Class ID '%s' not found",
                 school_class_id,
@@ -77,14 +78,16 @@ class SectionService(BaseService[SectionRepository]):
         self,
         db: Session,
         section_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> Section:
         """
         Retrieve a section by ID or raise NotFoundException.
         """
-        section = self.repository.get(
+        section = self.repository.get_by_id_and_school(
             db,
             section_id,
-        )
+            current_school_id,
+        ) if current_school_id is not None else self.repository.get(db, section_id)
 
         if section is None:
             logger.warning("Validation failure: Section ID '%s' not found", section_id)
@@ -103,6 +106,7 @@ class SectionService(BaseService[SectionRepository]):
         self,
         db: Session,
         section_data: SectionCreate,
+        current_school_id: UUID | None = None,
     ) -> SectionResponse:
         """
         Create a new section.
@@ -116,6 +120,7 @@ class SectionService(BaseService[SectionRepository]):
         self._validate_school_class(
             db,
             section_data.school_class_id,
+            current_school_id,
         )
 
         if self.repository.exists_by_name(
@@ -155,6 +160,7 @@ class SectionService(BaseService[SectionRepository]):
         self,
         db: Session,
         section_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> SectionResponse:
         """
         Get a section by ID.
@@ -162,6 +168,7 @@ class SectionService(BaseService[SectionRepository]):
         section = self._get_section_or_raise(
             db,
             section_id,
+            current_school_id,
         )
 
         return SectionResponse.model_validate(section)
@@ -170,6 +177,7 @@ class SectionService(BaseService[SectionRepository]):
         self,
         db: Session,
         school_class_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> list[SectionResponse]:
         """
         Get all sections of a school class.
@@ -177,6 +185,7 @@ class SectionService(BaseService[SectionRepository]):
         self._validate_school_class(
             db,
             school_class_id,
+            current_school_id,
         )
 
         sections = self.repository.get_by_class(
@@ -198,6 +207,7 @@ class SectionService(BaseService[SectionRepository]):
         db: Session,
         section_id: UUID,
         section_data: SectionUpdate,
+        current_school_id: UUID | None = None,
     ) -> SectionResponse:
         """
         Update an existing section.
@@ -206,6 +216,7 @@ class SectionService(BaseService[SectionRepository]):
         section = self._get_section_or_raise(
             db,
             section_id,
+            current_school_id,
         )
 
         update_data = section_data.model_dump(
@@ -250,6 +261,7 @@ class SectionService(BaseService[SectionRepository]):
         self,
         db: Session,
         section_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> None:
         """
         Soft delete a section entity.
@@ -258,6 +270,7 @@ class SectionService(BaseService[SectionRepository]):
         section = self._get_section_or_raise(
             db,
             section_id,
+            current_school_id,
         )
 
         self.repository.delete(

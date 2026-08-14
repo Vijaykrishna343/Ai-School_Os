@@ -60,6 +60,10 @@ from app.api.v1.endpoints.timetable_entry import (
 from app.api.v1.endpoints.teacher_substitution import (
     router as teacher_substitution_router,
 )
+from app.api.v1.endpoints.dashboard import (
+    router as dashboard_router,
+)
+
 from app.api.student.student_controller import (
     router as student_router,
 )
@@ -241,6 +245,13 @@ api_router.include_router(
     prefix="/teacher-substitutions",
     tags=["Timetable Substitutions"],
 )
+
+api_router.include_router(
+    dashboard_router,
+    prefix="/dashboard",
+    tags=["Dashboard"],
+)
+
 
 
 

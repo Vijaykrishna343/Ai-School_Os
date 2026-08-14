@@ -49,6 +49,7 @@ class SchoolClassService:
         self,
         db: Session,
         school_class_data: SchoolClassCreate,
+        current_school_id: UUID | None = None,
     ) -> SchoolClass:
         """
         Create a new school class.
@@ -58,6 +59,9 @@ class SchoolClassService:
             school_class_data.name,
             school_class_data.school_id,
         )
+
+        if current_school_id is not None and school_class_data.school_id != current_school_id:
+            raise NotFoundException("School", str(school_class_data.school_id))
 
         school = self.school_repository.get(
             db,
@@ -114,6 +118,7 @@ class SchoolClassService:
         self,
         db: Session,
         school_class_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> SchoolClass:
         """
         Get school class by ID or raise NotFoundException.
@@ -123,7 +128,7 @@ class SchoolClassService:
             school_class_id,
         )
 
-        if school_class is None:
+        if school_class is None or (current_school_id is not None and school_class.school_id != current_school_id):
             logger.warning("Validation failure: School Class ID '%s' not found", school_class_id)
             raise NotFoundException(
                 "School Class",
@@ -145,10 +150,14 @@ class SchoolClassService:
         self,
         db: Session,
         school_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> list[SchoolClass]:
         """
         Get all active classes of a school.
         """
+        if current_school_id is not None and school_id != current_school_id:
+            raise NotFoundException("School", str(school_id))
+
         school = self.school_repository.get(
             db,
             school_id,
@@ -175,6 +184,7 @@ class SchoolClassService:
         db: Session,
         school_class_id: UUID,
         school_class_data: SchoolClassUpdate,
+        current_school_id: UUID | None = None,
     ) -> SchoolClass:
         """
         Update an existing school class.
@@ -183,6 +193,7 @@ class SchoolClassService:
         school_class = self.get_school_class(
             db,
             school_class_id,
+            current_school_id,
         )
 
         update_data = school_class_data.model_dump(
@@ -239,6 +250,7 @@ class SchoolClassService:
         self,
         db: Session,
         school_class_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> None:
         """
         Soft delete a school class entity.
@@ -247,6 +259,7 @@ class SchoolClassService:
         school_class = self.get_school_class(
             db,
             school_class_id,
+            current_school_id,
         )
 
         self.repository.delete(

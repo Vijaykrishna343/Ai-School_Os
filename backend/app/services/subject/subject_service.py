@@ -53,10 +53,22 @@ class SubjectService(BaseService[SubjectRepository]):
         self,
         db: Session,
         subject_data: SubjectCreate,
+        current_school_id: UUID | None = None,
     ) -> Subject:
         """
         Create a new subject entity.
         """
+        if (
+            current_school_id is not None
+            and subject_data.school_id != current_school_id
+        ):
+            logger.warning(
+                "Tenant mismatch: User school '%s' tried creating subject for school '%s'",
+                current_school_id,
+                subject_data.school_id,
+            )
+            raise NotFoundException("School", str(subject_data.school_id))
+
         logger.info(
             "Creating subject '%s' (%s) for school ID: %s",
             subject_data.subject_name,
@@ -111,15 +123,21 @@ class SubjectService(BaseService[SubjectRepository]):
         self,
         db: Session,
         subject_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> Subject:
         """
         Get a subject by ID or raise NotFoundException.
         """
-        return self.get_by_id(
+        subject = self.repository.get_by_id_and_school(
             db,
             subject_id,
-            "Subject",
-        )
+            current_school_id,
+        ) if current_school_id is not None else self.repository.get(db, subject_id)
+
+        if subject is None or subject.is_deleted:
+            raise NotFoundException("Subject", str(subject_id))
+
+        return subject
 
     def get_subjects(
         self,
@@ -155,6 +173,7 @@ class SubjectService(BaseService[SubjectRepository]):
         db: Session,
         subject_id: UUID,
         subject_data: SubjectUpdate,
+        current_school_id: UUID | None = None,
     ) -> Subject:
         """
         Update an existing subject.
@@ -163,6 +182,7 @@ class SubjectService(BaseService[SubjectRepository]):
         db_subject = self.get_subject(
             db,
             subject_id,
+            current_school_id=current_school_id,
         )
 
         if (
@@ -227,6 +247,7 @@ class SubjectService(BaseService[SubjectRepository]):
         self,
         db: Session,
         subject_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> None:
         """
         Soft delete a subject entity.
@@ -235,6 +256,7 @@ class SubjectService(BaseService[SubjectRepository]):
         db_subject = self.get_subject(
             db,
             subject_id,
+            current_school_id=current_school_id,
         )
 
         self.repository.soft_delete(

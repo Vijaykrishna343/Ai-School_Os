@@ -110,10 +110,13 @@ class StudentService(
         self,
         db: Session,
         school_id: UUID,
+        current_school_id: UUID | None = None,
     ):
         """
-        Validate school existence.
+        Validate school existence and current tenant context.
         """
+        if current_school_id is not None and school_id != current_school_id:
+            raise NotFoundException("School", str(school_id))
 
         school = self.school_repository.get(
             db,
@@ -133,17 +136,17 @@ class StudentService(
         self,
         db: Session,
         parent_id: UUID,
+        school_id: UUID | None = None,
     ):
         """
-        Validate parent existence.
+        Validate parent existence and tenant context.
         """
-
         parent = self.parent_repository.get(
             db,
             parent_id,
         )
 
-        if parent is None:
+        if parent is None or (school_id is not None and parent.school_id != school_id):
             logger.warning("Validation failure: Parent ID '%s' not found for student", parent_id)
             raise NotFoundException(
                 "Parent",
@@ -156,11 +159,11 @@ class StudentService(
         self,
         db: Session,
         academic_year_id: UUID,
+        school_id: UUID | None = None,
     ):
         """
-        Validate academic year existence.
+        Validate academic year existence and tenant context.
         """
-
         academic_year = (
             self.academic_year_repository.get(
                 db,
@@ -168,7 +171,7 @@ class StudentService(
             )
         )
 
-        if academic_year is None:
+        if academic_year is None or (school_id is not None and academic_year.school_id != school_id):
             logger.warning("Validation failure: Academic Year ID '%s' not found for student", academic_year_id)
             raise NotFoundException(
                 "Academic Year",
@@ -181,11 +184,11 @@ class StudentService(
         self,
         db: Session,
         school_class_id: UUID,
+        school_id: UUID | None = None,
     ):
         """
-        Validate class existence.
+        Validate class existence and tenant context.
         """
-
         school_class = (
             self.school_class_repository.get(
                 db,
@@ -193,7 +196,7 @@ class StudentService(
             )
         )
 
-        if school_class is None:
+        if school_class is None or (school_id is not None and school_class.school_id != school_id):
             logger.warning("Validation failure: School Class ID '%s' not found for student", school_class_id)
             raise NotFoundException(
                 "School Class",
@@ -206,11 +209,11 @@ class StudentService(
         self,
         db: Session,
         section_id: UUID,
+        school_id: UUID | None = None,
     ):
         """
-        Validate section existence.
+        Validate section existence and tenant context.
         """
-
         section = (
             self.section_repository.get(
                 db,
@@ -218,7 +221,7 @@ class StudentService(
             )
         )
 
-        if section is None:
+        if section is None or (school_id is not None and section.school_class.school_id != school_id):
             logger.warning("Validation failure: Section ID '%s' not found for student", section_id)
             raise NotFoundException(
                 "Section",
@@ -230,18 +233,18 @@ class StudentService(
     def _get_student_or_raise(
             self,
             db: Session,
-            student_id:UUID,
+            student_id: UUID,
+            school_id: UUID | None = None,
     ) -> Student:
         """
         Get a student by ID or raise NotFoundException.
         """
-
         student = self.repository.get(
             db,
             student_id,
         )
 
-        if student is None:
+        if student is None or (school_id is not None and student.school_id != school_id):
             logger.warning("Validation failure: Student ID '%s' not found", student_id)
             raise NotFoundException(
                 "Student",
@@ -424,6 +427,7 @@ class StudentService(
         self,
         db: Session,
         student_data: StudentCreate,
+        current_school_id: UUID | None = None,
     ) -> StudentResponse:
         """
         Create a new student.
@@ -442,17 +446,20 @@ class StudentService(
         school = self._validate_school(
             db,
             student_data.school_id,
+            current_school_id,
         )
 
         parent = self._validate_parent(
             db,
             student_data.parent_id,
+            student_data.school_id,
         )
 
         academic_year = (
             self._validate_academic_year(
                 db,
                 student_data.academic_year_id,
+                student_data.school_id,
             )
         )
 
@@ -460,12 +467,14 @@ class StudentService(
             self._validate_school_class(
                 db,
                 student_data.school_class_id,
+                student_data.school_id,
             )
         )
 
         section = self._validate_section(
             db,
             student_data.section_id,
+            student_data.school_id,
         )
 
         # ------------------------------------------------------
@@ -612,6 +621,7 @@ class StudentService(
         self,
         db: Session,
         student_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> StudentResponse:
         """
         Get a student by ID.
@@ -622,9 +632,10 @@ class StudentService(
         """
 
         student = self._get_student_or_raise(
-           db,
-           student_id,
-)
+            db,
+            student_id,
+            current_school_id,
+        )
 
         return StudentResponse.model_validate(
             student,
@@ -638,22 +649,25 @@ class StudentService(
         self,
         db: Session,
         filters: StudentFilter,
+        current_school_id: UUID | None = None,
     ) -> StudentListResponse:
         """
         Get paginated students with filters.
         """
+        if current_school_id is not None:
+            filters.school_id = current_school_id
 
         students, total = self.repository.get_students(
-        db=db,
-        school_id=filters.school_id,
-        parent_id=filters.parent_id,
-        academic_year_id=filters.academic_year_id,
-        school_class_id=filters.school_class_id,
-        section_id=filters.section_id,
-        gender=filters.gender,
-        status=filters.status,
-        page=filters.page,
-        page_size=filters.page_size,
+            db=db,
+            school_id=filters.school_id,
+            parent_id=filters.parent_id,
+            academic_year_id=filters.academic_year_id,
+            school_class_id=filters.school_class_id,
+            section_id=filters.section_id,
+            gender=filters.gender,
+            status=filters.status,
+            page=filters.page,
+            page_size=filters.page_size,
         )
 
         total_pages = (
@@ -725,6 +739,7 @@ class StudentService(
         db: Session,
         student_id: UUID,
         student_data: StudentUpdate,
+        current_school_id: UUID | None = None,
     ) -> StudentResponse:
         """
         Update an existing student.
@@ -734,6 +749,7 @@ class StudentService(
         student = self._get_student_or_raise(
             db,
             student_id,
+            current_school_id,
         )
 
         if isinstance(student_data, dict):
@@ -783,6 +799,7 @@ class StudentService(
             self._validate_parent(
                 db,
                 update_data["parent_id"],
+                student.school_id,
             )
 
         # ------------------------------------------------------
@@ -839,6 +856,7 @@ class StudentService(
         self,
         db: Session,
         student_id: UUID,
+        current_school_id: UUID | None = None,
     ) -> None:
         """
         Soft delete a student.
@@ -852,6 +870,7 @@ class StudentService(
         student = self._get_student_or_raise(
             db,
             student_id,
+            current_school_id,
         )
 
         self.repository.delete(

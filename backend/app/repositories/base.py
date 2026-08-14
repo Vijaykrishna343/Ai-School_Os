@@ -67,6 +67,23 @@ class BaseRepository(Generic[ModelType]):
         """
         return self.get(db, obj_id)
 
+    def get_by_id_and_school(
+        self,
+        db: Session,
+        obj_id: UUID,
+        school_id: UUID,
+    ) -> ModelType | None:
+        """
+        Retrieve an active record by ID and school ID (tenant isolation).
+        """
+        return db.scalar(
+            select(self.model).where(
+                self.model.id == obj_id,
+                self.model.school_id == school_id,
+                self.model.is_deleted.is_(False),
+            )
+        )
+
     def get_all(
         self,
         db: Session,

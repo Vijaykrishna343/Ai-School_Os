@@ -17,7 +17,9 @@ from app.dependencies import (
     get_school_class_service,
 )
 from app.identity.dependencies.require_permission import require_permission
+from app.identity.models.user import IdentityUser
 from app.schemas.school_class import (
+
     SchoolClassCreate,
     SchoolClassListResponse,
     SchoolClassResponse,
@@ -35,10 +37,10 @@ router = APIRouter()
     response_model=dict,
     status_code=HTTPStatus.CREATED,
     summary="Create School Class",
-    dependencies=[Depends(require_permission("class.create"))],
 )
 def create_school_class(
     school_class: SchoolClassCreate,
+    current_user: IdentityUser = Depends(require_permission("class.create")),
     db: Session = Depends(get_db),
     service: SchoolClassService = Depends(
         get_school_class_service,
@@ -47,9 +49,13 @@ def create_school_class(
     """
     Create a new school class entity.
     """
+    # Enforce authoritative tenant boundary
+    school_class.school_id = current_user.school_id
+
     created = service.create_school_class(
         db,
         school_class,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -64,20 +70,25 @@ def create_school_class(
     "/",
     response_model=dict,
     summary="Get All School Classes",
-    dependencies=[Depends(require_permission("class.view"))],
 )
 def get_all_school_classes(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
+    current_user: IdentityUser = Depends(require_permission("class.view")),
     db: Session = Depends(get_db),
     service: SchoolClassService = Depends(
         get_school_class_service,
     ),
 ) -> dict[str, object]:
     """
-    Get paginated list of active school classes.
+    Get paginated list of active school classes for authenticated user's school.
     """
-    classes = service.get_all_school_classes(db)
+    classes = service.get_school_classes_by_school(
+        db,
+        school_id=current_user.school_id,
+        current_school_id=current_user.school_id,
+    )
+
     total = len(classes)
 
     start = (page - 1) * page_size
@@ -106,10 +117,10 @@ def get_all_school_classes(
     "/{school_class_id}",
     response_model=dict,
     summary="Get School Class",
-    dependencies=[Depends(require_permission("class.view"))],
 )
 def get_school_class(
     school_class_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("class.view")),
     db: Session = Depends(get_db),
     service: SchoolClassService = Depends(
         get_school_class_service,
@@ -121,6 +132,7 @@ def get_school_class(
     school_class = service.get_school_class(
         db,
         school_class_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -135,11 +147,11 @@ def get_school_class(
     "/{school_class_id}",
     response_model=dict,
     summary="Update School Class",
-    dependencies=[Depends(require_permission("class.update"))],
 )
 def update_school_class(
     school_class_id: UUID,
     school_class: SchoolClassUpdate,
+    current_user: IdentityUser = Depends(require_permission("class.update")),
     db: Session = Depends(get_db),
     service: SchoolClassService = Depends(
         get_school_class_service,
@@ -152,6 +164,7 @@ def update_school_class(
         db,
         school_class_id,
         school_class,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(
@@ -166,10 +179,10 @@ def update_school_class(
     "/{school_class_id}",
     response_model=dict,
     summary="Delete School Class",
-    dependencies=[Depends(require_permission("class.delete"))],
 )
 def delete_school_class(
     school_class_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("class.delete")),
     db: Session = Depends(get_db),
     service: SchoolClassService = Depends(
         get_school_class_service,
@@ -181,6 +194,7 @@ def delete_school_class(
     service.delete_school_class(
         db,
         school_class_id,
+        current_school_id=current_user.school_id,
     )
 
     return ApiResponse.success(

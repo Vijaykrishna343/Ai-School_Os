@@ -3,6 +3,8 @@
 # ==========================
 
 backend/venv/
+venv/
+.venv/
 **/__pycache__/
 *.py[cod]
 **/.pytest_cache/
@@ -17,6 +19,7 @@ htmlcov/
 # ==========================
 
 backend/.env
+frontend/.env
 .env
 *.env
 
@@ -25,7 +28,10 @@ backend/.env
 # ==========================
 
 frontend/node_modules/
+frontend/dist/
 frontend/.next/
+dist/
+build/
 
 # ==========================
 # IDE
