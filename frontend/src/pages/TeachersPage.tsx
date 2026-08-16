@@ -21,6 +21,7 @@ export const TeachersPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [search, setSearch] = useState('');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('');
 
   const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
@@ -52,8 +53,14 @@ export const TeachersPage: React.FC = () => {
 
   // Queries
   const { data: teachersData, isLoading: isTeachersLoading } = useQuery({
-    queryKey: ['teachers', page, pageSize, search],
-    queryFn: () => teachersApi.getTeachers({ page, page_size: pageSize, search: search || undefined }),
+    queryKey: ['teachers', page, pageSize, search, selectedStatusFilter],
+    queryFn: () =>
+      teachersApi.getTeachers({
+        page,
+        page_size: pageSize,
+        search: search || undefined,
+        status: selectedStatusFilter || undefined,
+      }),
   });
 
   // Mutations
@@ -171,44 +178,62 @@ export const TeachersPage: React.FC = () => {
     switch (status) {
       case 'ACTIVE': return 'success';
       case 'ON_LEAVE': return 'warning';
-      case 'RESIGNED':
-      case 'TERMINATED': return 'error';
+      case 'INACTIVE':
+      case 'RESIGNED': return 'error';
       default: return 'default';
     }
   };
 
-  const columns: Column<Teacher>[] = [
+  const teacherColumns: Column<Teacher>[] = [
     {
       key: 'employee_id',
       header: 'Employee ID',
-      render: (row) => <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">{row.employee_id}</span>,
+      className: 'min-w-[7rem]',
+      render: (row) => (
+        <span className="font-mono text-xs font-bold text-brand-500 dark:text-brand-350">{row.employee_id}</span>
+      ),
     },
     {
       key: 'name',
       header: 'Teacher Name',
+      className: 'min-w-[9rem]',
       render: (row) => (
         <div>
-          <p className="font-semibold text-slate-900 dark:text-white">
+          <p className="font-semibold text-ink dark:text-stone-100">
             {row.first_name} {row.last_name}
           </p>
-          <p className="text-xs text-slate-400">{row.gender}</p>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted/60 dark:text-stone-500">
+            {row.gender}
+          </p>
         </div>
       ),
     },
     {
       key: 'qualification',
       header: 'Qualification',
-      render: (row) => <span className="text-sm text-slate-600 dark:text-slate-300">{row.qualification}</span>,
+      className: 'min-w-[8rem]',
+      render: (row) => (
+        <div>
+          <p className="font-medium text-ink dark:text-stone-200">{row.qualification}</p>
+          {row.specialization && (
+            <p className="text-[10px] font-mono uppercase tracking-wider text-ink-muted/60 dark:text-stone-500">
+              {row.specialization}
+            </p>
+          )}
+        </div>
+      ),
     },
     {
       key: 'phone',
       header: 'Phone',
-      render: (row) => <span className="font-mono text-xs text-slate-600 dark:text-slate-300">{row.phone}</span>,
+      className: 'min-w-[6.5rem]',
+      render: (row) => <span className="font-mono text-xs text-ink dark:text-stone-300">{row.phone}</span>,
     },
     {
       key: 'joining_date',
       header: 'Joining Date',
-      render: (row) => <span className="text-xs text-slate-500">{row.joining_date}</span>,
+      className: 'min-w-[6.5rem]',
+      render: (row) => <span className="font-mono text-ink-muted dark:text-stone-400">{row.joining_date}</span>,
     },
     {
       key: 'status',
@@ -222,15 +247,16 @@ export const TeachersPage: React.FC = () => {
     {
       key: 'actions',
       header: 'Actions',
+      className: 'min-w-[11rem]',
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setViewingTeacher(row)}>
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => setViewingTeacher(row)}>
             View
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleOpenEditModal(row)}>
+          <Button variant="outline" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => handleOpenEditModal(row)}>
             Edit
           </Button>
-          <Button variant="danger" size="sm" onClick={() => setDeleteTarget(row)}>
+          <Button variant="danger" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => setDeleteTarget(row)}>
             Delete
           </Button>
         </div>
@@ -239,40 +265,61 @@ export const TeachersPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto bg-[#fcf9f8]">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto bg-paper dark:bg-stone-950 select-none">
       {/* Editorial Header */}
-      <div className="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="border-b border-divider dark:border-stone-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">
             OFFICE OF THE REGISTRAR
           </p>
-          <h1 className="text-2xl font-bold font-serif text-brand-500 dark:text-white mt-1">
+          <h1 className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100 mt-1 tracking-tight">
             Faculty Directory
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-ink-muted dark:text-stone-400 mt-1">
             Directory of institutional teachers, professional qualifications, and employment logs.
           </p>
         </div>
-        <Button onClick={handleOpenCreateModal}>+ Add Teacher</Button>
+        <Button onClick={handleOpenCreateModal} size="sm">
+          + Add Teacher
+        </Button>
       </div>
 
-      <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white rounded-none">
-        <Input
-          placeholder="Search by teacher name, employee ID, or email..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
+      <div className="p-4 border border-divider dark:border-stone-850 bg-paper flex flex-col md:flex-row items-center gap-4">
+        <div className="flex-1 w-full">
+          <Input
+            placeholder="Search by teacher name, employee ID, or email..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+          <select
+            value={selectedStatusFilter}
+            onChange={(e) => {
+              setSelectedStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 font-mono"
+          >
+            <option value="">ALL_STATUS</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+            <option value="ON_LEAVE">ON_LEAVE</option>
+            <option value="RESIGNED">RESIGNED</option>
+          </select>
+        </div>
       </div>
 
-      <div className="border border-slate-200 dark:border-slate-800 bg-white p-4 space-y-4 rounded-none">
+      <div className="space-y-4">
         <Table
-          columns={columns}
+          columns={teacherColumns}
           data={teachersData?.items || []}
           isLoading={isTeachersLoading}
-          emptyText="No teachers found matching the search criteria."
+          emptyText="No faculty records matching current registry filters."
         />
         {teachersData && (
           <Pagination
@@ -291,11 +338,12 @@ export const TeachersPage: React.FC = () => {
         onClose={() => setIsTeacherModalOpen(false)}
         title={editingTeacher ? `Edit Teacher — ${editingTeacher.employee_id}` : 'Add New Teacher'}
         footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsTeacherModalOpen(false)}>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsTeacherModalOpen(false)}>
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={handleSubmitTeacher}
               isLoading={createTeacherMutation.isPending || updateTeacherMutation.isPending}
             >
@@ -334,13 +382,13 @@ export const TeachersPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
                 Gender *
               </label>
               <select
                 value={teacherForm.gender || 'MALE'}
                 onChange={(e) => setTeacherForm({ ...teacherForm, gender: e.target.value as any })}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250"
               >
                 <option value="MALE">MALE</option>
                 <option value="FEMALE">FEMALE</option>
@@ -443,43 +491,90 @@ export const TeachersPage: React.FC = () => {
       <Drawer
         isOpen={!!viewingTeacher}
         onClose={() => setViewingTeacher(null)}
-        title={viewingTeacher ? `${viewingTeacher.first_name} ${viewingTeacher.last_name || ''}` : ''}
-        subtitle={viewingTeacher ? `Employee ID: ${viewingTeacher.employee_id}` : ''}
+        title="FACULTY DOSSIER"
+        subtitle={viewingTeacher ? `EMPLOYEE_ID: ${viewingTeacher.employee_id}` : ''}
         width="md"
       >
         {viewingTeacher && (
-          <div className="space-y-6 text-slate-800 dark:text-slate-350">
-            <div className="p-4 bg-[#fcf9f8] rounded-none border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="space-y-6 text-ink dark:text-stone-300">
+            {/* HEADER / FACULTY POSITION */}
+            <div className="p-4 border border-divider dark:border-stone-800 bg-paper-dim dark:bg-stone-900/60 rounded-none flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">FACULTY_POSITION</p>
-                <p className="text-base font-bold font-serif text-slate-900 dark:text-white mt-1">
-                  {viewingTeacher.qualification}
+                <p className="text-[9px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">FACULTY_POSITION</p>
+                <p className="text-sm font-serif font-bold text-brand-500 dark:text-stone-100 mt-1">
+                  {[viewingTeacher.first_name, viewingTeacher.middle_name, viewingTeacher.last_name].filter(Boolean).join(' ') || '—'}
                 </p>
-                {viewingTeacher.specialization && (
-                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">SPECIALIZATION: {viewingTeacher.specialization}</p>
-                )}
+                <p className="text-[10px] font-mono text-ink-muted/80 mt-0.5">
+                  {viewingTeacher.qualification}
+                  {viewingTeacher.specialization && ` — ${viewingTeacher.specialization}`}
+                </p>
               </div>
               <Badge variant={viewingTeacher.status === 'ACTIVE' ? 'success' : 'default'}>
                 {viewingTeacher.status}
               </Badge>
             </div>
 
+            {/* IDENTITY_RECORD */}
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1.5 mb-2">IDENTITY_RECORD</h3>
-              <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                <div><span className="text-slate-400">GENDER:</span> {viewingTeacher.gender}</div>
-                <div><span className="text-slate-400">DATE_OF_BIRTH:</span> {viewingTeacher.date_of_birth}</div>
-                <div><span className="text-slate-400">JOINING_DATE:</span> {viewingTeacher.joining_date}</div>
-                <div><span className="text-slate-400">EXPERIENCE_RECORD:</span> {viewingTeacher.experience_years || 0} years</div>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                IDENTITY_RECORD
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">FULL_NAME:</span> <span className="font-medium">
+                  {[viewingTeacher.first_name, viewingTeacher.middle_name, viewingTeacher.last_name].filter(Boolean).join(' ') || '—'}
+                </span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">GENDER:</span> <span>{viewingTeacher.gender}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">DATE_OF_BIRTH:</span> <span className="font-mono">{viewingTeacher.date_of_birth}</span></div>
               </div>
             </div>
 
+            {/* EMPLOYMENT_RECORD */}
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1.5 mb-2">CONTACT_RECORD</h3>
-              <div className="grid grid-cols-1 gap-2 text-xs font-mono">
-                <div><span className="text-slate-400">PHONE_CONTACT:</span> {viewingTeacher.phone}</div>
-                <div><span className="text-slate-400">EMAIL_ADDRESS:</span> {viewingTeacher.email}</div>
-                <div><span className="text-slate-400">RESIDENCE_ADDRESS:</span> {viewingTeacher.address_line1}, {viewingTeacher.city}, {viewingTeacher.state} — {viewingTeacher.postal_code}</div>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                EMPLOYMENT_RECORD
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EMPLOYEE_ID:</span> <span className="font-mono">{viewingTeacher.employee_id}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">JOINING_DATE:</span> <span className="font-mono">{viewingTeacher.joining_date}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EXPERIENCE_YEARS:</span> <span>{viewingTeacher.experience_years || 0} years</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">STATUS:</span> <span>{viewingTeacher.status}</span></div>
+              </div>
+            </div>
+
+            {/* PROFESSIONAL_RECORD */}
+            <div>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                PROFESSIONAL_RECORD
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">QUALIFICATION:</span> <span className="font-medium">{viewingTeacher.qualification}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">SPECIALIZATION:</span> <span className="font-medium">{viewingTeacher.specialization || '—'}</span></div>
+              </div>
+            </div>
+
+            {/* CONTACT_REGISTER */}
+            <div>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                CONTACT_REGISTER
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">PHONE:</span> <span className="font-mono">{viewingTeacher.phone}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EMAIL:</span> <span className="font-mono">{viewingTeacher.email}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EMERGENCY_CONTACT:</span> <span className="font-mono">{viewingTeacher.emergency_contact || '—'}</span></div>
+              </div>
+            </div>
+
+            {/* ADDRESS_RECORD */}
+            <div>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
+                ADDRESS_RECORD
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div className="md:col-span-2"><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">ADDRESS_LINE1:</span> <span>{viewingTeacher.address_line1}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">CITY:</span> <span>{viewingTeacher.city}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">DISTRICT:</span> <span>{viewingTeacher.district}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">STATE:</span> <span>{viewingTeacher.state}</span></div>
+                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">POSTAL_CODE:</span> <span className="font-mono">{viewingTeacher.postal_code}</span></div>
               </div>
             </div>
           </div>
