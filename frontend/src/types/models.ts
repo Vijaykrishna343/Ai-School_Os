@@ -754,5 +754,198 @@ export interface ReportCardRemarksUpdate {
   principal_remarks?: string | null;
 }
 
+export type FeeCategory =
+  | 'TUITION'
+  | 'ADMISSION'
+  | 'TRANSPORTATION'
+  | 'EXAMINATION'
+  | 'BOOKS'
+  | 'STUDY_MATERIAL'
+  | 'UNIFORM'
+  | 'ID_CARD'
+  | 'TIE'
+  | 'BELT'
+  | 'SHOES'
+  | 'DIARY'
+  | 'ACTIVITY'
+  | 'MISCELLANEOUS'
+  | 'OTHER';
+
+export type FeeStructureStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+
+export type DiscountType =
+  | 'SIBLING_CONCESSION'
+  | 'SCHOLARSHIP'
+  | 'STAFF_CONCESSION'
+  | 'MANAGEMENT_CONCESSION'
+  | 'SPECIAL_DISCOUNT'
+  | 'OTHER';
+
+export type PaymentMode = 'CASH' | 'UPI' | 'BANK_TRANSFER' | 'CARD' | 'CHEQUE' | 'OTHER';
+
+export type StudentFeeAssignmentStatus = 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
+
+export interface FeeItem {
+  id: string;
+  fee_structure_id: string;
+  category: FeeCategory;
+  name: string;
+  amount: number;
+  is_optional: boolean;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeeItemCreate {
+  category: FeeCategory;
+  name: string;
+  amount: number;
+  is_optional?: boolean;
+  order?: number;
+}
+
+export interface FeeStructure {
+  id: string;
+  school_id: string;
+  academic_year_id: string;
+  school_class_id: string | null;
+  name: string;
+  description: string | null;
+  status: FeeStructureStatus;
+  items: FeeItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeeStructureCreate {
+  academic_year_id: string;
+  school_class_id?: string | null;
+  name: string;
+  description?: string | null;
+  status?: FeeStructureStatus;
+  items?: FeeItemCreate[];
+}
+
+export interface FeeStructureUpdate {
+  name?: string;
+  description?: string | null;
+  school_class_id?: string | null;
+  status?: FeeStructureStatus;
+  items?: FeeItemCreate[];
+}
+
+export interface StudentFeeItem {
+  id: string;
+  student_fee_assignment_id: string;
+  fee_item_id: string | null;
+  category: FeeCategory;
+  name: string;
+  amount: number;
+  is_optional: boolean;
+  is_applicable: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentFeeItemCreate {
+  fee_item_id?: string | null;
+  category: FeeCategory;
+  name: string;
+  amount: number;
+  is_optional?: boolean;
+  is_applicable?: boolean;
+}
+
+export interface FeeDiscount {
+  id: string;
+  student_fee_assignment_id: string;
+  discount_type: DiscountType;
+  name: string;
+  amount: number;
+  remarks: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeeDiscountCreate {
+  discount_type: DiscountType;
+  name: string;
+  amount: number;
+  remarks?: string | null;
+}
+
+export interface StudentFeeAssignment {
+  id: string;
+  school_id: string;
+  academic_year_id: string;
+  student_id: string;
+  fee_structure_id: string;
+  status: StudentFeeAssignmentStatus;
+  due_date: string | null;
+  remarks: string | null;
+  gross_amount: number;
+  total_discounts: number;
+  net_payable: number;
+  total_paid: number;
+  outstanding_due: number;
+  student_fee_items: StudentFeeItem[];
+  discounts: FeeDiscount[];
+  student?: Student | null;
+  fee_structure?: FeeStructure | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentFeeAssignmentCreate {
+  academic_year_id: string;
+  student_id: string;
+  fee_structure_id: string;
+  due_date?: string | null;
+  remarks?: string | null;
+  custom_items?: StudentFeeItemCreate[];
+}
+
+export interface FeePayment {
+  id: string;
+  school_id: string;
+  student_fee_assignment_id: string;
+  receipt_number: string;
+  amount: number;
+  payment_date: string;
+  payment_mode: PaymentMode;
+  reference_number: string | null;
+  remarks: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeePaymentCreate {
+  student_fee_assignment_id: string;
+  amount: number;
+  payment_date: string;
+  payment_mode: PaymentMode;
+  reference_number?: string | null;
+  remarks?: string | null;
+}
+
+export interface FeeReceipt {
+  receipt_number: string;
+  school_id: string;
+  student_id: string;
+  student_fee_assignment_id: string;
+  payment_id: string;
+  payment_date: string;
+  payment_mode: PaymentMode;
+  reference_number: string | null;
+  amount: number;
+  gross_amount: number;
+  total_discounts: number;
+  net_payable: number;
+  total_paid: number;
+  outstanding_due: number;
+}
+
+
 
 

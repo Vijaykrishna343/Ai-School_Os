@@ -56,7 +56,7 @@ const navGroups: NavGroup[] = [
     title: 'Operations',
     items: [
       { name: 'Attendance', path: '/app/attendance', icon: <CalendarCheck className="w-4 h-4" />, permission: 'attendance.view' },
-      { name: 'Fees & Payments', path: '/app/fees', icon: <CreditCard className="w-4 h-4" />, permission: 'fee.view' },
+      { name: 'Fees & Payments', path: '/app/fees', icon: <CreditCard className="w-4 h-4" />, permission: 'fees.view' },
       { name: 'Exams & Reports', path: '/app/exams', icon: <FileSpreadsheet className="w-4 h-4" />, permission: 'exam.view' },
       { name: 'Timetable', path: '/app/timetable', icon: <Clock className="w-4 h-4" />, permission: 'timetable.view' },
     ],

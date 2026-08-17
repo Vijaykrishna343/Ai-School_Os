@@ -17,5 +17,7 @@ export * from './studentExamResultsApi';
 export * from './reportCardsApi';
 export * from './gradingScalesApi';
 export * from './evaluationConfigsApi';
+export * from './feesApi';
+
 
 

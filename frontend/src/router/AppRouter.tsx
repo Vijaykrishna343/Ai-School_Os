@@ -9,6 +9,7 @@ import { ModulePlaceholderPage } from '@/pages/ModulePlaceholderPage';
 import { ProgressionPage } from '@/pages/ProgressionPage';
 import { AttendancePage } from '@/pages/AttendancePage';
 import { ExamsPage } from '@/pages/ExamsPage';
+import { FeesPage } from '@/pages/FeesPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AppLayout } from '@/layouts/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -93,12 +94,8 @@ export const AppRouter = () => {
         <Route
           path="fees"
           element={
-            <PermissionRoute permission="fee.view">
-              <ModulePlaceholderPage
-                title="Fees & Payments"
-                phase="Phase 5.5"
-                description="Fee structures, itemized discounts, student assignments, and payment transaction collection."
-              />
+            <PermissionRoute permission="fees.view">
+              <FeesPage />
             </PermissionRoute>
           }
         />
