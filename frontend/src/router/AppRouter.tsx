@@ -7,6 +7,7 @@ import { ParentsPage } from '@/pages/ParentsPage';
 import { TeachersPage } from '@/pages/TeachersPage';
 import { ModulePlaceholderPage } from '@/pages/ModulePlaceholderPage';
 import { ProgressionPage } from '@/pages/ProgressionPage';
+import { AttendancePage } from '@/pages/AttendancePage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AppLayout } from '@/layouts/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -83,11 +84,7 @@ export const AppRouter = () => {
           path="attendance"
           element={
             <PermissionRoute permission="attendance.view">
-              <ModulePlaceholderPage
-                title="Daily Attendance"
-                phase="Phase 5.4"
-                description="Section attendance marking grid, daily records, and historical logs."
-              />
+              <AttendancePage />
             </PermissionRoute>
           }
         />

@@ -10,3 +10,5 @@ export * from './parentsApi';
 export * from './teachersApi';
 export * from './progressionApi';
 export * from './subjectsApi';
+export * from './attendanceApi';
+

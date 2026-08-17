@@ -460,3 +460,45 @@ export interface SubjectUpdate {
   status?: 'ACTIVE' | 'INACTIVE';
 }
 
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'EXCUSED';
+
+export interface Attendance {
+  id: string;
+  school_id: string;
+  academic_year_id: string;
+  school_class_id: string;
+  section_id: string;
+  student_id: string;
+  attendance_date: string;
+  status: AttendanceStatus;
+  remarks: string | null;
+  recorded_by_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceCreate {
+  student_id: string;
+  attendance_date: string;
+  status: AttendanceStatus;
+  remarks?: string | null;
+}
+
+export interface AttendanceBulkItem {
+  student_id: string;
+  status: AttendanceStatus;
+  remarks?: string | null;
+}
+
+export interface AttendanceBulkCreate {
+  section_id: string;
+  attendance_date: string;
+  records: AttendanceBulkItem[];
+}
+
+export interface AttendanceUpdate {
+  status?: AttendanceStatus | null;
+  remarks?: string | null;
+}
+
+
