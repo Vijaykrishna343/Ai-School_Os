@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/Input';
 import { Table, Column } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
 import { Alert } from '@/components/ui/Alert';
+import { Pagination } from '@/components/ui/Pagination';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 type TabType = 'matrix' | 'rollover';
 
@@ -37,6 +39,13 @@ export const ProgressionPage: React.FC = () => {
   });
   const [ruleError, setRuleError] = useState<string | null>(null);
 
+  // Matrix Rule filters
+  const [filterSourceClassId, setFilterSourceClassId] = useState('');
+  const [filterTargetClassId, setFilterTargetClassId] = useState('');
+  const [filterIsTerminal, setFilterIsTerminal] = useState<string>('all');
+  const [rulesPage, setRulesPage] = useState(1);
+  const [rulesPageSize] = useState(10);
+
   // Rollover dry run states
   const [sourceYearId, setSourceYearId] = useState('');
   const [targetYearId, setTargetYearId] = useState('');
@@ -47,6 +56,10 @@ export const ProgressionPage: React.FC = () => {
   const [previewData, setPreviewData] = useState<any>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  // Local page filters for decisions ledger
+  const [localSearch, setLocalSearch] = useState('');
+  const [localDecisionFilter, setLocalDecisionFilter] = useState('all');
 
   // Execution verification state
   const [isExecuteConfirmOpen, setIsExecuteConfirmOpen] = useState(false);
@@ -59,19 +72,41 @@ export const ProgressionPage: React.FC = () => {
   // ---------------------------------------------------------
   // Data Queries
   // ---------------------------------------------------------
-  const { data: yearsData } = useQuery({
+  const {
+    data: yearsData,
+    isError: isYearsError,
+    error: yearsError,
+    refetch: refetchYears,
+  } = useQuery({
     queryKey: ['academicYearsList'],
     queryFn: () => academicYearsApi.getAcademicYears({ page: 1, page_size: 100 }),
   });
 
-  const { data: classesData } = useQuery({
+  const {
+    data: classesData,
+    isError: isClassesError,
+    error: classesError,
+    refetch: refetchClasses,
+  } = useQuery({
     queryKey: ['schoolClassesList'],
     queryFn: () => schoolClassesApi.getSchoolClasses({ page: 1, page_size: 100 }),
   });
 
-  const { data: rulesData, isLoading: isRulesLoading } = useQuery({
-    queryKey: ['progressionRules'],
-    queryFn: () => progressionApi.getRules({ page: 1, page_size: 100 }),
+  const {
+    data: rulesData,
+    isLoading: isRulesLoading,
+    isError: isRulesError,
+    error: rulesError,
+    refetch: refetchRules,
+  } = useQuery({
+    queryKey: ['progressionRules', filterSourceClassId, filterTargetClassId, filterIsTerminal, rulesPage, rulesPageSize],
+    queryFn: () => progressionApi.getRules({
+      source_class_id: filterSourceClassId || undefined,
+      target_class_id: filterTargetClassId || undefined,
+      is_terminal: filterIsTerminal === 'true' ? true : filterIsTerminal === 'false' ? false : undefined,
+      page: rulesPage,
+      page_size: rulesPageSize,
+    }),
   });
 
   // Rule mutations
@@ -168,7 +203,7 @@ export const ProgressionPage: React.FC = () => {
   };
 
   // Preview Dry Run trigger
-  const handleTriggerPreview = async () => {
+  const handleTriggerPreview = async (pageToFetch = 1) => {
     if (!sourceYearId || !targetYearId) {
       setPreviewError('Source and target academic years are required.');
       return;
@@ -180,17 +215,20 @@ export const ProgressionPage: React.FC = () => {
 
     setIsPreviewLoading(true);
     setPreviewError(null);
-    setPreviewData(null);
-    setExecutionResult(null);
+    if (pageToFetch === 1) {
+      setPreviewData(null);
+      setExecutionResult(null);
+    }
     setExecutionError(null);
 
     try {
       const res = await progressionApi.generatePreview(sourceYearId, {
         target_academic_year_id: targetYearId,
-        page: previewPage,
+        page: pageToFetch,
         page_size: previewPageSize,
       });
       setPreviewData(res);
+      setPreviewPage(pageToFetch);
     } catch (err: any) {
       setPreviewError(err.message || 'Failed to calculate academic progression preview.');
     } finally {
@@ -374,6 +412,47 @@ export const ProgressionPage: React.FC = () => {
     },
   ];
 
+  let isTabError = false;
+  let tabErrorMsg = '';
+  let onRetryHandler = () => {};
+
+  if (isYearsError) {
+    isTabError = true;
+    tabErrorMsg = (yearsError as any)?.message || 'Failed to retrieve academic years.';
+    onRetryHandler = () => refetchYears();
+  } else if (isClassesError) {
+    isTabError = true;
+    tabErrorMsg = (classesError as any)?.message || 'Failed to retrieve school classes.';
+    onRetryHandler = () => refetchClasses();
+  } else if (activeTab === 'matrix' && isRulesError) {
+    isTabError = true;
+    tabErrorMsg = (rulesError as any)?.message || 'Failed to retrieve progression rules matrix.';
+    onRetryHandler = () => refetchRules();
+  }
+
+  if (isTabError) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <ErrorState
+          title="Academic Progression Configuration Error"
+          message={tabErrorMsg}
+          onRetry={onRetryHandler}
+        />
+      </div>
+    );
+  }
+
+  // Local search/filter on current preview page
+  const filteredPreviewItems = previewData?.items?.filter((item: any) => {
+    const matchesSearch =
+      !localSearch ||
+      item.student_name.toLowerCase().includes(localSearch.toLowerCase()) ||
+      item.admission_number.toLowerCase().includes(localSearch.toLowerCase());
+    const matchesDecision =
+      localDecisionFilter === 'all' || item.decision === localDecisionFilter;
+    return matchesSearch && matchesDecision;
+  }) || [];
+
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto bg-[#fcf9f8] min-h-[85vh]">
       {/* Editorial Header */}
@@ -422,22 +501,86 @@ export const ProgressionPage: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {activeTab === 'matrix' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center bg-white border border-slate-200 dark:border-slate-800 p-4 rounded-none">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
-              PROGRESSION_RULES_MAP
-            </p>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white border border-slate-200 dark:border-slate-800 p-4 rounded-none">
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+              <div>
+                <label htmlFor="filter-source-class" className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                  Source Class
+                </label>
+                <select
+                  id="filter-source-class"
+                  value={filterSourceClassId}
+                  onChange={(e) => {
+                    setFilterSourceClassId(e.target.value);
+                    setRulesPage(1);
+                  }}
+                  className="w-full px-2 py-1.5 text-xs rounded-sm border border-slate-300 dark:border-slate-700 bg-white"
+                >
+                  <option value="">All Source Classes</option>
+                  {classesData?.items?.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="filter-target-class" className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                  Target Class
+                </label>
+                <select
+                  id="filter-target-class"
+                  value={filterTargetClassId}
+                  onChange={(e) => {
+                    setFilterTargetClassId(e.target.value);
+                    setRulesPage(1);
+                  }}
+                  className="w-full px-2 py-1.5 text-xs rounded-sm border border-slate-300 dark:border-slate-700 bg-white"
+                >
+                  <option value="">All Target Classes</option>
+                  {classesData?.items?.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="filter-is-terminal" className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                  Terminal Status
+                </label>
+                <select
+                  id="filter-is-terminal"
+                  value={filterIsTerminal}
+                  onChange={(e) => {
+                    setFilterIsTerminal(e.target.value);
+                    setRulesPage(1);
+                  }}
+                  className="w-full px-2 py-1.5 text-xs rounded-sm border border-slate-300 dark:border-slate-700 bg-white"
+                >
+                  <option value="all">All Mappings</option>
+                  <option value="false">Non-Terminal (Promote)</option>
+                  <option value="true">Terminal (Graduate)</option>
+                </select>
+              </div>
+            </div>
             {permissions.includes('progression_matrix.manage') && (
-              <Button onClick={handleOpenCreateModal}>+ Create Mapping Rule</Button>
+              <Button onClick={handleOpenCreateModal} className="w-full md:w-auto mt-2 md:mt-4">+ Create Mapping Rule</Button>
             )}
           </div>
 
-          <div className="border border-slate-200 dark:border-slate-800 bg-white p-4 rounded-none">
+          <div className="border border-slate-200 dark:border-slate-800 bg-white p-4 rounded-none space-y-4">
             <Table
               columns={ruleColumns}
               data={rulesData?.items || []}
               isLoading={isRulesLoading}
               emptyText="No class progression mappings found. Build rules to govern year transition."
             />
+            {rulesData && rulesData.total_pages > 1 && (
+              <Pagination
+                page={rulesPage}
+                totalPages={rulesData.total_pages}
+                totalItems={rulesData.total}
+                pageSize={rulesPageSize}
+                onPageChange={(p) => setRulesPage(p)}
+              />
+            )}
           </div>
         </div>
       )}
@@ -496,7 +639,7 @@ export const ProgressionPage: React.FC = () => {
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
-              <Button onClick={handleTriggerPreview} isLoading={isPreviewLoading}>
+              <Button onClick={() => handleTriggerPreview(1)} isLoading={isPreviewLoading}>
                 Generate Dry-Run Preview
               </Button>
             </div>
@@ -575,14 +718,57 @@ export const ProgressionPage: React.FC = () => {
 
               {/* Registry Details Table */}
               <div className="border border-slate-200 dark:border-slate-800 bg-white p-4 space-y-4 rounded-none">
-                <p className="text-xs font-mono uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">
-                  PROSPECTIVE_DECISIONS_LEDGER
-                </p>
+                <div className="border-b border-slate-100 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
+                    PROSPECTIVE_DECISIONS_LEDGER
+                  </p>
+                  <p className="text-[10px] font-mono text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 border border-amber-200/50">
+                    * Local Filters: Search and Decision filters apply ONLY to the records loaded on this page.
+                  </p>
+                </div>
+
+                {/* Local Filters Row */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-3">
+                  <div className="flex-1 w-full">
+                    <Input
+                      placeholder="Search student name or admission number on current page..."
+                      value={localSearch}
+                      onChange={(e) => setLocalSearch(e.target.value)}
+                      className="text-xs bg-white"
+                    />
+                  </div>
+                  <div className="w-full sm:w-48">
+                    <select
+                      value={localDecisionFilter}
+                      onChange={(e) => setLocalDecisionFilter(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs rounded-sm border border-slate-300 dark:border-slate-700 bg-white"
+                    >
+                      <option value="all">All Outcomes</option>
+                      <option value="PROMOTED">PROMOTED</option>
+                      <option value="RETAINED">RETAINED</option>
+                      <option value="GRADUATED">GRADUATED</option>
+                      <option value="TRANSFERRED">TRANSFERRED</option>
+                      <option value="WITHDRAWN">WITHDRAWN</option>
+                      <option value="PENDING">PENDING (Blocked/Excluded)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <Table
                   columns={previewItemColumns}
-                  data={previewData.items || []}
+                  data={filteredPreviewItems}
                   isLoading={false}
                 />
+
+                {previewData && previewData.total_pages > 1 && (
+                  <Pagination
+                    page={previewPage}
+                    totalPages={previewData.total_pages}
+                    totalItems={previewData.total}
+                    pageSize={previewPageSize}
+                    onPageChange={(p) => handleTriggerPreview(p)}
+                  />
+                )}
               </div>
             </div>
           )}

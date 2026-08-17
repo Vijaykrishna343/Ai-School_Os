@@ -682,8 +682,8 @@ describe('Academic Progression Workspace Component', () => {
     expect(screen.getAllByText('PROMOTED')[0]).toBeInTheDocument();
     expect(screen.getAllByText('RETAINED')[0]).toBeInTheDocument();
     expect(screen.getAllByText('GRADUATED')[0]).toBeInTheDocument();
-    expect(screen.getByText('TRANSFERRED')).toBeInTheDocument();
-    expect(screen.getByText('WITHDRAWN')).toBeInTheDocument();
+    expect(screen.getAllByText('TRANSFERRED')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('WITHDRAWN')[0]).toBeInTheDocument();
     expect(screen.getAllByText('PENDING').length).toBe(2);
 
     // Verify target placements are mapped correctly based on decision/status
@@ -697,5 +697,198 @@ describe('Academic Progression Workspace Component', () => {
     expect(screen.getByText("Section 'A' not found in target class. Fallback to section 'B'.")).toBeInTheDocument();
     expect(screen.getByText("Missing progression rule")).toBeInTheDocument();
     expect(screen.queryByText('FEE_DUE')).not.toBeInTheDocument();
+  });
+
+  it('renders and operates Matrix Rules pagination controls', async () => {
+    vi.mocked(progressionApi.getRules).mockResolvedValue({
+      items: [{ id: 'rule-1', source_class_id: 'class-nursery', target_class_id: 'class-lkg', is_terminal: false, description: 'Nursery to LKG' }],
+      total: 15,
+      page: 1,
+      page_size: 10,
+      total_pages: 2,
+    } as any);
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ProgressionPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Nursery to LKG')).toBeInTheDocument();
+    });
+
+    const nextPageButton = screen.getByRole('button', { name: 'Next page' });
+    expect(nextPageButton).toBeInTheDocument();
+
+    fireEvent.click(nextPageButton);
+
+    await waitFor(() => {
+      expect(progressionApi.getRules).toHaveBeenCalledWith(expect.objectContaining({
+        page: 2,
+      }));
+    });
+  });
+
+  it('renders and operates Decisions Ledger pagination controls', async () => {
+    const mockPreviewResponse = {
+      execution_plan_hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+      summary: {
+        source_academic_year_id: 'ay-2025',
+        target_academic_year_id: 'ay-2026',
+        total_students_evaluated: 100,
+        promoted_count: 80,
+        graduated_count: 20,
+        retained_count: 0,
+        blocked_count: 0,
+        excluded_count: 0,
+        warning_count: 0,
+      },
+      items: [
+        {
+          student_id: 'stud-1',
+          admission_number: 'ADM-001',
+          student_name: 'John Doe',
+          current_academic_year_id: 'ay-2025',
+          current_class_id: 'class-nursery',
+          current_class_name: 'Nursery',
+          current_section_id: 'sec-a',
+          current_section_name: 'A',
+          decision: 'PROMOTED',
+          target_class_name: 'LKG',
+          target_section_name: 'A',
+          allocation_status: 'ALLOCATED',
+          reason: 'Meets promotional parameters',
+          warnings: [],
+        },
+      ],
+      total: 100,
+      page: 1,
+      page_size: 50,
+      total_pages: 2,
+    };
+    vi.mocked(progressionApi.generatePreview).mockResolvedValue(mockPreviewResponse as any);
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ProgressionPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Dry-Run & Rollover Console/i }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('option', { name: '2025-2026 (ACTIVE)' }).length).toBeGreaterThan(0);
+    });
+    fireEvent.change(screen.getByLabelText(/Source Academic Year/i), { target: { value: 'ay-2025' } });
+    fireEvent.change(screen.getByLabelText(/Target Academic Year/i), { target: { value: 'ay-2026' } });
+    fireEvent.click(screen.getByRole('button', { name: /Generate Dry-Run Preview/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+
+    const nextPageButton = screen.getByRole('button', { name: 'Next page' });
+    expect(nextPageButton).toBeInTheDocument();
+
+    fireEvent.click(nextPageButton);
+
+    await waitFor(() => {
+      expect(progressionApi.generatePreview).toHaveBeenCalledWith('ay-2025', expect.objectContaining({
+        page: 2,
+      }));
+    });
+  });
+
+  it('updates Rules list request when Matrix filters change', async () => {
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ProgressionPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    const sourceClassSelect = screen.getByLabelText('Source Class');
+    await waitFor(() => {
+      expect(sourceClassSelect).toHaveTextContent('Nursery');
+    });
+
+    fireEvent.change(screen.getByLabelText('Source Class'), { target: { value: 'class-nursery' } });
+
+    await waitFor(() => {
+      expect(progressionApi.getRules).toHaveBeenCalledWith(expect.objectContaining({
+        source_class_id: 'class-nursery',
+        page: 1,
+      }));
+    });
+
+    fireEvent.change(screen.getByLabelText('Terminal Status'), { target: { value: 'true' } });
+
+    await waitFor(() => {
+      expect(progressionApi.getRules).toHaveBeenCalledWith(expect.objectContaining({
+        source_class_id: 'class-nursery',
+        is_terminal: true,
+        page: 1,
+      }));
+    });
+  });
+
+  it('renders ErrorState when rules matrix query fails', async () => {
+    vi.mocked(progressionApi.getRules).mockRejectedValue(new Error('Matrix Load Failure'));
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ProgressionPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Academic Progression Configuration Error')).toBeInTheDocument();
+      expect(screen.getByText('Matrix Load Failure')).toBeInTheDocument();
+    });
+  });
+
+  it('invokes rules query refetch when ErrorState Retry is clicked', async () => {
+    vi.mocked(progressionApi.getRules).mockRejectedValueOnce(new Error('Temporary Failure'));
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ProgressionPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Temporary Failure')).toBeInTheDocument();
+    });
+
+    vi.mocked(progressionApi.getRules).mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+      total_pages: 0,
+    } as any);
+
+    const retryButton = screen.getByRole('button', { name: 'Retry Request' });
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Temporary Failure')).not.toBeInTheDocument();
+      expect(progressionApi.getRules).toHaveBeenCalledTimes(2);
+    });
   });
 });
