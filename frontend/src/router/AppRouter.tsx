@@ -10,6 +10,7 @@ import { ProgressionPage } from '@/pages/ProgressionPage';
 import { AttendancePage } from '@/pages/AttendancePage';
 import { ExamsPage } from '@/pages/ExamsPage';
 import { FeesPage } from '@/pages/FeesPage';
+import { TimetablePage } from '@/pages/TimetablePage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AppLayout } from '@/layouts/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -113,11 +114,7 @@ export const AppRouter = () => {
           path="timetable"
           element={
             <PermissionRoute permission="timetable.view">
-              <ModulePlaceholderPage
-                title="Timetable & Slots"
-                phase="Phase 5.4"
-                description="Period slot allocation, classroom schedules, timetable publishing, and teacher substitutions."
-              />
+              <TimetablePage />
             </PermissionRoute>
           }
         />

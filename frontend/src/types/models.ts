@@ -946,6 +946,190 @@ export interface FeeReceipt {
   outstanding_due: number;
 }
 
+// =====================================================================
+// Timetable & Scheduling
+// =====================================================================
 
+export type RoomType = 'CLASSROOM' | 'LABORATORY' | 'AUDITORIUM' | 'SPORTS_GROUND';
+export type PeriodType = 'REGULAR' | 'BREAK' | 'ASSEMBLY' | 'LUNCH';
+export type TimetableStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
 
+export interface Classroom {
+  id: string;
+  school_id: string;
+  room_number: string;
+  building_name: string | null;
+  capacity: number;
+  room_type: RoomType;
+  created_at: string;
+  updated_at: string;
+}
 
+export interface ClassroomCreate {
+  school_id: string;
+  room_number: string;
+  building_name?: string | null;
+  capacity?: number;
+  room_type?: RoomType;
+}
+
+export interface ClassroomUpdate {
+  room_number?: string;
+  building_name?: string | null;
+  capacity?: number;
+  room_type?: RoomType;
+}
+
+export interface PeriodSlot {
+  id: string;
+  school_id: string;
+  name: string;
+  period_type: PeriodType;
+  start_time: string;
+  end_time: string;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PeriodSlotCreate {
+  school_id: string;
+  name: string;
+  period_type?: PeriodType;
+  start_time: string;
+  end_time: string;
+  display_order: number;
+}
+
+export interface PeriodSlotUpdate {
+  name?: string;
+  period_type?: PeriodType;
+  start_time?: string;
+  end_time?: string;
+  display_order?: number;
+}
+
+export interface TimetableEntryCreate {
+  day_of_week: DayOfWeek;
+  period_slot_id: string;
+  subject_id: string;
+  teacher_id: string;
+  classroom_id?: string | null;
+}
+
+export interface PeriodSlotNested {
+  id: string;
+  name: string;
+  period_type: PeriodType;
+  start_time: string;
+  end_time: string;
+  display_order: number;
+}
+
+export interface SubjectNested {
+  id: string;
+  subject_name: string;
+  subject_code: string;
+}
+
+export interface TeacherNested {
+  id: string;
+  first_name: string;
+  last_name: string;
+  employee_id: string;
+}
+
+export interface ClassroomNested {
+  id: string;
+  room_number: string;
+  building_name: string | null;
+  capacity: number;
+  room_type: RoomType;
+}
+
+export interface TimetableEntryDetail {
+  id: string;
+  timetable_id: string;
+  day_of_week: DayOfWeek;
+  period_slot_id: string;
+  subject_id: string;
+  teacher_id: string;
+  classroom_id: string | null;
+  created_at: string;
+  updated_at: string;
+  period_slot: PeriodSlotNested;
+  subject: SubjectNested;
+  teacher: TeacherNested;
+  classroom: ClassroomNested | null;
+}
+
+export interface TimetableCreate {
+  school_id: string;
+  academic_year_id: string;
+  school_class_id: string;
+  section_id: string;
+  academic_term_id?: string | null;
+}
+
+export interface Timetable {
+  id: string;
+  school_id: string;
+  academic_year_id: string;
+  school_class_id: string;
+  section_id: string;
+  academic_term_id: string | null;
+  status: TimetableStatus;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimetableDetail extends Timetable {
+  entries: TimetableEntryDetail[];
+}
+
+export interface TeacherScheduleEntry {
+  entry_id: string;
+  timetable_id: string;
+  academic_year_id: string;
+  school_class_id: string;
+  section_id: string;
+  school_class_name: string;
+  section_name: string;
+  day_of_week: string;
+  period_slot: Record<string, unknown>;
+  subject: Record<string, unknown>;
+  classroom: Record<string, unknown> | null;
+}
+
+export interface TeacherSubstitutionCreate {
+  school_id: string;
+  timetable_entry_id: string;
+  substitution_date: string;
+  substitute_teacher_id: string;
+  remarks?: string | null;
+}
+
+export interface TeacherSubstitutionUpdate {
+  substitute_teacher_id?: string;
+  remarks?: string | null;
+}
+
+export interface TeacherSubstitutionResponse {
+  id: string;
+  school_id: string;
+  timetable_entry_id: string;
+  substitution_date: string;
+  original_teacher_id: string;
+  substitute_teacher_id: string;
+  remarks: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeacherSubstitutionDetail extends TeacherSubstitutionResponse {
+  original_teacher: TeacherNested;
+  substitute_teacher: TeacherNested;
+  timetable_entry: TimetableEntryDetail;
+}

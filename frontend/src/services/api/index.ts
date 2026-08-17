@@ -18,6 +18,7 @@ export * from './reportCardsApi';
 export * from './gradingScalesApi';
 export * from './evaluationConfigsApi';
 export * from './feesApi';
-
-
-
+export * from './classroomsApi';
+export * from './periodSlotsApi';
+export * from './timetableApi';
+export * from './substitutionsApi';
