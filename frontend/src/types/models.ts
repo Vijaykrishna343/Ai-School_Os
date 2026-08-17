@@ -314,22 +314,26 @@ export interface TeacherCreate {
   experience_years?: number;
   phone: string;
   email: string;
+  emergency_contact?: string;
   address_line1: string;
   city: string;
   district: string;
   state: string;
   postal_code: string;
+  status?: 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED' | 'TERMINATED' | 'RETIRED';
 }
 
 export interface TeacherUpdate {
   first_name?: string;
   middle_name?: string;
   last_name?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
   qualification?: string;
   specialization?: string;
   experience_years?: number;
   phone?: string;
   email?: string;
+  emergency_contact?: string;
   address_line1?: string;
   city?: string;
   district?: string;

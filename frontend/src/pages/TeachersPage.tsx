@@ -13,6 +13,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Drawer } from '@/components/ui/Drawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Alert } from '@/components/ui/Alert';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export const TeachersPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -41,18 +42,27 @@ export const TeachersPage: React.FC = () => {
     experience_years: 0,
     phone: '',
     email: '',
+    emergency_contact: '',
     address_line1: '',
     city: '',
     district: '',
     state: '',
     postal_code: '110001',
+    status: 'ACTIVE',
   });
 
   const [formError, setFormError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string> | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Queries
-  const { data: teachersData, isLoading: isTeachersLoading } = useQuery({
+  const {
+    data: teachersData,
+    isLoading: isTeachersLoading,
+    isError: isTeachersError,
+    error: teachersError,
+    refetch: refetchTeachers,
+  } = useQuery({
     queryKey: ['teachers', page, pageSize, search, selectedStatusFilter],
     queryFn: () =>
       teachersApi.getTeachers({
@@ -93,6 +103,11 @@ export const TeachersPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
       setDeleteTarget(null);
+      setDeleteError(null);
+    },
+    onError: (err: any) => {
+      setDeleteError(err.message || 'Failed to delete teacher record.');
+      setDeleteTarget(null);
     },
   });
 
@@ -114,11 +129,13 @@ export const TeachersPage: React.FC = () => {
       experience_years: 0,
       phone: '',
       email: '',
+      emergency_contact: '',
       address_line1: '',
       city: '',
       district: '',
       state: '',
       postal_code: '110001',
+      status: 'ACTIVE',
     });
     setIsTeacherModalOpen(true);
   };
@@ -137,11 +154,13 @@ export const TeachersPage: React.FC = () => {
       experience_years: teacher.experience_years || 0,
       phone: teacher.phone,
       email: teacher.email,
+      emergency_contact: teacher.emergency_contact || '',
       address_line1: teacher.address_line1,
       city: teacher.city,
       district: teacher.district,
       state: teacher.state,
       postal_code: teacher.postal_code,
+      status: teacher.status,
     });
     setIsTeacherModalOpen(true);
   };
@@ -157,16 +176,19 @@ export const TeachersPage: React.FC = () => {
           first_name: teacherForm.first_name,
           middle_name: teacherForm.middle_name,
           last_name: teacherForm.last_name,
+          gender: teacherForm.gender,
           qualification: teacherForm.qualification,
           specialization: teacherForm.specialization,
           experience_years: teacherForm.experience_years,
           phone: teacherForm.phone,
           email: teacherForm.email,
+          emergency_contact: teacherForm.emergency_contact,
           address_line1: teacherForm.address_line1,
           city: teacherForm.city,
           district: teacherForm.district,
           state: teacherForm.state,
           postal_code: teacherForm.postal_code,
+          status: teacherForm.status,
         },
       });
     } else {
@@ -264,6 +286,18 @@ export const TeachersPage: React.FC = () => {
     },
   ];
 
+  if (isTeachersError) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <ErrorState
+          title="Administrative Faculty Directory Error"
+          message={(teachersError as any)?.message || 'Failed to retrieve institutional teacher records.'}
+          onRetry={() => refetchTeachers()}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto bg-paper dark:bg-stone-950 select-none">
       {/* Editorial Header */}
@@ -283,6 +317,12 @@ export const TeachersPage: React.FC = () => {
           + Add Teacher
         </Button>
       </div>
+
+      {deleteError && (
+        <Alert type="error" title="Deletion Failure" onClose={() => setDeleteError(null)}>
+          {deleteError}
+        </Alert>
+      )}
 
       <div className="p-4 border border-divider dark:border-stone-850 bg-paper flex flex-col md:flex-row items-center gap-4">
         <div className="flex-1 w-full">
@@ -352,137 +392,234 @@ export const TeachersPage: React.FC = () => {
           </div>
         }
       >
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+        <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
           {formError && <Alert type="error" title="Form Error">{formError}</Alert>}
 
-          {!editingTeacher && (
-            <Input
-              label="Employee ID *"
-              value={teacherForm.employee_id || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, employee_id: e.target.value })}
-              error={validationErrors?.employee_id}
-              required
-            />
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="First Name *"
-              value={teacherForm.first_name || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, first_name: e.target.value })}
-              error={validationErrors?.first_name}
-              required
-            />
-            <Input
-              label="Last Name"
-              value={teacherForm.last_name || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, last_name: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
-                Gender *
-              </label>
-              <select
-                value={teacherForm.gender || 'MALE'}
-                onChange={(e) => setTeacherForm({ ...teacherForm, gender: e.target.value as any })}
-                className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250"
-              >
-                <option value="MALE">MALE</option>
-                <option value="FEMALE">FEMALE</option>
-                <option value="OTHER">OTHER</option>
-              </select>
-            </div>
-            {!editingTeacher && (
+          {/* IDENTITY SECTION */}
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-500 dark:text-brand-350 border-b border-divider pb-1">
+              I. Identity Record
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Input
-                type="date"
-                label="Date of Birth *"
-                value={teacherForm.date_of_birth || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, date_of_birth: e.target.value })}
+                label="First Name *"
+                value={teacherForm.first_name || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, first_name: e.target.value })}
+                error={validationErrors?.first_name}
                 required
               />
+              <Input
+                label="Middle Name"
+                value={teacherForm.middle_name || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, middle_name: e.target.value })}
+                error={validationErrors?.middle_name}
+              />
+              <Input
+                label="Last Name"
+                value={teacherForm.last_name || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, last_name: e.target.value })}
+                error={validationErrors?.last_name}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="gender-select" className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
+                  Gender *
+                </label>
+                <select
+                  id="gender-select"
+                  value={teacherForm.gender || 'MALE'}
+                  onChange={(e) => setTeacherForm({ ...teacherForm, gender: e.target.value as any })}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250 font-mono"
+                >
+                  <option value="MALE">MALE</option>
+                  <option value="FEMALE">FEMALE</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
+              </div>
+              {!editingTeacher ? (
+                <Input
+                  type="date"
+                  label="Date of Birth *"
+                  value={teacherForm.date_of_birth || ''}
+                  onChange={(e) => setTeacherForm({ ...teacherForm, date_of_birth: e.target.value })}
+                  error={validationErrors?.date_of_birth}
+                  required
+                />
+              ) : (
+                <Input
+                  type="date"
+                  label="Date of Birth"
+                  value={editingTeacher.date_of_birth || ''}
+                  disabled
+                />
+              )}
+            </div>
+          </div>
+
+          {/* EMPLOYMENT SECTION */}
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-500 dark:text-brand-350 border-b border-divider pb-1">
+              II. Employment Record
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {!editingTeacher ? (
+                <Input
+                  label="Employee ID *"
+                  value={teacherForm.employee_id || ''}
+                  onChange={(e) => setTeacherForm({ ...teacherForm, employee_id: e.target.value })}
+                  error={validationErrors?.employee_id}
+                  required
+                />
+              ) : (
+                <Input
+                  label="Employee ID"
+                  value={editingTeacher.employee_id || ''}
+                  disabled
+                />
+              )}
+              {!editingTeacher ? (
+                <Input
+                  type="date"
+                  label="Joining Date *"
+                  value={teacherForm.joining_date || ''}
+                  onChange={(e) => setTeacherForm({ ...teacherForm, joining_date: e.target.value })}
+                  error={validationErrors?.joining_date}
+                  required
+                />
+              ) : (
+                <Input
+                  type="date"
+                  label="Joining Date"
+                  value={editingTeacher.joining_date || ''}
+                  disabled
+                />
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Input
+                label="Qualification *"
+                placeholder="e.g. M.Ed, B.Sc"
+                value={teacherForm.qualification || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, qualification: e.target.value })}
+                error={validationErrors?.qualification}
+                required
+              />
+              <Input
+                label="Specialization"
+                placeholder="e.g. Mathematics"
+                value={teacherForm.specialization || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, specialization: e.target.value })}
+                error={validationErrors?.specialization}
+              />
+              <Input
+                type="number"
+                label="Experience Years"
+                value={teacherForm.experience_years ?? 0}
+                onChange={(e) => setTeacherForm({ ...teacherForm, experience_years: parseInt(e.target.value, 10) || 0 })}
+                error={validationErrors?.experience_years}
+              />
+            </div>
+
+            {editingTeacher && (
+              <div>
+                <label htmlFor="status-select" className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
+                  Employment Status *
+                </label>
+                <select
+                  id="status-select"
+                  value={teacherForm.status || 'ACTIVE'}
+                  onChange={(e) => setTeacherForm({ ...teacherForm, status: e.target.value as any })}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250 font-mono"
+                >
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                  <option value="ON_LEAVE">ON_LEAVE</option>
+                  <option value="RESIGNED">RESIGNED</option>
+                  <option value="TERMINATED">TERMINATED</option>
+                  <option value="RETIRED">RETIRED</option>
+                </select>
+              </div>
             )}
           </div>
 
-          {!editingTeacher && (
-            <Input
-              type="date"
-              label="Joining Date *"
-              value={teacherForm.joining_date || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, joining_date: e.target.value })}
-              required
-            />
-          )}
+          {/* CONTACT SECTION */}
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-500 dark:text-brand-350 border-b border-divider pb-1">
+              III. Contact Register
+            </h3>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Qualification *"
-              placeholder="e.g. M.Ed, B.Sc"
-              value={teacherForm.qualification || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, qualification: e.target.value })}
-              error={validationErrors?.qualification}
-              required
-            />
-            <Input
-              label="Specialization (Optional)"
-              placeholder="e.g. Mathematics"
-              value={teacherForm.specialization || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, specialization: e.target.value })}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Input
+                label="Phone *"
+                value={teacherForm.phone || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
+                error={validationErrors?.phone}
+                required
+              />
+              <Input
+                label="Email *"
+                value={teacherForm.email || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
+                error={validationErrors?.email}
+                required
+              />
+              <Input
+                label="Emergency Contact"
+                value={teacherForm.emergency_contact || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, emergency_contact: e.target.value })}
+                error={validationErrors?.emergency_contact}
+              />
+            </div>
           </div>
 
-          <Input
-            type="number"
-            label="Experience Years"
-            value={teacherForm.experience_years || 0}
-            onChange={(e) => setTeacherForm({ ...teacherForm, experience_years: parseInt(e.target.value, 10) || 0 })}
-          />
+          {/* ADDRESS SECTION */}
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-500 dark:text-brand-350 border-b border-divider pb-1">
+              IV. Address Record
+            </h3>
 
-          <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Phone *"
-              value={teacherForm.phone || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
-              error={validationErrors?.phone}
+              label="Address Line 1 *"
+              value={teacherForm.address_line1 || ''}
+              onChange={(e) => setTeacherForm({ ...teacherForm, address_line1: e.target.value })}
+              error={validationErrors?.address_line1}
               required
             />
-            <Input
-              label="Email *"
-              value={teacherForm.email || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
-              error={validationErrors?.email}
-              required
-            />
-          </div>
 
-          <Input
-            label="Address Line 1 *"
-            value={teacherForm.address_line1 || ''}
-            onChange={(e) => setTeacherForm({ ...teacherForm, address_line1: e.target.value })}
-            required
-          />
-
-          <div className="grid grid-cols-3 gap-3">
-            <Input
-              label="City *"
-              value={teacherForm.city || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, city: e.target.value })}
-              required
-            />
-            <Input
-              label="District *"
-              value={teacherForm.district || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, district: e.target.value })}
-              required
-            />
-            <Input
-              label="State *"
-              value={teacherForm.state || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, state: e.target.value })}
-              required
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <Input
+                label="City *"
+                value={teacherForm.city || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, city: e.target.value })}
+                error={validationErrors?.city}
+                required
+              />
+              <Input
+                label="District *"
+                value={teacherForm.district || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, district: e.target.value })}
+                error={validationErrors?.district}
+                required
+              />
+              <Input
+                label="State *"
+                value={teacherForm.state || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, state: e.target.value })}
+                error={validationErrors?.state}
+                required
+              />
+              <Input
+                label="Postal Code *"
+                value={teacherForm.postal_code || ''}
+                onChange={(e) => setTeacherForm({ ...teacherForm, postal_code: e.target.value })}
+                error={validationErrors?.postal_code}
+                required
+              />
+            </div>
           </div>
         </div>
       </Modal>
