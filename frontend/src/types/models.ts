@@ -431,3 +431,32 @@ export interface ProgressionExecutionData {
   error_summary?: string | null;
 }
 
+export interface Subject {
+  id: string;
+  school_id: string;
+  subject_code: string;
+  subject_name: string;
+  description?: string | null;
+  is_optional: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SubjectCreate {
+  school_id?: string;
+  subject_code: string;
+  subject_name: string;
+  description?: string;
+  is_optional?: boolean;
+  status?: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface SubjectUpdate {
+  subject_code?: string;
+  subject_name?: string;
+  description?: string | null;
+  is_optional?: boolean;
+  status?: 'ACTIVE' | 'INACTIVE';
+}
+
