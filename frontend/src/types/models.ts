@@ -501,4 +501,258 @@ export interface AttendanceUpdate {
   remarks?: string | null;
 }
 
+export type AssessmentType =
+  | 'FORMATIVE_ASSESSMENT'
+  | 'SUMMATIVE_ASSESSMENT'
+  | 'UNIT_TEST'
+  | 'PERIODIC_TEST'
+  | 'QUARTERLY'
+  | 'HALF_YEARLY'
+  | 'TERM'
+  | 'PRE_FINAL'
+  | 'QUARTER_FINAL'
+  | 'SEMI_FINAL'
+  | 'FINAL'
+  | 'OTHER';
+
+export type AttemptType = 'REGULAR' | 'RETEST' | 'MAKEUP';
+
+export type ExamStatus = 'DRAFT' | 'SCHEDULED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+
+export type ReportCardStatus = 'DRAFT' | 'FINALIZED' | 'PUBLISHED';
+
+export type CalculationMode = 'SIMPLE_TOTAL' | 'WEIGHTED_ASSESSMENT_TYPE';
+
+export type RetestPolicy = 'REPLACE_ORIGINAL' | 'BEST_ATTEMPT' | 'LATEST_ATTEMPT';
+
+export type RoundingMode = 'ROUND_HALF_UP' | 'ROUND_FLOOR' | 'ROUND_CEIL';
+
+export interface Exam {
+  id: string;
+  school_id: string;
+  academic_year_id: string;
+  academic_term_id: string | null;
+  name: string;
+  assessment_type: AssessmentType;
+  attempt_type: AttemptType;
+  start_date: string;
+  end_date: string;
+  status: ExamStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExamCreate {
+  school_id?: string;
+  academic_year_id: string;
+  academic_term_id?: string | null;
+  name: string;
+  assessment_type?: AssessmentType;
+  attempt_type?: AttemptType;
+  start_date: string;
+  end_date: string;
+  status?: ExamStatus;
+}
+
+export interface ExamUpdate {
+  academic_term_id?: string | null;
+  name?: string;
+  assessment_type?: AssessmentType;
+  attempt_type?: AttemptType;
+  start_date?: string;
+  end_date?: string;
+  status?: ExamStatus;
+}
+
+export interface ExamSchedule {
+  id: string;
+  exam_id: string;
+  school_id: string;
+  academic_year_id: string;
+  school_class_id: string;
+  section_id: string;
+  subject_id: string;
+  exam_date: string;
+  start_time: string;
+  end_time: string;
+  maximum_marks: number;
+  passing_marks: number;
+  created_at: string;
+  updated_at: string;
+  exam?: Exam;
+  subject?: any;
+  school_class?: { id: string; name: string } | null;
+  section?: { id: string; name: string } | null;
+}
+
+export interface ExamScheduleCreate {
+  exam_id: string;
+  school_id?: string;
+  academic_year_id: string;
+  school_class_id: string;
+  section_id: string;
+  subject_id: string;
+  exam_date: string;
+  start_time: string;
+  end_time: string;
+  maximum_marks: number;
+  passing_marks: number;
+}
+
+export interface ExamScheduleUpdate {
+  exam_date?: string;
+  start_time?: string;
+  end_time?: string;
+  maximum_marks?: number;
+  passing_marks?: number;
+}
+
+export interface StudentExamResult {
+  id: string;
+  exam_schedule_id: string;
+  student_id: string;
+  marks_obtained: number;
+  remarks: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentExamResultCreate {
+  exam_schedule_id: string;
+  student_id: string;
+  marks_obtained: number;
+  remarks?: string | null;
+}
+
+export interface StudentExamResultUpdate {
+  marks_obtained?: number;
+  remarks?: string | null;
+}
+
+export interface GradeScaleEntry {
+  id: string;
+  grade_scale_id: string;
+  grade_code: string;
+  min_percentage: number;
+  max_percentage: number;
+  grade_point: number;
+  description: string | null;
+}
+
+export interface GradeScale {
+  id: string;
+  school_id: string;
+  name: string;
+  description: string | null;
+  is_default: boolean;
+  entries?: GradeScaleEntry[];
+}
+
+export interface GradeScaleCreate {
+  name: string;
+  description?: string | null;
+  is_default?: boolean;
+  entries?: Omit<GradeScaleEntry, 'id' | 'grade_scale_id'>[];
+}
+
+export interface GradeScaleUpdate {
+  name?: string;
+  description?: string | null;
+  is_default?: boolean;
+  entries?: (Omit<GradeScaleEntry, 'id' | 'grade_scale_id'> | GradeScaleEntry)[];
+}
+
+export interface AssessmentTypeWeightage {
+  id: string;
+  evaluation_config_id: string;
+  assessment_type: AssessmentType;
+  weightage_percentage: number;
+}
+
+export interface EvaluationConfig {
+  id: string;
+  school_id: string;
+  academic_year_id: string;
+  name: string;
+  calculation_mode: CalculationMode;
+  retest_policy: RetestPolicy;
+  rounding_mode: RoundingMode;
+  weightages?: AssessmentTypeWeightage[];
+}
+
+export interface EvaluationConfigCreate {
+  school_id?: string;
+  academic_year_id: string;
+  name: string;
+  calculation_mode: CalculationMode;
+  retest_policy: RetestPolicy;
+  rounding_mode: RoundingMode;
+  weightages?: Omit<AssessmentTypeWeightage, 'id' | 'evaluation_config_id'>[];
+}
+
+export interface ReportCardItemSnapshot {
+  id: string;
+  report_card_id: string;
+  subject_id: string;
+  subject_name: string;
+  subject_code: string;
+  max_marks: number;
+  obtained_marks: number;
+  percentage: number;
+  grade_code: string;
+  grade_point: number;
+  is_pass: boolean;
+  remarks: string | null;
+}
+
+export interface ReportCard {
+  id: string;
+  school_id: string;
+  academic_year_id: string;
+  academic_term_id: string | null;
+  student_id: string;
+  school_class_id: string;
+  section_id: string;
+  grade_scale_id: string;
+  evaluation_config_id: string;
+  status: ReportCardStatus;
+  total_max_marks: number;
+  total_obtained_marks: number;
+  percentage: number;
+  overall_grade: string;
+  overall_grade_point: number;
+  gpa: number | null;
+  is_passed: boolean;
+  total_working_days: number;
+  present_days: number;
+  attendance_percentage: number;
+  teacher_remarks: string | null;
+  principal_remarks: string | null;
+  finalized_at: string | null;
+  published_at: string | null;
+  items?: ReportCardItemSnapshot[];
+  student?: Student | null;
+  school_class?: { id: string; name: string } | null;
+  section?: { id: string; name: string } | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReportCardGenerateRequest {
+  school_id: string;
+  academic_year_id: string;
+  academic_term_id?: string | null;
+  student_id?: string | null;
+  section_id?: string | null;
+  school_class_id?: string | null;
+  grade_scale_id?: string | null;
+  evaluation_config_id?: string | null;
+}
+
+export interface ReportCardRemarksUpdate {
+  teacher_remarks?: string | null;
+  principal_remarks?: string | null;
+}
+
+
 

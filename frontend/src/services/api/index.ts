@@ -11,4 +11,11 @@ export * from './teachersApi';
 export * from './progressionApi';
 export * from './subjectsApi';
 export * from './attendanceApi';
+export * from './examsApi';
+export * from './examSchedulesApi';
+export * from './studentExamResultsApi';
+export * from './reportCardsApi';
+export * from './gradingScalesApi';
+export * from './evaluationConfigsApi';
+
 

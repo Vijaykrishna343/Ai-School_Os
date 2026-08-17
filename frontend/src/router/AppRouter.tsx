@@ -8,6 +8,7 @@ import { TeachersPage } from '@/pages/TeachersPage';
 import { ModulePlaceholderPage } from '@/pages/ModulePlaceholderPage';
 import { ProgressionPage } from '@/pages/ProgressionPage';
 import { AttendancePage } from '@/pages/AttendancePage';
+import { ExamsPage } from '@/pages/ExamsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AppLayout } from '@/layouts/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -106,11 +107,7 @@ export const AppRouter = () => {
           path="exams"
           element={
             <PermissionRoute permission="exam.view">
-              <ModulePlaceholderPage
-                title="Exams & Report Cards"
-                phase="Phase 5.4 & 5.5"
-                description="Assessment schedules, student mark entries, grading scales, and report card PDF generation."
-              />
+              <ExamsPage />
             </PermissionRoute>
           }
         />
