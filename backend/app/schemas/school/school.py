@@ -31,6 +31,16 @@ class SchoolBase(BaseModel):
     postal_code: str
 
     status: SchoolStatus = SchoolStatus.ACTIVE
+    subscription_tier: str = "STANDARD"
+
+    max_students: int | None = None
+    max_teachers: int | None = None
+
+    trial_ends_at: datetime | None = None
+    subscription_expires_at: datetime | None = None
+    grace_period_ends_at: datetime | None = None
+    suspended_at: datetime | None = None
+    suspension_reason: str | None = None
 
 
 class SchoolCreate(SchoolBase):
@@ -62,7 +72,27 @@ class SchoolUpdate(BaseModel):
 
     postal_code: str | None = None
 
-    status: SchoolStatus | None = None
+
+class SchoolStatusUpdate(BaseModel):
+    """
+    Request body for updating school status (Super Admin only).
+    """
+
+    status: SchoolStatus
+    suspension_reason: str | None = None
+
+
+class SchoolSubscriptionUpdate(BaseModel):
+    """
+    Request body for updating school subscription details (Super Admin only).
+    """
+
+    subscription_tier: str = "STANDARD"
+    max_students: int | None = None
+    max_teachers: int | None = None
+    trial_ends_at: datetime | None = None
+    subscription_expires_at: datetime | None = None
+    grace_period_ends_at: datetime | None = None
 
 
 class SchoolResponse(SchoolBase):

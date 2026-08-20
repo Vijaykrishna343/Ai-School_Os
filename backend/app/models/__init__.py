@@ -25,10 +25,13 @@ from .student import (
 )
 from .subject import Subject
 from .teacher import Teacher
+from .notification import Notification, NotificationChannel, NotificationStatus, NotificationRecipientType
+from .audit_log import AuditLog
 
 __all__ = [
     "AcademicYear",
     "Attendance",
+    "AuditLog",
     "ClassProgressionRule",
     "ProgressionExecution",
     "ProgressionExecutionItem",
@@ -37,6 +40,10 @@ __all__ = [
     "FeeItem",
     "FeePayment",
     "FeeStructure",
+    "Notification",
+    "NotificationChannel",
+    "NotificationStatus",
+    "NotificationRecipientType",
     "Parent",
     "School",
     "SchoolClass",

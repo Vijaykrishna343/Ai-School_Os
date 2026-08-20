@@ -148,5 +148,40 @@ class IdentityUserRepository(BaseRepository[IdentityUser]):
         )
         return db.scalar(stmt) or 0
 
+    def list_users(
+        self,
+        db: Session,
+        school_id: UUID | None = None,
+        email: str | None = None,
+        username: str | None = None,
+        first_name: str | None = None,
+        is_active: bool | None = None,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[IdentityUser], int]:
+        """
+        Get filtered, paginated list of users for a school.
+        """
+        stmt = select(IdentityUser).where(IdentityUser.is_deleted.is_(False))
+
+        if school_id is not None:
+            stmt = stmt.where(IdentityUser.school_id == school_id)
+        if email:
+            stmt = stmt.where(func.lower(IdentityUser.email).contains(email.lower()))
+        if username:
+            stmt = stmt.where(func.lower(IdentityUser.username).contains(username.lower()))
+        if first_name:
+            stmt = stmt.where(func.lower(IdentityUser.first_name).contains(first_name.lower()))
+        if is_active is not None:
+            stmt = stmt.where(IdentityUser.is_active.is_(is_active))
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = db.scalar(count_stmt) or 0
+
+        stmt = stmt.order_by(IdentityUser.first_name).offset((page - 1) * page_size).limit(page_size)
+        items = list(db.scalars(stmt).all())
+
+        return items, total
+
 
 identity_user_repository = IdentityUserRepository()

@@ -21,9 +21,16 @@ class UserResponse(BaseModel):
 
     is_active: bool
 
+    status: str = "ACTIVE"
+
+    suspended_at: datetime | None = None
+
+    suspension_reason: str | None = None
+
     is_verified: bool
 
     last_login: datetime | None
+
 
     created_at: datetime
 

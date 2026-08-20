@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -8,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.common.exceptions import (
     AlreadyExistsException,
     BadRequestException,
+    ForbiddenException,
     NotFoundException,
 )
 from app.common.logger.logger import get_logger
@@ -16,6 +15,9 @@ from app.identity.repositories import (
     role_repository,
     user_role_repository,
 )
+
+if TYPE_CHECKING:
+    from app.identity.models.user import IdentityUser
 
 logger = get_logger(__name__)
 
@@ -34,6 +36,7 @@ class IdentityUserRoleService:
         db: Session,
         user_id: UUID,
         role_id: UUID,
+        current_user: IdentityUser | None = None,
     ) -> Any:
         """
         Assign a role to a user.
@@ -56,6 +59,9 @@ class IdentityUserRoleService:
                 str(user_id),
             )
 
+        if current_user and not current_user.is_super_admin and user.school_id != current_user.school_id:
+            raise NotFoundException("User", str(user_id))
+
         # -------------------------------
         # Validate Role
         # -------------------------------
@@ -71,6 +77,10 @@ class IdentityUserRoleService:
                 "Role",
                 str(role_id),
             )
+
+        # Privilege Escalation Guard (FIX 1 & INVARIANT 1)
+        if role.name == "Super Admin" and (current_user is None or not current_user.is_super_admin):
+            raise ForbiddenException("School administrators cannot assign Super Admin or platform-level roles.")
 
         # -------------------------------
         # Multi-tenant Validation
@@ -123,6 +133,7 @@ class IdentityUserRoleService:
         self,
         db: Session,
         user_id: UUID,
+        current_user: IdentityUser | None = None,
     ) -> Any:
         """
         Get all assigned roles for a user.
@@ -132,7 +143,7 @@ class IdentityUserRoleService:
             user_id,
         )
 
-        if user is None:
+        if user is None or (current_user and not current_user.is_super_admin and user.school_id != current_user.school_id):
             logger.warning("Validation failure: User ID '%s' not found", user_id)
             raise NotFoundException(
                 "User",
@@ -153,11 +164,20 @@ class IdentityUserRoleService:
         db: Session,
         user_id: UUID,
         role_id: UUID,
+        current_user: IdentityUser | None = None,
     ) -> None:
         """
         Remove a role from a user.
         """
         logger.info("Removing role ID %s from user ID %s", role_id, user_id)
+        user = identity_user_repository.get_by_id(db, user_id)
+        if user is None or (current_user and not current_user.is_super_admin and user.school_id != current_user.school_id):
+            raise NotFoundException("User", str(user_id))
+
+        role = role_repository.get_by_id(db, role_id)
+        if role and role.name == "Super Admin" and (current_user is None or not current_user.is_super_admin):
+            raise ForbiddenException("School administrators cannot modify Super Admin assignments.")
+
         if not user_role_repository.role_exists(
             db,
             user_id,
@@ -174,6 +194,7 @@ class IdentityUserRoleService:
             role_id,
         )
         logger.info("Role ID %s removed from user ID %s successfully", role_id, user_id)
+
 
 
 user_role_service = IdentityUserRoleService()

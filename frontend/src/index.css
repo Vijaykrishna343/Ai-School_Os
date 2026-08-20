@@ -57,3 +57,24 @@
   }
 }
 
+/* Phase 9.2 & 9.3 — Print Styles for Report Cards and Fee Receipts */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  aside, nav, header, button, .no-print {
+    display: none !important;
+  }
+
+  .printable-area {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+}

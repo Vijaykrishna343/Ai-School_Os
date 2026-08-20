@@ -22,3 +22,14 @@ export * from './classroomsApi';
 export * from './periodSlotsApi';
 export * from './timetableApi';
 export * from './substitutionsApi';
+export * from './usersApi';
+export * from './rolesApi';
+export * from './permissionsApi';
+export * from './userRolesApi';
+export * from './rolePermissionsApi';
+export * from './schoolsApi';
+export * from './teacherAttendanceApi';
+export * from './studentCertificatesApi';
+export * from './homeworkApi';
+export * from './documentsApi';
+

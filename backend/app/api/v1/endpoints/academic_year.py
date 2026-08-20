@@ -19,6 +19,7 @@ from app.dependencies import (
     get_student_promotion_service,
 )
 from app.identity.dependencies.require_permission import require_permission
+from app.identity.security.current_user import get_current_user
 from app.identity.models.user import IdentityUser
 from app.schemas.academic_year import (
     AcademicYearCreate,
@@ -44,6 +45,49 @@ from app.services.student.progression_preview_service import ProgressionPreviewS
 from app.services.student.student_promotion_service import StudentPromotionService
 
 router = APIRouter()
+
+
+@router.get(
+    "/current",
+    response_model=dict,
+    summary="Get Current Academic Year Context",
+)
+def get_current_academic_year(
+    current_user: IdentityUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    service: AcademicYearService = Depends(get_academic_year_service),
+) -> dict[str, object]:
+    """
+    Get current active academic year for the authenticated user's school.
+    Accessible to operational roles (teachers, staff) without requiring administrative academic_year.view permission.
+    """
+    ay = service.get_current_academic_year(
+        db,
+        school_id=current_user.school_id,
+    )
+    if not ay:
+        items = service.get_all_academic_years(
+            db,
+            school_id=current_user.school_id,
+        )
+        ay = items[0] if items else None
+
+    items_list = []
+    if ay:
+        items_list = [AcademicYearResponse.model_validate(ay)]
+
+    list_response = AcademicYearListResponse(
+        items=items_list,
+        total=len(items_list),
+        page=1,
+        page_size=10,
+        total_pages=1 if items_list else 0,
+    )
+
+    return ApiResponse.success(
+        message="Current academic year fetched successfully.",
+        data=list_response.model_dump(),
+    )
 
 
 @router.post(

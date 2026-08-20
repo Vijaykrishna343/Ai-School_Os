@@ -44,11 +44,20 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "student.view", "module": "student", "action": "view", "description": "View student"},
     {"name": "student.update", "module": "student", "action": "update", "description": "Update student"},
     {"name": "student.delete", "module": "student", "action": "delete", "description": "Delete student"},
+    {"name": "student.export", "module": "student", "action": "export", "description": "Export student data as CSV"},
     {"name": "student.promote", "module": "student", "action": "promote", "description": "Promote student"},
     {"name": "student.retain", "module": "student", "action": "retain", "description": "Retain student"},
     {"name": "student.transition", "module": "student", "action": "transition", "description": "Transition academic year"},
     {"name": "student.tc.create", "module": "student", "action": "tc.create", "description": "Create transfer certificate"},
     {"name": "student.tc.view", "module": "student", "action": "tc.view", "description": "View transfer certificate"},
+    {"name": "student.certificate.create", "module": "student", "action": "certificate.create", "description": "Issue student certificate"},
+    {"name": "student.certificate.view", "module": "student", "action": "certificate.view", "description": "View student certificate"},
+
+    # Teacher Attendance
+    {"name": "teacher_attendance.view", "module": "teacher_attendance", "action": "view", "description": "View staff attendance"},
+    {"name": "teacher_attendance.create", "module": "teacher_attendance", "action": "create", "description": "Mark staff attendance"},
+    {"name": "teacher_attendance.update", "module": "teacher_attendance", "action": "update", "description": "Update staff attendance"},
+    {"name": "teacher_attendance.manage", "module": "teacher_attendance", "action": "manage", "description": "Manage staff attendance"},
 
     # Academic Progression Matrix & Preview & Execution
     {"name": "progression_matrix.view", "module": "progression_matrix", "action": "view", "description": "View class progression rules"},
@@ -62,12 +71,14 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "teacher.view", "module": "teacher", "action": "view", "description": "View teacher"},
     {"name": "teacher.update", "module": "teacher", "action": "update", "description": "Update teacher"},
     {"name": "teacher.delete", "module": "teacher", "action": "delete", "description": "Delete teacher"},
+    {"name": "teacher.export", "module": "teacher", "action": "export", "description": "Export teacher data as CSV"},
 
     # Parent
     {"name": "parent.create", "module": "parent", "action": "create", "description": "Create parent"},
     {"name": "parent.view", "module": "parent", "action": "view", "description": "View parent"},
     {"name": "parent.update", "module": "parent", "action": "update", "description": "Update parent"},
     {"name": "parent.delete", "module": "parent", "action": "delete", "description": "Delete parent"},
+    {"name": "parent.export", "module": "parent", "action": "export", "description": "Export parent data as CSV"},
 
     # Subject
     {"name": "subject.create", "module": "subject", "action": "create", "description": "Create subject"},
@@ -80,12 +91,14 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "attendance.view", "module": "attendance", "action": "view", "description": "View attendance"},
     {"name": "attendance.update", "module": "attendance", "action": "update", "description": "Update attendance"},
     {"name": "attendance.delete", "module": "attendance", "action": "delete", "description": "Delete attendance"},
+    {"name": "attendance.export", "module": "attendance", "action": "export", "description": "Export attendance data as CSV"},
 
     # Fees
     {"name": "fees.create", "module": "fees", "action": "create", "description": "Create fees"},
     {"name": "fees.view", "module": "fees", "action": "view", "description": "View fees"},
     {"name": "fees.update", "module": "fees", "action": "update", "description": "Update fees"},
     {"name": "fees.delete", "module": "fees", "action": "delete", "description": "Delete fees"},
+    {"name": "fees.export", "module": "fees", "action": "export", "description": "Export fees data as CSV"},
 
     # Exam
     {"name": "exam.create", "module": "exam", "action": "create", "description": "Create exam"},
@@ -163,6 +176,26 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "role_permission.assign", "module": "role_permission", "action": "assign", "description": "Assign role permission"},
     {"name": "role_permission.remove", "module": "role_permission", "action": "remove", "description": "Remove role permission"},
     {"name": "role_permission.view", "module": "role_permission", "action": "view", "description": "View role permission"},
+
+    # Homework
+    {"name": "homework.create", "module": "homework", "action": "create", "description": "Create homework"},
+    {"name": "homework.view", "module": "homework", "action": "view", "description": "View homework"},
+    {"name": "homework.update", "module": "homework", "action": "update", "description": "Update homework"},
+    {"name": "homework.delete", "module": "homework", "action": "delete", "description": "Delete homework"},
+    {"name": "homework.publish", "module": "homework", "action": "publish", "description": "Publish homework"},
+    {"name": "homework.submit", "module": "homework", "action": "submit", "description": "Submit homework"},
+    {"name": "homework.grade", "module": "homework", "action": "grade", "description": "Grade homework submission"},
+    {"name": "homework.manage", "module": "homework", "action": "manage", "description": "Manage homework"},
+
+    # Documents (Phase 24)
+    {"name": "documents.create", "module": "documents", "action": "create", "description": "Create document metadata"},
+    {"name": "documents.view", "module": "documents", "action": "view", "description": "View document metadata"},
+    {"name": "documents.upload", "module": "documents", "action": "upload", "description": "Upload document file"},
+    {"name": "documents.download", "module": "documents", "action": "download", "description": "Download document file"},
+    {"name": "documents.update", "module": "documents", "action": "update", "description": "Update document metadata"},
+    {"name": "documents.delete", "module": "documents", "action": "delete", "description": "Delete document"},
+    {"name": "documents.verify", "module": "documents", "action": "verify", "description": "Verify or reject document"},
+    {"name": "documents.manage", "module": "documents", "action": "manage", "description": "Manage document storage"},
 ]
 
 

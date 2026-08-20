@@ -7,8 +7,19 @@ import {
 } from '@/types/models';
 
 export const academicYearsApi = {
+  getCurrentAcademicYear: async (): Promise<PaginatedResponse<AcademicYear>> => {
+    return await apiClient.get('/academic-years/current');
+  },
+
   getAcademicYears: async (params?: { page?: number; page_size?: number }): Promise<PaginatedResponse<AcademicYear>> => {
-    return await apiClient.get('/academic-years', { params });
+    try {
+      return await apiClient.get('/academic-years', { params });
+    } catch (err: any) {
+      if (err?.status === 403 || err?.response?.status === 403) {
+        return await apiClient.get('/academic-years/current');
+      }
+      throw err;
+    }
   },
 
   getAcademicYear: async (id: string): Promise<AcademicYear> => {

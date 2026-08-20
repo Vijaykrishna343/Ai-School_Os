@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 vi.mock('@/services/api/dashboardApi', () => ({
   dashboardApi: {
     getAdminSummary: vi.fn(),
+    getTeacherSummary: vi.fn(),
   },
 }));
 
@@ -32,6 +33,7 @@ describe('DashboardPage Component', () => {
         last_name: 'User',
         is_active: true,
       },
+      permissions: ['school.view', 'student.view'],
       isAuthenticated: true,
       isLoading: false,
     });
@@ -40,7 +42,7 @@ describe('DashboardPage Component', () => {
 
   it('renders loading state initially', () => {
     vi.mocked(dashboardApi.getAdminSummary).mockReturnValue(new Promise(() => {}));
-    
+
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -50,32 +52,18 @@ describe('DashboardPage Component', () => {
       </QueryClientProvider>
     );
 
-    // Welcome text or banner skeletal loading should appear
     expect(screen.queryByText(/Administrative Command Center/i)).not.toBeInTheDocument();
   });
 
-  it('renders dashboard with real metrics when api success', async () => {
+  it('renders admin dashboard with real metrics when api success', async () => {
     const mockSummary = {
       active_students: 150,
       active_teachers: 15,
       active_parents: 120,
       active_classes: 10,
       active_sections: 20,
-      current_academic_year: {
-        id: 'ay-1',
-        name: '2026-2027',
-        status: 'ACTIVE',
-        start_date: '2026-04-01',
-        end_date: '2027-03-31',
-      },
-      current_academic_term: {
-        id: 'term-1',
-        name: 'Term 1',
-        term_structure: 'TERM1',
-      },
     };
-
-    vi.mocked(dashboardApi.getAdminSummary).mockResolvedValue(mockSummary);
+    vi.mocked(dashboardApi.getAdminSummary).mockResolvedValue(mockSummary as any);
 
     const queryClient = createTestQueryClient();
     render(
@@ -89,17 +77,54 @@ describe('DashboardPage Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Administrative Command Center/i)).toBeInTheDocument();
       expect(screen.getByText('150')).toBeInTheDocument(); // students
-      expect(screen.getByText('15')).toBeInTheDocument();  // teachers
+      expect(screen.getByText('15')).toBeInTheDocument(); // faculty
       expect(screen.getByText('120')).toBeInTheDocument(); // parents
-      expect(screen.getByText('10')).toBeInTheDocument();  // classes
-      expect(screen.getByText('20')).toBeInTheDocument();  // sections
-      expect(screen.getByText('2026-2027')).toBeInTheDocument();
-      expect(screen.getByText('Term 1')).toBeInTheDocument();
+    });
+  });
+
+  it('renders teacher workstation dashboard when user lacks school.view', async () => {
+    useAuthStore.setState({
+      user: {
+        id: 'teacher-123',
+        school_id: 'school-456',
+        email: 'smoke.teacher@school.com',
+        first_name: 'Smoke',
+        last_name: 'Teacher',
+        is_active: true,
+      },
+      permissions: ['attendance.view', 'student.view'],
+      isAuthenticated: true,
+      isLoading: false,
+    });
+
+    const mockTeacherSummary = {
+      user_id: 'teacher-123',
+      user_name: 'Smoke Teacher',
+      assigned_students_count: 42,
+      active_classes_count: 2,
+      active_sections_count: 4,
+    };
+    vi.mocked(dashboardApi.getTeacherSummary).mockResolvedValue(mockTeacherSummary as any);
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <DashboardPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Teacher Workstation/i)).toBeInTheDocument();
+      expect(screen.getByText('42')).toBeInTheDocument(); // assigned students
     });
   });
 
   it('renders error state on API failure', async () => {
-    vi.mocked(dashboardApi.getAdminSummary).mockRejectedValue(new Error('Network error loading dashboard'));
+    vi.mocked(dashboardApi.getAdminSummary).mockRejectedValue(
+      new Error('Network error loading dashboard')
+    );
 
     const queryClient = createTestQueryClient();
     render(

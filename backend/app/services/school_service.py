@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.common.enums.school import SchoolStatus
 from app.common.exceptions import (
     AlreadyExistsException,
     NotFoundException,
@@ -14,6 +15,8 @@ from app.repositories.school import (
 )
 from app.schemas.school.school import (
     SchoolCreate,
+    SchoolStatusUpdate,
+    SchoolSubscriptionUpdate,
     SchoolUpdate,
 )
 from app.services.base_service import BaseService
@@ -141,6 +144,43 @@ class SchoolService(BaseService[SchoolRepository]):
         )
         logger.info("School ID: %s updated successfully", school_id)
         return updated
+
+    def update_school_status(
+        self,
+        db: Session,
+        school_id: UUID,
+        status_data: SchoolStatusUpdate,
+    ) -> School:
+        """
+        Update school status (e.g. SUSPENDED, ACTIVE, BLOCKED) with timestamping.
+        """
+        from datetime import datetime, timezone
+        school = self.get_school(db, school_id)
+        school.status = status_data.status
+        school.suspension_reason = status_data.suspension_reason
+        if status_data.status in (SchoolStatus.SUSPENDED, SchoolStatus.BLOCKED):
+            school.suspended_at = datetime.now(timezone.utc)
+        elif status_data.status == SchoolStatus.ACTIVE:
+            school.suspended_at = None
+            school.suspension_reason = None
+
+        return self.repository.update(db, school)
+
+    def update_school_subscription(
+        self,
+        db: Session,
+        school_id: UUID,
+        subscription_data: SchoolSubscriptionUpdate,
+    ) -> School:
+        """
+        Update school subscription tier, resource limits, and dates.
+        """
+        school = self.get_school(db, school_id)
+        for key, value in subscription_data.model_dump(exclude_unset=True).items():
+            setattr(school, key, value)
+
+        return self.repository.update(db, school)
+
 
     # ------------------------------------------------------------------
     # Delete Methods

@@ -149,8 +149,15 @@ describe('AcademicsPage Component', () => {
           display_order: 10,
           status: 'ACTIVE',
         },
+        {
+          id: 'class-2',
+          school_id: 'school-123',
+          name: 'Class 11',
+          display_order: 11,
+          status: 'ACTIVE',
+        },
       ],
-      total: 1,
+      total: 2,
       page: 1,
       page_size: 10,
       total_pages: 1,
@@ -453,5 +460,47 @@ describe('AcademicsPage Component', () => {
     await waitFor(() => {
       expect(screen.getByText('No academic years defined yet.')).toBeInTheDocument();
     });
+  });
+
+  it('allows single-click class selection in Create Section modal after rapid tab switching (DEF-10-1)', async () => {
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AcademicsPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // Switch rapidly between tabs
+    const yearsTab = screen.getByText('Academic Years');
+    const classesTab = screen.getByText('School Classes');
+    const sectionsTab = screen.getByText('Sections');
+
+    fireEvent.click(classesTab);
+    fireEvent.click(sectionsTab);
+    fireEvent.click(yearsTab);
+    fireEvent.click(sectionsTab);
+
+    // Open Create Section Modal
+    await waitFor(() => {
+      expect(screen.getByText('+ Add Section')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('+ Add Section'));
+
+    // Verify modal is open and select dropdown is populated
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Create Section' })).toBeInTheDocument();
+    });
+
+    const selects = screen.getAllByRole('combobox');
+    const select = selects[selects.length - 1];
+    expect(select).toBeInTheDocument();
+    expect(select).not.toBeDisabled();
+
+    // Single click / change selection to Grade 6
+    fireEvent.change(select, { target: { value: 'class-2' } });
+
+    expect((select as HTMLSelectElement).value).toBe('class-2');
   });
 });

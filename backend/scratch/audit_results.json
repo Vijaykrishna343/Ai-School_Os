@@ -1,0 +1,152 @@
+[
+  {
+    "section": "7.7A",
+    "test": "Unauthenticated Request Security",
+    "status": "PASS",
+    "details": "HTTP 401 Unauthorized returned for unauthenticated endpoint"
+  },
+  {
+    "section": "7.7A",
+    "test": "Authentication Contract",
+    "status": "PASS",
+    "details": "HTTP 200 OK \u2014 Bearer token issued"
+  },
+  {
+    "section": "7.7A",
+    "test": "User Roles Endpoint Contract",
+    "status": "PASS",
+    "details": "GET /users/{id}/roles returned HTTP 200, count=1"
+  },
+  {
+    "section": "7.7A",
+    "test": "System Permissions Inventory",
+    "status": "PASS",
+    "details": "System permission count: 105"
+  },
+  {
+    "section": "7.7A",
+    "test": "Core Permission Keys Alignment",
+    "status": "PASS",
+    "details": "All core permission keys present in system database"
+  },
+  {
+    "section": "7.7A",
+    "test": "Tenant Isolation Context",
+    "status": "PASS",
+    "details": "User school_id = 03ab756e-9aea-46f9-968d-d21dda4e0ec7"
+  },
+  {
+    "section": "7.7B",
+    "test": "Student Registry & Parent Link",
+    "status": "PASS",
+    "details": "Student ADM000001 -> parent_id: 610b08ed-26a9-4f0e-9eb2-b48b54e781a7"
+  },
+  {
+    "section": "7.7B",
+    "test": "Enrollment History Continuity",
+    "status": "PASS",
+    "details": "Total enrollments=2, 2026 decision=PROMOTED, 2027 class=915b9c1a-d946-4263-976b-094184bcddfa"
+  },
+  {
+    "section": "7.7B",
+    "test": "Attendance Record Link",
+    "status": "PASS",
+    "details": "2026-08-18 attendance status=PRESENT"
+  },
+  {
+    "section": "7.7B",
+    "test": "Exam Results Link",
+    "status": "PASS",
+    "details": "Student ADM000001 exam results count=3"
+  },
+  {
+    "section": "7.7B",
+    "test": "Report Cards Link",
+    "status": "PASS",
+    "details": "Student ADM000001 report cards count=1"
+  },
+  {
+    "section": "7.7B",
+    "test": "Fee Assignment Link",
+    "status": "PASS",
+    "details": "Student ADM000001 fee assignments count=1"
+  },
+  {
+    "section": "7.7C",
+    "test": "404 Not Found Contract",
+    "status": "PASS",
+    "details": "GET non-existent student -> HTTP 404"
+  },
+  {
+    "section": "7.7C",
+    "test": "422 Validation Error Contract",
+    "status": "PASS",
+    "details": "Invalid payload -> HTTP 422"
+  },
+  {
+    "section": "7.7C",
+    "test": "Section Class Sub-path Route",
+    "status": "PASS",
+    "details": "GET /sections/class/{id} -> HTTP 200"
+  },
+  {
+    "section": "7.7D",
+    "test": "Attendance Duplicate Rejection",
+    "status": "PASS",
+    "details": "Duplicate daily attendance -> HTTP 409"
+  },
+  {
+    "section": "7.7D",
+    "test": "Marks Duplicate Rejection",
+    "status": "FAIL",
+    "details": "Duplicate exam result -> HTTP 422"
+  },
+  {
+    "section": "7.7D",
+    "test": "Excess Fee Payment Rejection",
+    "status": "PASS",
+    "details": "Payment > outstanding due -> HTTP 422"
+  },
+  {
+    "section": "7.7D",
+    "test": "Double Promotion Rejection",
+    "status": "PASS",
+    "details": "Re-promoting into same target year -> HTTP 422"
+  },
+  {
+    "section": "7.7E",
+    "test": "Orphaned Students Audit",
+    "status": "PASS",
+    "details": "Orphaned student count: 0"
+  },
+  {
+    "section": "7.7E",
+    "test": "Orphaned Enrollment Histories Audit",
+    "status": "PASS",
+    "details": "Orphaned enrollment count: 0"
+  },
+  {
+    "section": "7.7E",
+    "test": "Multi-Tenant Isolation Audit",
+    "status": "PASS",
+    "details": "Total students in VGS001: 3, non-VGS001 students: 0"
+  },
+  {
+    "section": "7.7E",
+    "test": "Historical Enrollment Records Audit",
+    "status": "PASS",
+    "details": "Total student enrollment records: 6 (Expected 6: 3 in 2026-2027 + 3 in 2027-2028)"
+  },
+  {
+    "section": "7.7E",
+    "test": "Duplicate Student Uniqueness Audit",
+    "status": "PASS",
+    "details": "Duplicate admission numbers count: 0"
+  },
+  {
+    "section": "7.7E",
+    "test": "Duplicate Attendance Uniqueness Audit",
+    "status": "PASS",
+    "details": "Duplicate attendance records count: 0"
+  }
+]

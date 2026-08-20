@@ -337,6 +337,17 @@ export const AcademicsPage: React.FC = () => {
     setIsClassModalOpen(true);
   };
 
+  // Sync section form school class ID when modal opens or when classesData finishes loading asynchronously
+  React.useEffect(() => {
+    if (isSectionModalOpen && !selectedSection && !sectionForm.school_class_id && classesData?.items?.length) {
+      const defaultClassId = selectedClassFilter || classesData.items[0].id;
+      setSectionForm((prev) => ({
+        ...prev,
+        school_class_id: defaultClassId,
+      }));
+    }
+  }, [isSectionModalOpen, selectedSection, sectionForm.school_class_id, classesData, selectedClassFilter]);
+
   const handleOpenSectionModal = (sec?: Section) => {
     setFormError(null);
     if (sec) {
@@ -349,8 +360,9 @@ export const AcademicsPage: React.FC = () => {
       });
     } else {
       setSelectedSection(null);
+      const defaultClassId = selectedClassFilter || classesData?.items?.[0]?.id || '';
       setSectionForm({
-        school_class_id: selectedClassFilter || classesData?.items?.[0]?.id || '',
+        school_class_id: defaultClassId,
         name: '',
         capacity: 40,
         room_number: '',
@@ -1074,6 +1086,9 @@ export const AcademicsPage: React.FC = () => {
               className="w-full px-3 py-2 text-sm rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900"
               disabled={!!selectedSection}
             >
+              {!sectionForm.school_class_id && (
+                <option value="" disabled>-- Select a School Class --</option>
+              )}
               {classesData?.items?.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}

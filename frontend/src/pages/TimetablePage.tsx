@@ -304,10 +304,15 @@ export const TimetablePage: React.FC = () => {
   const handleSaveRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     clearMessages();
+    const capacity = Number(roomForm.capacity);
+    if (isNaN(capacity) || capacity <= 0) {
+      setErrorMessage('Room capacity must be a positive integer (minimum 1).');
+      return;
+    }
     try {
       if (editingRoom) {
         const updatePayload: ClassroomUpdate = {
-          room_number: roomForm.room_number, building_name: roomForm.building_name, capacity: roomForm.capacity, room_type: roomForm.room_type,
+          room_number: roomForm.room_number, building_name: roomForm.building_name, capacity: capacity, room_type: roomForm.room_type,
         };
         await classroomsApi.updateClassroom(editingRoom.id, updatePayload);
         setSuccessMessage('Classroom updated.');
@@ -316,7 +321,7 @@ export const TimetablePage: React.FC = () => {
           school_id: '',
           room_number: roomForm.room_number || '',
           building_name: roomForm.building_name || null,
-          capacity: roomForm.capacity || 40,
+          capacity: capacity,
           room_type: roomForm.room_type || 'CLASSROOM',
         });
         setSuccessMessage('Classroom created.');
@@ -791,7 +796,17 @@ export const TimetablePage: React.FC = () => {
         <form onSubmit={handleSaveRoom} className="space-y-4 text-xs">
           <Input label="Room Number *" value={roomForm.room_number || ''} onChange={(e) => setRoomForm({ ...roomForm, room_number: e.target.value })} required />
           <Input label="Building Name" value={roomForm.building_name || ''} onChange={(e) => setRoomForm({ ...roomForm, building_name: e.target.value })} />
-          <Input type="number" label="Capacity" value={roomForm.capacity || ''} onChange={(e) => setRoomForm({ ...roomForm, capacity: Number(e.target.value) })} />
+          <Input
+            type="number"
+            min={1}
+            label="Room Capacity (Min: 1) *"
+            placeholder="e.g. 40"
+            helperText="Enter expected maximum student capacity (minimum 1)."
+            title="Enter expected maximum student capacity (minimum 1)"
+            value={roomForm.capacity || ''}
+            onChange={(e) => setRoomForm({ ...roomForm, capacity: Number(e.target.value) })}
+            required
+          />
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Room Type</label>
             <select value={roomForm.room_type} onChange={(e) => setRoomForm({ ...roomForm, room_type: e.target.value as RoomType })}

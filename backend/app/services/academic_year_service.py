@@ -186,6 +186,20 @@ class AcademicYearService:
             return self.repository.get_by_school(db, school_id)
         return self.repository.get_all(db)
 
+    def get_current_academic_year(
+        self,
+        db: Session,
+        school_id: UUID,
+    ) -> AcademicYear | None:
+        """
+        Retrieve the current active academic year for a school.
+        """
+        ay = self.repository.get_current(db, school_id)
+        if not ay:
+            items = self.repository.get_by_school(db, school_id)
+            ay = items[0] if items else None
+        return ay
+
     def get_paginated_academic_years(
         self,
         db: Session,

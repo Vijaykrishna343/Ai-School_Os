@@ -1,8 +1,7 @@
-from __future__ import annotations
-
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum, Index, String
+from sqlalchemy import DateTime, Enum, Index, String
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -119,19 +118,59 @@ class School(CommonModel):
     )
 
     # ------------------------------------------------------------------
-    # Status
+    # Status & Subscription Lifecycle
     # ------------------------------------------------------------------
 
     status: Mapped[SchoolStatus] = mapped_column(
         Enum(
             SchoolStatus,
             name="school_status",
-            native_enum=True,
+            native_enum=False,
             validate_strings=True,
         ),
         default=SchoolStatus.ACTIVE,
         nullable=False,
     )
+
+    subscription_tier: Mapped[str] = mapped_column(
+        String(50),
+        default="STANDARD",
+        nullable=False,
+    )
+
+    max_students: Mapped[int | None] = mapped_column(
+        nullable=True,
+    )
+
+    max_teachers: Mapped[int | None] = mapped_column(
+        nullable=True,
+    )
+
+    trial_ends_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    subscription_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    grace_period_ends_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    suspended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    suspension_reason: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
 
     # ------------------------------------------------------------------
     # Relationships

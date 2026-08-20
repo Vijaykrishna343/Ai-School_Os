@@ -489,4 +489,35 @@ describe('TimetablePage Component', () => {
       expect(screen.getByText('Failed to load period slots')).toBeInTheDocument();
     });
   });
+
+  // -----------------------------------------------------------
+  // 11. ROOM CAPACITY VALIDATION (DEF-10-2)
+  // -----------------------------------------------------------
+  it('validates minimum room capacity and displays tooltip text (DEF-10-2)', async () => {
+    renderTimetablePage();
+    fireEvent.click(screen.getByText('Classrooms'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Add Classroom')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Add Classroom'));
+
+    await waitFor(() => {
+      expect(screen.getByText('ADD CLASSROOM')).toBeInTheDocument();
+    });
+
+    const capacityInput = screen.getByLabelText(/Room Capacity/i);
+    expect(capacityInput).toBeInTheDocument();
+    expect(capacityInput).toHaveAttribute('min', '1');
+    expect(capacityInput).toHaveAttribute('title', 'Enter expected maximum student capacity (minimum 1)');
+    expect(screen.getByText('Enter expected maximum student capacity (minimum 1).')).toBeInTheDocument();
+
+    // Set invalid zero capacity & check HTML5 validity
+    fireEvent.change(capacityInput, { target: { value: '0' } });
+    expect((capacityInput as HTMLInputElement).checkValidity()).toBe(false);
+
+    // Set valid capacity & check validity
+    fireEvent.change(capacityInput, { target: { value: '35' } });
+    expect((capacityInput as HTMLInputElement).checkValidity()).toBe(true);
+  });
 });

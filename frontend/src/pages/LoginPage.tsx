@@ -11,14 +11,23 @@ export const LoginPage = () => {
   const location = useLocation();
   const { login, isLoading, authError } = useAuthStore();
 
+  const [schoolCode, setSchoolCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    schoolCode?: string;
+    email?: string;
+    password?: string;
+  }>({});
 
   const from = (location.state as any)?.from?.pathname || '/app/dashboard';
 
   const validate = () => {
-    const errors: { email?: string; password?: string } = {};
+    const errors: { schoolCode?: string; email?: string; password?: string } = {};
+
+    if (!schoolCode.trim()) {
+      errors.schoolCode = 'School code is required.';
+    }
     if (!email.trim()) {
       errors.email = 'Email address is required.';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
@@ -27,6 +36,7 @@ export const LoginPage = () => {
     if (!password) {
       errors.password = 'Password is required.';
     }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -36,7 +46,11 @@ export const LoginPage = () => {
     if (!validate()) return;
 
     try {
-      await login({ email, password });
+      await login({
+        school_code: schoolCode.trim().toUpperCase(),
+        email: email.trim(),
+        password,
+      });
       navigate(from, { replace: true });
     } catch {
       // Error is caught and stored in authError state
@@ -111,6 +125,19 @@ export const LoginPage = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <Input
+              label="School Code"
+              type="text"
+              placeholder="e.g. VGS001"
+              value={schoolCode}
+              onChange={(e) => setSchoolCode(e.target.value)}
+              error={fieldErrors.schoolCode}
+              leftIcon={<Building2 className="w-3.5 h-3.5 text-ink-muted/70" />}
+              autoComplete="organization"
+              autoFocus
+              required
+            />
+
+            <Input
               label="Email Address"
               type="email"
               placeholder="registrar@school.com"
@@ -119,7 +146,6 @@ export const LoginPage = () => {
               error={fieldErrors.email}
               leftIcon={<Mail className="w-3.5 h-3.5 text-ink-muted/70" />}
               autoComplete="email"
-              autoFocus
               required
             />
 
@@ -159,4 +185,3 @@ export const LoginPage = () => {
     </div>
   );
 };
-

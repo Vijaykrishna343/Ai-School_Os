@@ -3,8 +3,10 @@ import {
   PaginatedResponse,
   Student,
   StudentCreate,
-  StudentEnrollmentHistory,
+  StudentEnrollmentHistoryResponse,
   StudentUpdate,
+  TransferCertificate,
+  TransferCertificateCreate,
 } from '@/types/models';
 
 export interface StudentFilterParams {
@@ -37,7 +39,15 @@ export const studentsApi = {
     await apiClient.delete(`/students/${id}`);
   },
 
-  getStudentEnrollmentHistory: async (id: string): Promise<StudentEnrollmentHistory[]> => {
-    return await apiClient.get(`/students/${id}/enrollment-history`);
+  getStudentEnrollmentHistory: async (id: string): Promise<{ student_id: string; enrollments: StudentEnrollmentHistoryResponse[]; total: number }> => {
+    return await apiClient.get(`/students/${id}/enrollments`);
+  },
+
+  getTransferCertificates: async (studentId: string): Promise<{ student_id: string; certificates: TransferCertificate[]; total: number }> => {
+    return await apiClient.get(`/students/${studentId}/transfer-certificates`);
+  },
+
+  issueTransferCertificate: async (studentId: string, data: TransferCertificateCreate): Promise<TransferCertificate> => {
+    return await apiClient.post(`/students/${studentId}/transfer-certificate`, data);
   },
 };

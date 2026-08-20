@@ -12,6 +12,8 @@ import {
   FileSpreadsheet,
   Clock,
   Building2,
+  UserCog,
+  ShieldCheck,
   X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -30,11 +32,14 @@ const navigationItems: NavItem[] = [
   { name: 'Teachers', path: '/app/teachers', icon: <UserCheck className="w-5 h-5" />, permission: 'teacher.view' },
   { name: 'Parents', path: '/app/parents', icon: <Users className="w-5 h-5" />, permission: 'parent.view' },
   { name: 'Academics', path: '/app/academics', icon: <BookOpen className="w-5 h-5" />, permission: 'academic_year.view' },
-  { name: 'Progression', path: '/app/progression', icon: <TrendingUp className="w-5 h-5" />, permission: 'progression.view' },
+  { name: 'Progression', path: '/app/progression', icon: <TrendingUp className="w-5 h-5" />, permission: 'progression_matrix.view' },
   { name: 'Attendance', path: '/app/attendance', icon: <CalendarCheck className="w-5 h-5" />, permission: 'attendance.view' },
   { name: 'Fees & Payments', path: '/app/fees', icon: <CreditCard className="w-5 h-5" />, permission: 'fees.view' },
   { name: 'Exams & Reports', path: '/app/exams', icon: <FileSpreadsheet className="w-5 h-5" />, permission: 'exam.view' },
   { name: 'Timetable', path: '/app/timetable', icon: <Clock className="w-5 h-5" />, permission: 'timetable.view' },
+  { name: 'User Management', path: '/app/users', icon: <UserCog className="w-5 h-5" />, permission: 'user.view' },
+  { name: 'Roles & Access', path: '/app/roles', icon: <ShieldCheck className="w-5 h-5" />, permission: 'role.view' },
+  { name: 'School Profile', path: '/app/settings', icon: <Building2 className="w-5 h-5" />, permission: 'school.view' },
 ];
 
 export const MobileNav = ({

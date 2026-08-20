@@ -137,7 +137,7 @@ apiClient.interceptors.response.use(
 
     if (data) {
       if (typeof data === 'object') {
-        errorMessage = data.message || data.detail || errorMessage;
+        errorMessage = data.error?.message || data.message || data.detail || errorMessage;
         if (data.errors && typeof data.errors === 'object') {
           validationErrors = data.errors;
         }

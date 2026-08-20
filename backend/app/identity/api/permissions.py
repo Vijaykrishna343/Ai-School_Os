@@ -3,23 +3,18 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
+from app.common.exceptions import ForbiddenException
 from app.dependencies.database import get_db
 from app.identity.dependencies import get_permission_service
-from app.identity.dependencies.require_permission import (
-    require_permission,
-)
+from app.identity.dependencies.require_permission import require_permission
+from app.identity.models.user import IdentityUser
 from app.identity.schemas.permission import (
     PermissionCreate,
     PermissionFilter,
     PermissionResponse,
     PermissionUpdate,
 )
-from app.identity.security.current_user import (
-    get_current_user,
-)
-from app.identity.services.permission_service import (
-    IdentityPermissionService,
-)
+from app.identity.services.permission_service import IdentityPermissionService
 
 router = APIRouter(
     prefix="/permissions",
@@ -32,18 +27,16 @@ router = APIRouter(
     response_model=PermissionResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create Permission",
-    dependencies=[
-        Depends(require_permission("permission.create")),
-    ],
 )
 def create_permission(
     permission: PermissionCreate,
+    current_user: IdentityUser = Depends(require_permission("permission.create")),
     db: Session = Depends(get_db),
-    service: IdentityPermissionService = Depends(
-        get_permission_service,
-    ),
+    service: IdentityPermissionService = Depends(get_permission_service),
 ) -> PermissionResponse:
-    """Create a new permission."""
+    """Create a new global permission (Super Admin only)."""
+    if not current_user.is_super_admin:
+        raise ForbiddenException("Global permission definitions are managed strictly by Super Admin.")
     return service.create_permission(
         db,
         permission,
@@ -53,16 +46,14 @@ def create_permission(
 @router.get(
     "",
     summary="List Permissions",
-    dependencies=[Depends(get_current_user)],
 )
 def list_permissions(
     filters: PermissionFilter = Depends(),
+    current_user: IdentityUser = Depends(require_permission("permission.view")),
     db: Session = Depends(get_db),
-    service: IdentityPermissionService = Depends(
-        get_permission_service,
-    ),
+    service: IdentityPermissionService = Depends(get_permission_service),
 ):
-    """List permissions."""
+    """List global permissions."""
     if filters.module:
         return service.list_by_module(
             db,
@@ -76,14 +67,12 @@ def list_permissions(
     "/{permission_id}",
     response_model=PermissionResponse,
     summary="Get Permission",
-    dependencies=[Depends(get_current_user)],
 )
 def get_permission(
     permission_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("permission.view")),
     db: Session = Depends(get_db),
-    service: IdentityPermissionService = Depends(
-        get_permission_service,
-    ),
+    service: IdentityPermissionService = Depends(get_permission_service),
 ) -> PermissionResponse:
     """Retrieve a permission by ID."""
     return service.get_permission(
@@ -96,19 +85,17 @@ def get_permission(
     "/{permission_id}",
     response_model=PermissionResponse,
     summary="Update Permission",
-    dependencies=[
-        Depends(require_permission("permission.update")),
-    ],
 )
 def update_permission(
     permission_id: UUID,
     permission: PermissionUpdate,
+    current_user: IdentityUser = Depends(require_permission("permission.update")),
     db: Session = Depends(get_db),
-    service: IdentityPermissionService = Depends(
-        get_permission_service,
-    ),
+    service: IdentityPermissionService = Depends(get_permission_service),
 ) -> PermissionResponse:
-    """Update a permission."""
+    """Update a permission (Super Admin only)."""
+    if not current_user.is_super_admin:
+        raise ForbiddenException("Global permission definitions are managed strictly by Super Admin.")
     return service.update_permission(
         db,
         permission_id,
@@ -120,18 +107,16 @@ def update_permission(
     "/{permission_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete Permission",
-    dependencies=[
-        Depends(require_permission("permission.delete")),
-    ],
 )
 def delete_permission(
     permission_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("permission.delete")),
     db: Session = Depends(get_db),
-    service: IdentityPermissionService = Depends(
-        get_permission_service,
-    ),
+    service: IdentityPermissionService = Depends(get_permission_service),
 ):
-    """Delete a permission."""
+    """Delete a permission (Super Admin only)."""
+    if not current_user.is_super_admin:
+        raise ForbiddenException("Global permission definitions are managed strictly by Super Admin.")
     service.delete_permission(
         db,
         permission_id,

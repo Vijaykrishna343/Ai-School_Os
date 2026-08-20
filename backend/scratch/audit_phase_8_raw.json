@@ -1,0 +1,977 @@
+{
+  "roles": [
+    {
+      "id": "874f8b91-8d7c-4bbe-be22-7ccf3e925fbc",
+      "name": "Accountant",
+      "description": "Accountant with access to fee management and student viewing.",
+      "is_system": true
+    },
+    {
+      "id": "ab4bd474-5a67-43b7-abd3-d361699c2c71",
+      "name": "Class Teacher",
+      "description": "Class Teacher with class management, attendance, student viewing, and marks.",
+      "is_system": true
+    },
+    {
+      "id": "bee28923-cb30-4f3d-bdb2-798f8205e934",
+      "name": "Parent",
+      "description": "Parent with access to view student profile, attendance, fees, and marks.",
+      "is_system": true
+    },
+    {
+      "id": "10ed81c7-e4b1-4693-8bde-de4311e269e5",
+      "name": "Principal",
+      "description": "School Principal with full administrative and academic oversight access.",
+      "is_system": true
+    },
+    {
+      "id": "39a09d02-64d0-43e6-8a46-68bb2ce25d81",
+      "name": "Receptionist",
+      "description": "Receptionist with access to student and parent registration and viewing.",
+      "is_system": true
+    },
+    {
+      "id": "cc629c28-c1c1-448e-aa1c-525625c7d8a3",
+      "name": "School Admin",
+      "description": "School Administrator with full access to school management and operations.",
+      "is_system": true
+    },
+    {
+      "id": "bebbebbc-e0e6-4069-9f34-301aac359e1a",
+      "name": "Student",
+      "description": "Student with access to personal attendance, fees, and marks.",
+      "is_system": true
+    },
+    {
+      "id": "ad802054-2276-4820-9f45-9007519de243",
+      "name": "Super Admin",
+      "description": "System Super Administrator with full platform access across all resources.",
+      "is_system": true
+    },
+    {
+      "id": "0e8b041b-3e5d-4408-8431-a7e5ddc438b9",
+      "name": "Teacher",
+      "description": "Teacher with access to attendance, subjects, student viewing, and marks.",
+      "is_system": true
+    },
+    {
+      "id": "34c321a5-68cd-493d-b707-ce548b3dc34b",
+      "name": "Vice Principal",
+      "description": "Vice Principal with administrative and academic oversight access.",
+      "is_system": true
+    }
+  ],
+  "role_permissions": {
+    "Accountant": [
+      "fees.create",
+      "fees.delete",
+      "fees.update",
+      "fees.view",
+      "student.view"
+    ],
+    "Class Teacher": [
+      "attendance.create",
+      "attendance.update",
+      "attendance.view",
+      "class.view",
+      "grading.view",
+      "marks.create",
+      "marks.update",
+      "marks.view",
+      "section.view",
+      "student.view",
+      "subject.view"
+    ],
+    "Parent": [
+      "attendance.view",
+      "fees.view",
+      "marks.view",
+      "student.view"
+    ],
+    "Principal": [
+      "academic_term.view",
+      "attendance.create",
+      "attendance.delete",
+      "attendance.update",
+      "attendance.view",
+      "class.create",
+      "class.delete",
+      "class.update",
+      "class.view",
+      "evaluation_config.view",
+      "grading.view",
+      "report_card.edit_remarks",
+      "report_card.finalize",
+      "report_card.generate",
+      "report_card.publish",
+      "report_card.reopen",
+      "report_card.view",
+      "reports.create",
+      "reports.delete",
+      "reports.update",
+      "reports.view",
+      "section.create",
+      "section.delete",
+      "section.update",
+      "section.view",
+      "student.create",
+      "student.delete",
+      "student.promote",
+      "student.retain",
+      "student.tc.create",
+      "student.tc.view",
+      "student.transition",
+      "student.update",
+      "student.view",
+      "subject.create",
+      "subject.delete",
+      "subject.update",
+      "subject.view",
+      "teacher.create",
+      "teacher.delete",
+      "teacher.update",
+      "teacher.view"
+    ],
+    "Receptionist": [
+      "parent.create",
+      "parent.view",
+      "student.create",
+      "student.view"
+    ],
+    "School Admin": [
+      "academic_term.create",
+      "academic_term.delete",
+      "academic_term.update",
+      "academic_term.view",
+      "academic_year.create",
+      "academic_year.delete",
+      "academic_year.update",
+      "academic_year.view",
+      "attendance.create",
+      "attendance.delete",
+      "attendance.update",
+      "attendance.view",
+      "class.create",
+      "class.delete",
+      "class.update",
+      "class.view",
+      "evaluation_config.create",
+      "evaluation_config.delete",
+      "evaluation_config.update",
+      "evaluation_config.view",
+      "exam.create",
+      "exam.delete",
+      "exam.update",
+      "exam.view",
+      "fees.create",
+      "fees.delete",
+      "fees.update",
+      "fees.view",
+      "grading.manage",
+      "grading.view",
+      "marks.create",
+      "marks.delete",
+      "marks.update",
+      "marks.view",
+      "parent.create",
+      "parent.delete",
+      "parent.update",
+      "parent.view",
+      "permission.create",
+      "permission.delete",
+      "permission.update",
+      "permission.view",
+      "report_card.edit_remarks",
+      "report_card.finalize",
+      "report_card.generate",
+      "report_card.publish",
+      "report_card.reopen",
+      "report_card.view",
+      "reports.create",
+      "reports.delete",
+      "reports.update",
+      "reports.view",
+      "role.create",
+      "role.delete",
+      "role.update",
+      "role.view",
+      "role_permission.assign",
+      "role_permission.remove",
+      "role_permission.view",
+      "school.create",
+      "school.delete",
+      "school.update",
+      "school.view",
+      "section.create",
+      "section.delete",
+      "section.update",
+      "section.view",
+      "student.create",
+      "student.delete",
+      "student.promote",
+      "student.retain",
+      "student.tc.create",
+      "student.tc.view",
+      "student.transition",
+      "student.update",
+      "student.view",
+      "subject.create",
+      "subject.delete",
+      "subject.update",
+      "subject.view",
+      "teacher.create",
+      "teacher.delete",
+      "teacher.update",
+      "teacher.view",
+      "timetable.archive",
+      "timetable.create",
+      "timetable.delete",
+      "timetable.publish",
+      "timetable.update",
+      "timetable.view",
+      "user.create",
+      "user.delete",
+      "user.update",
+      "user.view",
+      "user_role.assign",
+      "user_role.remove",
+      "user_role.view"
+    ],
+    "Student": [
+      "attendance.view",
+      "fees.view",
+      "marks.view"
+    ],
+    "Super Admin": [
+      "academic_term.create",
+      "academic_term.delete",
+      "academic_term.update",
+      "academic_term.view",
+      "academic_year.create",
+      "academic_year.delete",
+      "academic_year.update",
+      "academic_year.view",
+      "attendance.create",
+      "attendance.delete",
+      "attendance.update",
+      "attendance.view",
+      "class.create",
+      "class.delete",
+      "class.update",
+      "class.view",
+      "evaluation_config.create",
+      "evaluation_config.delete",
+      "evaluation_config.update",
+      "evaluation_config.view",
+      "exam.create",
+      "exam.delete",
+      "exam.update",
+      "exam.view",
+      "fees.create",
+      "fees.delete",
+      "fees.update",
+      "fees.view",
+      "grading.manage",
+      "grading.view",
+      "marks.create",
+      "marks.delete",
+      "marks.update",
+      "marks.view",
+      "parent.create",
+      "parent.delete",
+      "parent.update",
+      "parent.view",
+      "permission.create",
+      "permission.delete",
+      "permission.update",
+      "permission.view",
+      "progression.execute",
+      "progression.preview",
+      "progression_matrix.manage",
+      "progression_matrix.view",
+      "report_card.edit_remarks",
+      "report_card.finalize",
+      "report_card.generate",
+      "report_card.publish",
+      "report_card.reopen",
+      "report_card.view",
+      "reports.create",
+      "reports.delete",
+      "reports.update",
+      "reports.view",
+      "role.create",
+      "role.delete",
+      "role.update",
+      "role.view",
+      "role_permission.assign",
+      "role_permission.remove",
+      "role_permission.view",
+      "school.create",
+      "school.delete",
+      "school.update",
+      "school.view",
+      "section.create",
+      "section.delete",
+      "section.update",
+      "section.view",
+      "student.create",
+      "student.delete",
+      "student.promote",
+      "student.retain",
+      "student.tc.create",
+      "student.tc.view",
+      "student.transition",
+      "student.update",
+      "student.view",
+      "subject.create",
+      "subject.delete",
+      "subject.update",
+      "subject.view",
+      "substitution.create",
+      "substitution.delete",
+      "substitution.update",
+      "substitution.view",
+      "teacher.create",
+      "teacher.delete",
+      "teacher.update",
+      "teacher.view",
+      "timetable.archive",
+      "timetable.create",
+      "timetable.delete",
+      "timetable.publish",
+      "timetable.update",
+      "timetable.view",
+      "user.create",
+      "user.delete",
+      "user.update",
+      "user.view",
+      "user_role.assign",
+      "user_role.remove",
+      "user_role.view"
+    ],
+    "Teacher": [
+      "attendance.create",
+      "attendance.update",
+      "attendance.view",
+      "grading.view",
+      "marks.create",
+      "marks.update",
+      "marks.view",
+      "student.view",
+      "subject.view"
+    ],
+    "Vice Principal": [
+      "academic_term.view",
+      "attendance.create",
+      "attendance.delete",
+      "attendance.update",
+      "attendance.view",
+      "class.create",
+      "class.delete",
+      "class.update",
+      "class.view",
+      "evaluation_config.view",
+      "grading.view",
+      "report_card.finalize",
+      "report_card.generate",
+      "report_card.view",
+      "reports.create",
+      "reports.delete",
+      "reports.update",
+      "reports.view",
+      "section.create",
+      "section.delete",
+      "section.update",
+      "section.view",
+      "student.create",
+      "student.delete",
+      "student.promote",
+      "student.retain",
+      "student.tc.create",
+      "student.tc.view",
+      "student.transition",
+      "student.update",
+      "student.view",
+      "subject.create",
+      "subject.delete",
+      "subject.update",
+      "subject.view",
+      "teacher.create",
+      "teacher.delete",
+      "teacher.update",
+      "teacher.view"
+    ]
+  },
+  "permissions": [
+    {
+      "name": "academic_term.create",
+      "module": "academic_term",
+      "action": "create"
+    },
+    {
+      "name": "academic_term.delete",
+      "module": "academic_term",
+      "action": "delete"
+    },
+    {
+      "name": "academic_term.update",
+      "module": "academic_term",
+      "action": "update"
+    },
+    {
+      "name": "academic_term.view",
+      "module": "academic_term",
+      "action": "view"
+    },
+    {
+      "name": "academic_year.create",
+      "module": "academic_year",
+      "action": "create"
+    },
+    {
+      "name": "academic_year.delete",
+      "module": "academic_year",
+      "action": "delete"
+    },
+    {
+      "name": "academic_year.update",
+      "module": "academic_year",
+      "action": "update"
+    },
+    {
+      "name": "academic_year.view",
+      "module": "academic_year",
+      "action": "view"
+    },
+    {
+      "name": "attendance.create",
+      "module": "attendance",
+      "action": "create"
+    },
+    {
+      "name": "attendance.delete",
+      "module": "attendance",
+      "action": "delete"
+    },
+    {
+      "name": "attendance.update",
+      "module": "attendance",
+      "action": "update"
+    },
+    {
+      "name": "attendance.view",
+      "module": "attendance",
+      "action": "view"
+    },
+    {
+      "name": "class.create",
+      "module": "class",
+      "action": "create"
+    },
+    {
+      "name": "class.delete",
+      "module": "class",
+      "action": "delete"
+    },
+    {
+      "name": "class.update",
+      "module": "class",
+      "action": "update"
+    },
+    {
+      "name": "class.view",
+      "module": "class",
+      "action": "view"
+    },
+    {
+      "name": "evaluation_config.create",
+      "module": "evaluation_config",
+      "action": "create"
+    },
+    {
+      "name": "evaluation_config.delete",
+      "module": "evaluation_config",
+      "action": "delete"
+    },
+    {
+      "name": "evaluation_config.update",
+      "module": "evaluation_config",
+      "action": "update"
+    },
+    {
+      "name": "evaluation_config.view",
+      "module": "evaluation_config",
+      "action": "view"
+    },
+    {
+      "name": "exam.create",
+      "module": "exam",
+      "action": "create"
+    },
+    {
+      "name": "exam.delete",
+      "module": "exam",
+      "action": "delete"
+    },
+    {
+      "name": "exam.update",
+      "module": "exam",
+      "action": "update"
+    },
+    {
+      "name": "exam.view",
+      "module": "exam",
+      "action": "view"
+    },
+    {
+      "name": "fees.create",
+      "module": "fees",
+      "action": "create"
+    },
+    {
+      "name": "fees.delete",
+      "module": "fees",
+      "action": "delete"
+    },
+    {
+      "name": "fees.update",
+      "module": "fees",
+      "action": "update"
+    },
+    {
+      "name": "fees.view",
+      "module": "fees",
+      "action": "view"
+    },
+    {
+      "name": "grading.manage",
+      "module": "grading",
+      "action": "manage"
+    },
+    {
+      "name": "grading.view",
+      "module": "grading",
+      "action": "view"
+    },
+    {
+      "name": "marks.create",
+      "module": "marks",
+      "action": "create"
+    },
+    {
+      "name": "marks.delete",
+      "module": "marks",
+      "action": "delete"
+    },
+    {
+      "name": "marks.update",
+      "module": "marks",
+      "action": "update"
+    },
+    {
+      "name": "marks.view",
+      "module": "marks",
+      "action": "view"
+    },
+    {
+      "name": "parent.create",
+      "module": "parent",
+      "action": "create"
+    },
+    {
+      "name": "parent.delete",
+      "module": "parent",
+      "action": "delete"
+    },
+    {
+      "name": "parent.update",
+      "module": "parent",
+      "action": "update"
+    },
+    {
+      "name": "parent.view",
+      "module": "parent",
+      "action": "view"
+    },
+    {
+      "name": "permission.create",
+      "module": "permission",
+      "action": "create"
+    },
+    {
+      "name": "permission.delete",
+      "module": "permission",
+      "action": "delete"
+    },
+    {
+      "name": "permission.update",
+      "module": "permission",
+      "action": "update"
+    },
+    {
+      "name": "permission.view",
+      "module": "permission",
+      "action": "view"
+    },
+    {
+      "name": "progression.execute",
+      "module": "progression",
+      "action": "execute"
+    },
+    {
+      "name": "progression.preview",
+      "module": "progression",
+      "action": "preview"
+    },
+    {
+      "name": "progression_matrix.manage",
+      "module": "progression_matrix",
+      "action": "manage"
+    },
+    {
+      "name": "progression_matrix.view",
+      "module": "progression_matrix",
+      "action": "view"
+    },
+    {
+      "name": "report_card.edit_remarks",
+      "module": "report_card",
+      "action": "edit_remarks"
+    },
+    {
+      "name": "report_card.finalize",
+      "module": "report_card",
+      "action": "finalize"
+    },
+    {
+      "name": "report_card.generate",
+      "module": "report_card",
+      "action": "generate"
+    },
+    {
+      "name": "report_card.publish",
+      "module": "report_card",
+      "action": "publish"
+    },
+    {
+      "name": "report_card.reopen",
+      "module": "report_card",
+      "action": "reopen"
+    },
+    {
+      "name": "report_card.view",
+      "module": "report_card",
+      "action": "view"
+    },
+    {
+      "name": "reports.create",
+      "module": "reports",
+      "action": "create"
+    },
+    {
+      "name": "reports.delete",
+      "module": "reports",
+      "action": "delete"
+    },
+    {
+      "name": "reports.update",
+      "module": "reports",
+      "action": "update"
+    },
+    {
+      "name": "reports.view",
+      "module": "reports",
+      "action": "view"
+    },
+    {
+      "name": "role.create",
+      "module": "role",
+      "action": "create"
+    },
+    {
+      "name": "role.delete",
+      "module": "role",
+      "action": "delete"
+    },
+    {
+      "name": "role.update",
+      "module": "role",
+      "action": "update"
+    },
+    {
+      "name": "role.view",
+      "module": "role",
+      "action": "view"
+    },
+    {
+      "name": "role_permission.assign",
+      "module": "role_permission",
+      "action": "assign"
+    },
+    {
+      "name": "role_permission.remove",
+      "module": "role_permission",
+      "action": "remove"
+    },
+    {
+      "name": "role_permission.view",
+      "module": "role_permission",
+      "action": "view"
+    },
+    {
+      "name": "school.create",
+      "module": "school",
+      "action": "create"
+    },
+    {
+      "name": "school.delete",
+      "module": "school",
+      "action": "delete"
+    },
+    {
+      "name": "school.update",
+      "module": "school",
+      "action": "update"
+    },
+    {
+      "name": "school.view",
+      "module": "school",
+      "action": "view"
+    },
+    {
+      "name": "section.create",
+      "module": "section",
+      "action": "create"
+    },
+    {
+      "name": "section.delete",
+      "module": "section",
+      "action": "delete"
+    },
+    {
+      "name": "section.update",
+      "module": "section",
+      "action": "update"
+    },
+    {
+      "name": "section.view",
+      "module": "section",
+      "action": "view"
+    },
+    {
+      "name": "student.create",
+      "module": "student",
+      "action": "create"
+    },
+    {
+      "name": "student.delete",
+      "module": "student",
+      "action": "delete"
+    },
+    {
+      "name": "student.promote",
+      "module": "student",
+      "action": "promote"
+    },
+    {
+      "name": "student.retain",
+      "module": "student",
+      "action": "retain"
+    },
+    {
+      "name": "student.tc.create",
+      "module": "student",
+      "action": "tc.create"
+    },
+    {
+      "name": "student.tc.view",
+      "module": "student",
+      "action": "tc.view"
+    },
+    {
+      "name": "student.transition",
+      "module": "student",
+      "action": "transition"
+    },
+    {
+      "name": "student.update",
+      "module": "student",
+      "action": "update"
+    },
+    {
+      "name": "student.view",
+      "module": "student",
+      "action": "view"
+    },
+    {
+      "name": "subject.create",
+      "module": "subject",
+      "action": "create"
+    },
+    {
+      "name": "subject.delete",
+      "module": "subject",
+      "action": "delete"
+    },
+    {
+      "name": "subject.update",
+      "module": "subject",
+      "action": "update"
+    },
+    {
+      "name": "subject.view",
+      "module": "subject",
+      "action": "view"
+    },
+    {
+      "name": "substitution.create",
+      "module": "substitution",
+      "action": "create"
+    },
+    {
+      "name": "substitution.delete",
+      "module": "substitution",
+      "action": "delete"
+    },
+    {
+      "name": "substitution.update",
+      "module": "substitution",
+      "action": "update"
+    },
+    {
+      "name": "substitution.view",
+      "module": "substitution",
+      "action": "view"
+    },
+    {
+      "name": "teacher.create",
+      "module": "teacher",
+      "action": "create"
+    },
+    {
+      "name": "teacher.delete",
+      "module": "teacher",
+      "action": "delete"
+    },
+    {
+      "name": "teacher.update",
+      "module": "teacher",
+      "action": "update"
+    },
+    {
+      "name": "teacher.view",
+      "module": "teacher",
+      "action": "view"
+    },
+    {
+      "name": "timetable.archive",
+      "module": "timetable",
+      "action": "archive"
+    },
+    {
+      "name": "timetable.create",
+      "module": "timetable",
+      "action": "create"
+    },
+    {
+      "name": "timetable.delete",
+      "module": "timetable",
+      "action": "delete"
+    },
+    {
+      "name": "timetable.publish",
+      "module": "timetable",
+      "action": "publish"
+    },
+    {
+      "name": "timetable.update",
+      "module": "timetable",
+      "action": "update"
+    },
+    {
+      "name": "timetable.view",
+      "module": "timetable",
+      "action": "view"
+    },
+    {
+      "name": "user.create",
+      "module": "user",
+      "action": "create"
+    },
+    {
+      "name": "user.delete",
+      "module": "user",
+      "action": "delete"
+    },
+    {
+      "name": "user.update",
+      "module": "user",
+      "action": "update"
+    },
+    {
+      "name": "user.view",
+      "module": "user",
+      "action": "view"
+    },
+    {
+      "name": "user_role.assign",
+      "module": "user_role",
+      "action": "assign"
+    },
+    {
+      "name": "user_role.remove",
+      "module": "user_role",
+      "action": "remove"
+    },
+    {
+      "name": "user_role.view",
+      "module": "user_role",
+      "action": "view"
+    }
+  ],
+  "tables": [
+    "alembic_version",
+    "students",
+    "parents",
+    "academic_years",
+    "sections",
+    "identity_users",
+    "school_classes",
+    "schools",
+    "identity_roles",
+    "identity_role_permissions",
+    "identity_permissions",
+    "identity_user_roles",
+    "student_exam_results",
+    "fee_structures",
+    "teachers",
+    "attendances",
+    "exams",
+    "subjects",
+    "exam_schedules",
+    "student_fee_assignments",
+    "fee_items",
+    "student_fee_items",
+    "fee_discounts",
+    "fee_payments",
+    "student_enrollment_histories",
+    "transfer_certificates",
+    "academic_terms",
+    "grade_scales",
+    "grade_scale_entries",
+    "report_cards",
+    "evaluation_configs",
+    "assessment_type_weightages",
+    "report_card_item_snapshots",
+    "period_slots",
+    "classrooms",
+    "teacher_substitutions",
+    "timetables",
+    "timetable_entries",
+    "class_progression_rules",
+    "progression_executions",
+    "progression_execution_items"
+  ],
+  "notification_tables": [],
+  "import_tables": []
+}

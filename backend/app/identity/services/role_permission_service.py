@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from app.common.exceptions import (
     AlreadyExistsException,
+    ForbiddenException,
     NotFoundException,
 )
 from app.common.logger.logger import get_logger
@@ -15,6 +16,9 @@ from app.identity.repositories import (
     role_permission_repository,
     role_repository,
 )
+
+if TYPE_CHECKING:
+    from app.identity.models.user import IdentityUser
 
 logger = get_logger(__name__)
 
@@ -33,6 +37,7 @@ class IdentityRolePermissionService:
         db: Session,
         role_id: UUID,
         permission_id: UUID,
+        current_user: IdentityUser | None = None,
     ) -> Any:
         """
         Assign a permission to a role.
@@ -54,6 +59,12 @@ class IdentityRolePermissionService:
                 "Role",
                 str(role_id),
             )
+
+        if role.is_system and (current_user is None or not current_user.is_super_admin):
+            raise ForbiddenException("System role permissions cannot be modified by school administrators.")
+
+        if current_user and not current_user.is_super_admin and role.school_id != current_user.school_id:
+            raise NotFoundException("Role", str(role_id))
 
         # -------------------------------
         # Validate Permission
@@ -105,16 +116,17 @@ class IdentityRolePermissionService:
         self,
         db: Session,
         role_id: UUID,
+        current_user: IdentityUser | None = None,
     ) -> Any:
         """
-        Get all assigned permissions for a role.
+        Get all permissions assigned to a role.
         """
         role = role_repository.get_by_id(
             db,
             role_id,
         )
 
-        if role is None:
+        if role is None or (current_user and not current_user.is_super_admin and not role.is_system and role.school_id != current_user.school_id):
             logger.warning("Validation failure: Role ID '%s' not found", role_id)
             raise NotFoundException(
                 "Role",
@@ -135,11 +147,19 @@ class IdentityRolePermissionService:
         db: Session,
         role_id: UUID,
         permission_id: UUID,
+        current_user: IdentityUser | None = None,
     ) -> None:
         """
         Remove a permission from a role.
         """
         logger.info("Removing permission ID %s from role ID %s", permission_id, role_id)
+        role = role_repository.get_by_id(db, role_id)
+        if role is None or (current_user and not current_user.is_super_admin and role.school_id != current_user.school_id):
+            raise NotFoundException("Role", str(role_id))
+
+        if role.is_system and (current_user is None or not current_user.is_super_admin):
+            raise ForbiddenException("System role permissions cannot be modified by school administrators.")
+
         if not role_permission_repository.permission_exists(
             db,
             role_id,

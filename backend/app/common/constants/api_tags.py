@@ -7,5 +7,6 @@ class APITags:
     ATTENDANCE = "Attendance"
     FEES = "Fees"
     EXAMS = "Exams"
+    PROGRESSION = "Student Progression & Rollover"
     AUTH = "Authentication"
     AI = "AI"

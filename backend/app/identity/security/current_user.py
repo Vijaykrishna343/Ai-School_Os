@@ -57,9 +57,9 @@ def get_current_user(
             "User not found."
         )
 
-    if not user.is_active:
+    if not user.is_active or getattr(user, "status", "ACTIVE") in ("SUSPENDED", "INACTIVE", "DELETED", "BLOCKED"):
         raise UnauthorizedException(
-            "User is inactive."
+            "User account is suspended or inactive."
         )
 
     return user

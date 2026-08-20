@@ -83,7 +83,7 @@ def list_fee_structures(
     search: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
-    current_user: IdentityUser = Depends(require_permission("fees.view")),
+    current_user: IdentityUser = Depends(require_permission("fees.create")),
     db: Session = Depends(get_db),
     service: FeeService = Depends(get_fee_service),
 ) -> FeeStructureListResponse:
@@ -427,7 +427,7 @@ def list_fee_payments(
     payment_mode: PaymentMode | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
-    current_user: IdentityUser = Depends(require_permission("fees.view")),
+    current_user: IdentityUser = Depends(require_permission("fees.create")),
     db: Session = Depends(get_db),
     service: FeeService = Depends(get_fee_service),
 ) -> FeePaymentListResponse:

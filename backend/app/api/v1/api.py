@@ -63,6 +63,30 @@ from app.api.v1.endpoints.teacher_substitution import (
 from app.api.v1.endpoints.dashboard import (
     router as dashboard_router,
 )
+from app.api.v1.endpoints.data_import import (
+    router as data_import_router,
+)
+from app.api.v1.endpoints.data_export import (
+    router as data_export_router,
+)
+from app.api.v1.endpoints.notifications import (
+    router as notifications_router,
+)
+from app.api.v1.endpoints.audit_logs import (
+    router as audit_logs_router,
+)
+from app.api.v1.endpoints.teacher_attendance import (
+    router as teacher_attendance_router,
+)
+from app.api.v1.endpoints.student_certificate import (
+    router as student_certificate_router,
+)
+from app.api.v1.endpoints.homework import (
+    router as homework_router,
+)
+from app.api.v1.endpoints.documents import (
+    router as documents_router,
+)
 
 from app.api.student.student_controller import (
     router as student_router,
@@ -152,7 +176,7 @@ api_router.include_router(
 api_router.include_router(
     student_promotion_router,
     prefix="/students",
-    tags=["Students"],
+    tags=["Student Promotion & Progression"],
 )
 
 
@@ -285,4 +309,51 @@ api_router.include_router(
     users_router,
     prefix="/users",
     tags=["Users"],
+)
+
+api_router.include_router(
+    data_import_router,
+    prefix="/import",
+    tags=["Data Import"],
+)
+
+api_router.include_router(
+    data_export_router,
+    prefix="/export",
+    tags=["Data Export"],
+)
+
+api_router.include_router(
+    notifications_router,
+    prefix="/notifications",
+    tags=["Notifications"],
+)
+
+api_router.include_router(
+    audit_logs_router,
+    prefix="/audit-logs",
+    tags=["Audit Logs"],
+)
+
+api_router.include_router(
+    teacher_attendance_router,
+    prefix="/teachers/attendance",
+    tags=["Teacher Attendance"],
+)
+
+api_router.include_router(
+    student_certificate_router,
+    tags=["Student Certificates"],
+)
+
+api_router.include_router(
+    homework_router,
+    prefix="/homework",
+    tags=["Homework"],
+)
+
+api_router.include_router(
+    documents_router,
+    prefix="/documents",
+    tags=["Documents"],
 )

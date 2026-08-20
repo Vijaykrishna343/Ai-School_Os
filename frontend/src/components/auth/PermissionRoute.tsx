@@ -8,9 +8,15 @@ export interface PermissionRouteProps {
 }
 
 export const PermissionRoute = ({ permission, children }: PermissionRouteProps) => {
-  const { permissions } = useAuthStore();
+  const { user, permissions, roles } = useAuthStore();
 
-  const hasPermission = permissions.includes(permission);
+  const isSuperAdmin = user?.is_super_admin || roles?.some((r: any) => r.name === 'Super Admin' || r.name === 'SUPER_ADMIN');
+  const hasPermission =
+    isSuperAdmin ||
+    permissions.includes('*') ||
+    permissions.includes(permission) ||
+    (permission.includes('.') && permissions.includes(`${permission.split('.')[0]}.*`));
+
 
   if (!hasPermission) {
     return <ForbiddenPage requiredPermission={permission} />;
@@ -18,3 +24,4 @@ export const PermissionRoute = ({ permission, children }: PermissionRouteProps) 
 
   return <>{children}</>;
 };
+

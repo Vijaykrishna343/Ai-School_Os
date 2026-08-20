@@ -31,6 +31,12 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:3000",
     ]
+    LOGIN_RATE_LIMIT: int = 5
+    LOGIN_RATE_WINDOW_SECONDS: int = 60
+    REDIS_URL: Union[str, None] = None
+    DOCUMENT_STORAGE_PATH: str = str(BASE_DIR / "storage" / "documents")
+    DOCUMENT_MAX_SIZE_MB: int = 10
+    STORAGE_PROVIDER: str = "local"
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",

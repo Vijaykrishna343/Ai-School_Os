@@ -7,9 +7,12 @@ export interface User {
   last_name?: string | null;
   phone?: string | null;
   is_active: boolean;
+  status?: string;
+  is_super_admin?: boolean;
   is_verified?: boolean;
   last_login?: string | null;
 }
+
 
 export interface UserRole {
   id: string;
@@ -32,6 +35,7 @@ export interface TokenResponse {
 }
 
 export interface UserLoginPayload {
+  school_code: string;
   email: string;
   password: string;
 }

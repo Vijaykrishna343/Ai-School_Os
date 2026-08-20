@@ -14,13 +14,16 @@ class APIException(HTTPException):
         self,
         *,
         status_code: int,
-        code: ErrorCode,
+        code: ErrorCode | str,
         message: str,
+        headers: dict[str, str] | None = None,
     ):
         self.code = code
         self.message = message
+        self.headers = headers
 
         super().__init__(
             status_code=status_code,
             detail=message,
+            headers=headers,
         )

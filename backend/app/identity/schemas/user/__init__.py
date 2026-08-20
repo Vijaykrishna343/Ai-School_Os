@@ -10,6 +10,7 @@ from .forgot_password import ForgotPassword
 from .reset_password import ResetPassword
 from .refresh_token import RefreshToken
 from .current_user import CurrentUser
+from .user_status_update import UserStatusUpdate
 
 __all__ = [
     "UserCreate",
@@ -24,4 +25,5 @@ __all__ = [
     "ResetPassword",
     "RefreshToken",
     "CurrentUser",
-]
+    "UserStatusUpdate",
+]

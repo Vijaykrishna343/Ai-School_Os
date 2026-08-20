@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { teachersApi } from '@/services/api';
+import { teachersApi, teacherAttendanceApi, TeacherAttendanceItem } from '@/services/api';
 import { Teacher, TeacherCreate, TeacherUpdate } from '@/types/models';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/Button';
@@ -14,10 +14,14 @@ import { Drawer } from '@/components/ui/Drawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Alert } from '@/components/ui/Alert';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Calendar, Clock } from 'lucide-react';
 
 export const TeachersPage: React.FC = () => {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+
+  const [activeTab, setActiveTab] = useState<'directory' | 'attendance'>('directory');
+  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
@@ -55,7 +59,7 @@ export const TeachersPage: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<Record<string, string> | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Queries
+  // Directory Queries
   const {
     data: teachersData,
     isLoading: isTeachersLoading,
@@ -71,6 +75,23 @@ export const TeachersPage: React.FC = () => {
         search: search || undefined,
         status: selectedStatusFilter || undefined,
       }),
+  });
+
+  // Attendance Queries
+  const {
+    data: attendanceList,
+    isLoading: isAttendanceLoading,
+    refetch: refetchAttendance,
+  } = useQuery({
+    queryKey: ['teacherAttendance', attendanceDate],
+    queryFn: () => teacherAttendanceApi.list(attendanceDate),
+    enabled: activeTab === 'attendance',
+  });
+
+  const { data: attendanceSummary } = useQuery({
+    queryKey: ['teacherAttendanceSummary', attendanceDate],
+    queryFn: () => teacherAttendanceApi.getSummary(attendanceDate),
+    enabled: activeTab === 'attendance',
   });
 
   // Mutations
@@ -108,6 +129,31 @@ export const TeachersPage: React.FC = () => {
     onError: (err: any) => {
       setDeleteError(err.message || 'Failed to delete teacher record.');
       setDeleteTarget(null);
+    },
+  });
+
+  const updateAttendanceMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      teacherAttendanceApi.update(id, { status: status as any }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacherAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ['teacherAttendanceSummary'] });
+    },
+  });
+
+  const checkInMutation = useMutation({
+    mutationFn: () => teacherAttendanceApi.checkIn(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacherAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ['teacherAttendanceSummary'] });
+    },
+  });
+
+  const checkOutMutation = useMutation({
+    mutationFn: () => teacherAttendanceApi.checkOut(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacherAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ['teacherAttendanceSummary'] });
     },
   });
 
@@ -206,6 +252,16 @@ export const TeachersPage: React.FC = () => {
     }
   };
 
+  const attendanceVariant = (status: string) => {
+    switch (status) {
+      case 'PRESENT': return 'success';
+      case 'LATE': return 'warning';
+      case 'ABSENT': return 'error';
+      case 'LEAVE': return 'info';
+      default: return 'default';
+    }
+  };
+
   const teacherColumns: Column<Teacher>[] = [
     {
       key: 'employee_id',
@@ -218,68 +274,114 @@ export const TeachersPage: React.FC = () => {
     {
       key: 'name',
       header: 'Teacher Name',
-      className: 'min-w-[9rem]',
       render: (row) => (
         <div>
-          <p className="font-semibold text-ink dark:text-stone-100">
+          <div className="font-medium text-xs text-ink dark:text-stone-200">
             {row.first_name} {row.last_name}
-          </p>
-          <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted/60 dark:text-stone-500">
-            {row.gender}
-          </p>
+          </div>
+          <div className="text-[10px] text-ink-muted dark:text-stone-400 font-mono">{row.email}</div>
         </div>
       ),
     },
     {
       key: 'qualification',
       header: 'Qualification',
-      className: 'min-w-[8rem]',
-      render: (row) => (
-        <div>
-          <p className="font-medium text-ink dark:text-stone-200">{row.qualification}</p>
-          {row.specialization && (
-            <p className="text-[10px] font-mono uppercase tracking-wider text-ink-muted/60 dark:text-stone-500">
-              {row.specialization}
-            </p>
-          )}
-        </div>
-      ),
+      render: (row) => <span className="text-xs">{row.qualification}</span>,
     },
     {
       key: 'phone',
-      header: 'Phone',
-      className: 'min-w-[6.5rem]',
-      render: (row) => <span className="font-mono text-xs text-ink dark:text-stone-300">{row.phone}</span>,
-    },
-    {
-      key: 'joining_date',
-      header: 'Joining Date',
-      className: 'min-w-[6.5rem]',
-      render: (row) => <span className="font-mono text-ink-muted dark:text-stone-400">{row.joining_date}</span>,
+      header: 'Phone Number',
+      render: (row) => <span className="font-mono text-xs text-ink-muted">{row.phone}</span>,
     },
     {
       key: 'status',
       header: 'Status',
-      render: (row) => (
-        <Badge variant={statusVariant(row.status) as any}>
-          {row.status}
-        </Badge>
-      ),
+      render: (row) => <Badge variant={statusVariant(row.status)}>{row.status}</Badge>,
     },
     {
       key: 'actions',
       header: 'Actions',
-      className: 'min-w-[11rem]',
+      className: 'text-right min-w-[10rem]',
       render: (row) => (
-        <div className="flex items-center gap-1.5">
-          <Button variant="outline" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => setViewingTeacher(row)}>
+        <div className="flex justify-end gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => setViewingTeacher(row)}>
             View
           </Button>
-          <Button variant="outline" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => handleOpenEditModal(row)}>
+          <Button variant="outline" size="sm" onClick={() => handleOpenEditModal(row)}>
             Edit
           </Button>
-          <Button variant="danger" size="sm" className="px-2 py-0.5 text-[10px] font-mono tracking-wide" onClick={() => setDeleteTarget(row)}>
+          <Button variant="danger" size="sm" onClick={() => setDeleteTarget(row)}>
             Delete
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const attendanceColumns: Column<TeacherAttendanceItem>[] = [
+    {
+      key: 'employee_id',
+      header: 'Employee ID',
+      render: (row) => <span className="font-mono text-xs font-bold text-brand-500">{row.employee_id || 'STAFF'}</span>,
+    },
+    {
+      key: 'teacher_name',
+      header: 'Staff Member',
+      render: (row) => (
+        <div>
+          <div className="font-medium text-xs text-ink dark:text-stone-200">{row.teacher_name}</div>
+          <div className="text-[10px] text-ink-muted font-mono">{row.department || 'Academic Staff'}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Attendance Status',
+      render: (row) => <Badge variant={attendanceVariant(row.status)}>{row.status}</Badge>,
+    },
+    {
+      key: 'check_in',
+      header: 'Check In',
+      render: (row) => <span className="font-mono text-xs">{row.check_in_time || '—'}</span>,
+    },
+    {
+      key: 'check_out',
+      header: 'Check Out',
+      render: (row) => <span className="font-mono text-xs">{row.check_out_time || '—'}</span>,
+    },
+    {
+      key: 'actions',
+      header: 'Quick Action',
+      className: 'text-right min-w-[14rem]',
+      render: (row) => (
+        <div className="flex justify-end gap-1">
+          <Button
+            variant={row.status === 'PRESENT' ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => updateAttendanceMutation.mutate({ id: row.id, status: 'PRESENT' })}
+          >
+            Present
+          </Button>
+          <Button
+            variant={row.status === 'ABSENT' ? 'danger' : 'outline'}
+            size="sm"
+            onClick={() => updateAttendanceMutation.mutate({ id: row.id, status: 'ABSENT' })}
+          >
+            Absent
+          </Button>
+          <Button
+            variant={row.status === 'LATE' ? 'secondary' : 'outline'}
+            size="sm"
+            onClick={() => updateAttendanceMutation.mutate({ id: row.id, status: 'LATE' })}
+          >
+            Late
+          </Button>
+          <Button
+            variant={row.status === 'LEAVE' ? 'ghost' : 'outline'}
+            size="sm"
+            onClick={() => updateAttendanceMutation.mutate({ id: row.id, status: 'LEAVE' })}
+          >
+            Leave
           </Button>
         </div>
       ),
@@ -288,10 +390,10 @@ export const TeachersPage: React.FC = () => {
 
   if (isTeachersError) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-6">
         <ErrorState
-          title="Administrative Faculty Directory Error"
-          message={(teachersError as any)?.message || 'Failed to retrieve institutional teacher records.'}
+          title="Staff Directory Error"
+          message={(teachersError as any)?.message || 'Failed to load teacher directory.'}
           onRetry={() => refetchTeachers()}
         />
       </div>
@@ -299,420 +401,284 @@ export const TeachersPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto bg-paper dark:bg-stone-950 select-none">
-      {/* Editorial Header */}
-      <div className="border-b border-divider dark:border-stone-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto bg-paper dark:bg-stone-950 min-h-[85vh]">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-divider pb-4">
         <div>
           <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">
-            OFFICE OF THE REGISTRAR
+            STAFF_MANAGEMENT // DIRECTORY_AND_ATTENDANCE
           </p>
-          <h1 className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100 mt-1 tracking-tight">
-            Faculty Directory
+          <h1 className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100 mt-1">
+            Teacher & Staff Workstation
           </h1>
-          <p className="text-xs text-ink-muted dark:text-stone-400 mt-1">
-            Directory of institutional teachers, professional qualifications, and employment logs.
-          </p>
         </div>
-        <Button onClick={handleOpenCreateModal} size="sm">
-          + Add Teacher
-        </Button>
+
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => checkInMutation.mutate()}
+            isLoading={checkInMutation.isPending}
+          >
+            <Clock className="w-3.5 h-3.5 mr-1 text-green-600" />
+            Check In
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => checkOutMutation.mutate()}
+            isLoading={checkOutMutation.isPending}
+          >
+            <Clock className="w-3.5 h-3.5 mr-1 text-amber-600" />
+            Check Out
+          </Button>
+
+          {activeTab === 'directory' && (
+            <Button variant="primary" size="sm" onClick={handleOpenCreateModal}>
+              + Register New Staff
+            </Button>
+          )}
+        </div>
       </div>
 
       {deleteError && (
-        <Alert type="error" title="Deletion Failure" onClose={() => setDeleteError(null)}>
+        <Alert type="error" title="Delete Operation Failed">
           {deleteError}
         </Alert>
       )}
 
-      <div className="p-4 border border-divider dark:border-stone-850 bg-paper flex flex-col md:flex-row items-center gap-4">
-        <div className="flex-1 w-full">
-          <Input
-            placeholder="Search by teacher name, employee ID, or email..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
-        </div>
-
-        <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
-          <select
-            value={selectedStatusFilter}
-            onChange={(e) => {
-              setSelectedStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 font-mono"
-          >
-            <option value="">ALL_STATUS</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-            <option value="ON_LEAVE">ON_LEAVE</option>
-            <option value="RESIGNED">RESIGNED</option>
-          </select>
-        </div>
+      {/* Navigation Tabs */}
+      <div className="flex border-b border-divider gap-4">
+        <button
+          onClick={() => setActiveTab('directory')}
+          className={`pb-2.5 text-xs font-mono font-bold border-b-2 uppercase transition-colors ${
+            activeTab === 'directory'
+              ? 'border-brand-500 text-brand-500 dark:text-stone-100'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          Staff Directory
+        </button>
+        <button
+          onClick={() => setActiveTab('attendance')}
+          className={`pb-2.5 text-xs font-mono font-bold border-b-2 uppercase transition-colors ${
+            activeTab === 'attendance'
+              ? 'border-brand-500 text-brand-500 dark:text-stone-100'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          Staff Attendance Workstation
+        </button>
       </div>
 
-      <div className="space-y-4">
-        <Table
-          columns={teacherColumns}
-          data={teachersData?.items || []}
-          isLoading={isTeachersLoading}
-          emptyText="No faculty records matching current registry filters."
-        />
-        {teachersData && (
-          <Pagination
-            page={teachersData.page}
-            totalPages={teachersData.total_pages}
-            totalItems={teachersData.total}
-            pageSize={teachersData.page_size}
-            onPageChange={(p) => setPage(p)}
-          />
-        )}
-      </div>
+      {/* TAB 1: STAFF DIRECTORY */}
+      {activeTab === 'directory' && (
+        <Card className="p-4 space-y-4">
+          <div className="flex flex-col md:flex-row gap-3 justify-between">
+            <div className="w-full md:w-72">
+              <Input
+                placeholder="Search teacher by name or ID..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                className="text-xs border border-divider rounded p-2 bg-paper dark:bg-stone-900"
+                value={selectedStatusFilter}
+                onChange={(e) => {
+                  setSelectedStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">All Statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="ON_LEAVE">On Leave</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="RESIGNED">Resigned</option>
+              </select>
+            </div>
+          </div>
 
-      {/* Teacher Create/Edit Modal */}
+          <Table
+            columns={teacherColumns}
+            data={teachersData?.items || []}
+            rowKey={(row) => row.id}
+            isLoading={isTeachersLoading}
+            emptyText="No teachers found in registry."
+          />
+
+          {teachersData && teachersData.total_pages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={teachersData.total_pages}
+              onPageChange={(p) => setPage(p)}
+            />
+          )}
+        </Card>
+      )}
+
+      {/* TAB 2: STAFF ATTENDANCE WORKSTATION */}
+      {activeTab === 'attendance' && (
+        <div className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-paper-dim dark:bg-stone-900/60 p-4 border border-divider">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-4 h-4 text-brand-500" />
+              <label className="text-xs font-mono uppercase font-bold text-ink-muted">Select Date:</label>
+              <input
+                type="date"
+                className="text-xs font-mono border border-divider px-3 py-1.5 rounded bg-paper dark:bg-stone-950"
+                value={attendanceDate}
+                onChange={(e) => setAttendanceDate(e.target.value)}
+              />
+            </div>
+
+            <Button variant="outline" size="sm" onClick={() => refetchAttendance()}>
+              Refresh Roster
+            </Button>
+          </div>
+
+          {/* Attendance Metric Summary Bar */}
+          {attendanceSummary && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Card className="p-3 text-center border-brand-500/30">
+                <p className="text-[10px] font-mono uppercase text-ink-muted">TOTAL STAFF</p>
+                <p className="text-xl font-bold font-mono text-brand-500">{attendanceSummary.total_teachers}</p>
+              </Card>
+              <Card className="p-3 text-center border-green-500/30">
+                <p className="text-[10px] font-mono uppercase text-green-600">PRESENT</p>
+                <p className="text-xl font-bold font-mono text-green-600">{attendanceSummary.present_count}</p>
+              </Card>
+              <Card className="p-3 text-center border-red-500/30">
+                <p className="text-[10px] font-mono uppercase text-red-600">ABSENT</p>
+                <p className="text-xl font-bold font-mono text-red-600">{attendanceSummary.absent_count}</p>
+              </Card>
+              <Card className="p-3 text-center border-amber-500/30">
+                <p className="text-[10px] font-mono uppercase text-amber-600">LATE</p>
+                <p className="text-xl font-bold font-mono text-amber-600">{attendanceSummary.late_count}</p>
+              </Card>
+              <Card className="p-3 text-center border-blue-500/30">
+                <p className="text-[10px] font-mono uppercase text-blue-600">LEAVE</p>
+                <p className="text-xl font-bold font-mono text-blue-600">{attendanceSummary.leave_count}</p>
+              </Card>
+            </div>
+          )}
+
+          <Card className="p-4">
+            <Table
+              columns={attendanceColumns}
+              data={attendanceList || []}
+              rowKey={(row) => row.id}
+              isLoading={isAttendanceLoading}
+              emptyText="No attendance records available for selected date."
+            />
+          </Card>
+        </div>
+      )}
+
+      {/* Modal: Create/Edit Teacher */}
       <Modal
         isOpen={isTeacherModalOpen}
         onClose={() => setIsTeacherModalOpen(false)}
-        title={editingTeacher ? `Edit Teacher — ${editingTeacher.employee_id}` : 'Add New Teacher'}
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsTeacherModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSubmitTeacher}
-              isLoading={createTeacherMutation.isPending || updateTeacherMutation.isPending}
-            >
-              {editingTeacher ? 'Update Record' : 'Create Teacher'}
-            </Button>
-          </div>
-        }
+        title={editingTeacher ? 'Edit Teacher Record' : 'Register New Staff Member'}
       >
-        <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
-          {formError && <Alert type="error" title="Form Error">{formError}</Alert>}
+        <div className="space-y-4 py-2">
+          {formError && <Alert type="error" title="Validation Failed">{formError}</Alert>}
 
-          {/* IDENTITY SECTION */}
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-500 dark:text-brand-350 border-b border-divider pb-1">
-              I. Identity Record
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-mono uppercase text-ink-muted">First Name *</label>
               <Input
-                label="First Name *"
-                value={teacherForm.first_name || ''}
+                value={teacherForm.first_name}
                 onChange={(e) => setTeacherForm({ ...teacherForm, first_name: e.target.value })}
                 error={validationErrors?.first_name}
-                required
               />
+            </div>
+            <div>
+              <label className="text-[11px] font-mono uppercase text-ink-muted">Last Name *</label>
               <Input
-                label="Middle Name"
-                value={teacherForm.middle_name || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, middle_name: e.target.value })}
-                error={validationErrors?.middle_name}
-              />
-              <Input
-                label="Last Name"
-                value={teacherForm.last_name || ''}
+                value={teacherForm.last_name}
                 onChange={(e) => setTeacherForm({ ...teacherForm, last_name: e.target.value })}
                 error={validationErrors?.last_name}
               />
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="gender-select" className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
-                  Gender *
-                </label>
-                <select
-                  id="gender-select"
-                  value={teacherForm.gender || 'MALE'}
-                  onChange={(e) => setTeacherForm({ ...teacherForm, gender: e.target.value as any })}
-                  className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250 font-mono"
-                >
-                  <option value="MALE">MALE</option>
-                  <option value="FEMALE">FEMALE</option>
-                  <option value="OTHER">OTHER</option>
-                </select>
-              </div>
-              {!editingTeacher ? (
-                <Input
-                  type="date"
-                  label="Date of Birth *"
-                  value={teacherForm.date_of_birth || ''}
-                  onChange={(e) => setTeacherForm({ ...teacherForm, date_of_birth: e.target.value })}
-                  error={validationErrors?.date_of_birth}
-                  required
-                />
-              ) : (
-                <Input
-                  type="date"
-                  label="Date of Birth"
-                  value={editingTeacher.date_of_birth || ''}
-                  disabled
-                />
-              )}
-            </div>
           </div>
 
-          {/* EMPLOYMENT SECTION */}
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-500 dark:text-brand-350 border-b border-divider pb-1">
-              II. Employment Record
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {!editingTeacher ? (
-                <Input
-                  label="Employee ID *"
-                  value={teacherForm.employee_id || ''}
-                  onChange={(e) => setTeacherForm({ ...teacherForm, employee_id: e.target.value })}
-                  error={validationErrors?.employee_id}
-                  required
-                />
-              ) : (
-                <Input
-                  label="Employee ID"
-                  value={editingTeacher.employee_id || ''}
-                  disabled
-                />
-              )}
-              {!editingTeacher ? (
-                <Input
-                  type="date"
-                  label="Joining Date *"
-                  value={teacherForm.joining_date || ''}
-                  onChange={(e) => setTeacherForm({ ...teacherForm, joining_date: e.target.value })}
-                  error={validationErrors?.joining_date}
-                  required
-                />
-              ) : (
-                <Input
-                  type="date"
-                  label="Joining Date"
-                  value={editingTeacher.joining_date || ''}
-                  disabled
-                />
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-mono uppercase text-ink-muted">Email Address *</label>
               <Input
-                label="Qualification *"
-                placeholder="e.g. M.Ed, B.Sc"
-                value={teacherForm.qualification || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, qualification: e.target.value })}
-                error={validationErrors?.qualification}
-                required
-              />
-              <Input
-                label="Specialization"
-                placeholder="e.g. Mathematics"
-                value={teacherForm.specialization || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, specialization: e.target.value })}
-                error={validationErrors?.specialization}
-              />
-              <Input
-                type="number"
-                label="Experience Years"
-                value={teacherForm.experience_years ?? 0}
-                onChange={(e) => setTeacherForm({ ...teacherForm, experience_years: parseInt(e.target.value, 10) || 0 })}
-                error={validationErrors?.experience_years}
-              />
-            </div>
-
-            {editingTeacher && (
-              <div>
-                <label htmlFor="status-select" className="block text-[10px] font-mono font-semibold uppercase tracking-widest text-ink-muted dark:text-stone-400 mb-1">
-                  Employment Status *
-                </label>
-                <select
-                  id="status-select"
-                  value={teacherForm.status || 'ACTIVE'}
-                  onChange={(e) => setTeacherForm({ ...teacherForm, status: e.target.value as any })}
-                  className="w-full px-2.5 py-1.5 text-xs rounded-none border border-divider bg-paper-dim text-ink focus:border-brand-500 focus:bg-paper focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-250 font-mono"
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                  <option value="ON_LEAVE">ON_LEAVE</option>
-                  <option value="RESIGNED">RESIGNED</option>
-                  <option value="TERMINATED">TERMINATED</option>
-                  <option value="RETIRED">RETIRED</option>
-                </select>
-              </div>
-            )}
-          </div>
-
-          {/* CONTACT SECTION */}
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-500 dark:text-brand-350 border-b border-divider pb-1">
-              III. Contact Register
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Input
-                label="Phone *"
-                value={teacherForm.phone || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
-                error={validationErrors?.phone}
-                required
-              />
-              <Input
-                label="Email *"
-                value={teacherForm.email || ''}
+                type="email"
+                value={teacherForm.email}
                 onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
                 error={validationErrors?.email}
-                required
               />
+            </div>
+            <div>
+              <label className="text-[11px] font-mono uppercase text-ink-muted">Phone Number *</label>
               <Input
-                label="Emergency Contact"
-                value={teacherForm.emergency_contact || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, emergency_contact: e.target.value })}
-                error={validationErrors?.emergency_contact}
+                value={teacherForm.phone}
+                onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
+                error={validationErrors?.phone}
               />
             </div>
           </div>
 
-          {/* ADDRESS SECTION */}
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-500 dark:text-brand-350 border-b border-divider pb-1">
-              IV. Address Record
-            </h3>
-
-            <Input
-              label="Address Line 1 *"
-              value={teacherForm.address_line1 || ''}
-              onChange={(e) => setTeacherForm({ ...teacherForm, address_line1: e.target.value })}
-              error={validationErrors?.address_line1}
-              required
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-mono uppercase text-ink-muted">Qualification *</label>
               <Input
-                label="City *"
-                value={teacherForm.city || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, city: e.target.value })}
-                error={validationErrors?.city}
-                required
-              />
-              <Input
-                label="District *"
-                value={teacherForm.district || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, district: e.target.value })}
-                error={validationErrors?.district}
-                required
-              />
-              <Input
-                label="State *"
-                value={teacherForm.state || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, state: e.target.value })}
-                error={validationErrors?.state}
-                required
-              />
-              <Input
-                label="Postal Code *"
-                value={teacherForm.postal_code || ''}
-                onChange={(e) => setTeacherForm({ ...teacherForm, postal_code: e.target.value })}
-                error={validationErrors?.postal_code}
-                required
+                value={teacherForm.qualification}
+                onChange={(e) => setTeacherForm({ ...teacherForm, qualification: e.target.value })}
+                error={validationErrors?.qualification}
               />
             </div>
+            <div>
+              <label className="text-[11px] font-mono uppercase text-ink-muted">Specialization</label>
+              <Input
+                value={teacherForm.specialization}
+                onChange={(e) => setTeacherForm({ ...teacherForm, specialization: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-divider">
+            <Button variant="outline" onClick={() => setIsTeacherModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmitTeacher}
+              isLoading={createTeacherMutation.isPending || updateTeacherMutation.isPending}
+            >
+              {editingTeacher ? 'Save Changes' : 'Create Teacher'}
+            </Button>
           </div>
         </div>
       </Modal>
 
-      {/* Teacher Detail Drawer */}
+      {/* Drawer: Viewing Teacher Details */}
       <Drawer
         isOpen={!!viewingTeacher}
         onClose={() => setViewingTeacher(null)}
-        title="FACULTY DOSSIER"
-        subtitle={viewingTeacher ? `EMPLOYEE_ID: ${viewingTeacher.employee_id}` : ''}
-        width="md"
+        title="Teacher Comprehensive Profile"
       >
         {viewingTeacher && (
-          <div className="space-y-6 text-ink dark:text-stone-300">
-            {/* HEADER / FACULTY POSITION */}
-            <div className="p-4 border border-divider dark:border-stone-800 bg-paper-dim dark:bg-stone-900/60 rounded-none flex items-center justify-between">
-              <div>
-                <p className="text-[9px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">FACULTY_POSITION</p>
-                <p className="text-sm font-serif font-bold text-brand-500 dark:text-stone-100 mt-1">
-                  {[viewingTeacher.first_name, viewingTeacher.middle_name, viewingTeacher.last_name].filter(Boolean).join(' ') || '—'}
-                </p>
-                <p className="text-[10px] font-mono text-ink-muted/80 mt-0.5">
-                  {viewingTeacher.qualification}
-                  {viewingTeacher.specialization && ` — ${viewingTeacher.specialization}`}
-                </p>
-              </div>
-              <Badge variant={viewingTeacher.status === 'ACTIVE' ? 'success' : 'default'}>
-                {viewingTeacher.status}
-              </Badge>
+          <div className="space-y-6 text-xs">
+            <div className="border-b border-divider pb-3">
+              <h2 className="text-lg font-bold text-brand-500 font-serif">
+                {viewingTeacher.first_name} {viewingTeacher.last_name}
+              </h2>
+              <p className="font-mono text-ink-muted">{viewingTeacher.email}</p>
             </div>
-
-            {/* IDENTITY_RECORD */}
-            <div>
-              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
-                IDENTITY_RECORD
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">FULL_NAME:</span> <span className="font-medium">
-                  {[viewingTeacher.first_name, viewingTeacher.middle_name, viewingTeacher.last_name].filter(Boolean).join(' ') || '—'}
-                </span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">GENDER:</span> <span>{viewingTeacher.gender}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">DATE_OF_BIRTH:</span> <span className="font-mono">{viewingTeacher.date_of_birth}</span></div>
-              </div>
-            </div>
-
-            {/* EMPLOYMENT_RECORD */}
-            <div>
-              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
-                EMPLOYMENT_RECORD
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EMPLOYEE_ID:</span> <span className="font-mono">{viewingTeacher.employee_id}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">JOINING_DATE:</span> <span className="font-mono">{viewingTeacher.joining_date}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EXPERIENCE_YEARS:</span> <span>{viewingTeacher.experience_years || 0} years</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">STATUS:</span> <span>{viewingTeacher.status}</span></div>
-              </div>
-            </div>
-
-            {/* PROFESSIONAL_RECORD */}
-            <div>
-              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
-                PROFESSIONAL_RECORD
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">QUALIFICATION:</span> <span className="font-medium">{viewingTeacher.qualification}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">SPECIALIZATION:</span> <span className="font-medium">{viewingTeacher.specialization || '—'}</span></div>
-              </div>
-            </div>
-
-            {/* CONTACT_REGISTER */}
-            <div>
-              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
-                CONTACT_REGISTER
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">PHONE:</span> <span className="font-mono">{viewingTeacher.phone}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EMAIL:</span> <span className="font-mono">{viewingTeacher.email}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">EMERGENCY_CONTACT:</span> <span className="font-mono">{viewingTeacher.emergency_contact || '—'}</span></div>
-              </div>
-            </div>
-
-            {/* ADDRESS_RECORD */}
-            <div>
-              <h3 className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500 border-b border-divider pb-1 mb-2.5">
-                ADDRESS_RECORD
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-xs">
-                <div className="md:col-span-2"><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">ADDRESS_LINE1:</span> <span>{viewingTeacher.address_line1}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">CITY:</span> <span>{viewingTeacher.city}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">DISTRICT:</span> <span>{viewingTeacher.district}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">STATE:</span> <span>{viewingTeacher.state}</span></div>
-                <div><span className="font-mono text-ink-muted text-[10px] mr-1 uppercase">POSTAL_CODE:</span> <span className="font-mono">{viewingTeacher.postal_code}</span></div>
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><span className="font-mono text-ink-muted">EMPLOYEE ID:</span> {viewingTeacher.employee_id}</div>
+              <div><span className="font-mono text-ink-muted">QUALIFICATION:</span> {viewingTeacher.qualification}</div>
+              <div><span className="font-mono text-ink-muted">STATUS:</span> {viewingTeacher.status}</div>
+              <div><span className="font-mono text-ink-muted">PHONE:</span> {viewingTeacher.phone}</div>
             </div>
           </div>
         )}
@@ -723,7 +689,7 @@ export const TeachersPage: React.FC = () => {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteTeacherMutation.mutate(deleteTarget.id)}
-        title={`Soft Delete Teacher`}
+        title="Soft Delete Teacher"
         message={`Are you sure you want to soft delete teacher "${deleteTarget?.first_name} ${deleteTarget?.last_name || ''}" (${deleteTarget?.employee_id})?`}
         isLoading={deleteTeacherMutation.isPending}
       />

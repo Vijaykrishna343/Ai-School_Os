@@ -12,3 +12,5 @@ export * from './Table';
 export * from './Pagination';
 export * from './Drawer';
 export * from './ConfirmDialog';
+export * from './PageHeader';
+export * from './Breadcrumbs';

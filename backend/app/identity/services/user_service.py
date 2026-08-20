@@ -18,6 +18,7 @@ from app.identity.schemas.user import (
     UserFilter,
     UserListResponse,
     UserResponse,
+    UserStatusUpdate,
     UserUpdate,
 )
 from app.identity.security.password import hash_password
@@ -38,10 +39,14 @@ class IdentityUserService(BaseIdentityService):
         self,
         db: Session,
         user: UserCreate,
+        current_user: IdentityUser | None = None,
     ) -> IdentityUser:
         """
-        Create a new identity user.
+        Create a new identity user with tenant scoping.
         """
+        if current_user and not current_user.is_super_admin:
+            user.school_id = current_user.school_id
+
         logger.info(
             "Creating identity user email '%s' for school ID: %s",
             user.email,
@@ -52,6 +57,7 @@ class IdentityUserService(BaseIdentityService):
             db,
             user.school_id,
         )
+
 
         if school is None:
             logger.warning(
@@ -156,16 +162,17 @@ class IdentityUserService(BaseIdentityService):
         self,
         db: Session,
         user_id: UUID,
+        current_user: IdentityUser | None = None,
     ) -> IdentityUser:
         """
-        Get an identity user by ID.
+        Get an identity user by ID with tenant verification.
         """
         user = identity_user_repository.get_by_id(
             db,
             user_id,
         )
 
-        if user is None:
+        if user is None or (current_user and not current_user.is_super_admin and user.school_id != current_user.school_id):
             logger.warning("Validation failure: User ID '%s' not found", user_id)
             raise NotFoundException(
                 "User not found."
@@ -177,17 +184,29 @@ class IdentityUserService(BaseIdentityService):
         self,
         db: Session,
         filters: UserFilter,
+        current_user: IdentityUser | None = None,
     ) -> UserListResponse:
         """
-        Get paginated list of users.
+        Get paginated list of users scoped to current_user's school.
         """
-        users, total, _ = (
-            identity_user_repository.get_paginated(
-                db,
-                page=filters.page,
-                page_size=filters.page_size,
-            )
+        effective_school_id = (
+            filters.school_id
+            if (current_user and current_user.is_super_admin and filters.school_id)
+            else (current_user.school_id if current_user else filters.school_id)
         )
+
+        users, total = identity_user_repository.list_users(
+            db=db,
+            school_id=effective_school_id,
+            email=filters.email,
+            username=filters.username,
+            first_name=filters.first_name,
+            is_active=filters.is_active,
+            page=filters.page,
+            page_size=filters.page_size,
+        )
+
+        total_pages = (total + filters.page_size - 1) // filters.page_size if total > 0 else 0
 
         return UserListResponse(
             items=[
@@ -197,6 +216,7 @@ class IdentityUserService(BaseIdentityService):
             total=total,
             page=filters.page,
             page_size=filters.page_size,
+            total_pages=total_pages,
         )
 
     def update_user(
@@ -204,6 +224,7 @@ class IdentityUserService(BaseIdentityService):
         db: Session,
         user_id: UUID,
         data: UserUpdate,
+        current_user: IdentityUser | None = None,
     ) -> IdentityUser:
         """
         Update an identity user.
@@ -212,6 +233,7 @@ class IdentityUserService(BaseIdentityService):
         user = self.get_user(
             db,
             user_id,
+            current_user=current_user,
         )
 
         updates = data.model_dump(
@@ -232,10 +254,46 @@ class IdentityUserService(BaseIdentityService):
         logger.info("Identity user ID: %s updated successfully", user_id)
         return updated_user
 
+    def update_user_status(
+        self,
+        db: Session,
+        user_id: UUID,
+        status_data: UserStatusUpdate,
+        current_user: IdentityUser | None = None,
+    ) -> IdentityUser:
+        """
+        Suspend or reactivate a user account with security guards.
+        """
+        from datetime import datetime, timezone
+        from app.common.exceptions import ForbiddenException
+
+        user = self.get_user(db, user_id, current_user=current_user)
+
+        if current_user:
+            if user.id == current_user.id:
+                raise ForbiddenException("Users cannot alter their own account status.")
+            if user.is_super_admin and not current_user.is_super_admin:
+                raise ForbiddenException("School administrators cannot suspend Super Admin accounts.")
+
+        new_status = status_data.status.upper()
+        user.status = new_status
+        user.is_active = (new_status == "ACTIVE")
+        user.suspension_reason = status_data.suspension_reason
+
+        if new_status in ("SUSPENDED", "INACTIVE"):
+            user.suspended_at = datetime.now(timezone.utc)
+        elif new_status == "ACTIVE":
+            user.suspended_at = None
+            user.suspension_reason = None
+
+        return identity_user_repository.update(db, user)
+
+
     def delete_user(
         self,
         db: Session,
         user_id: UUID,
+        current_user: IdentityUser | None = None,
     ) -> None:
         """
         Soft delete an identity user.
@@ -244,6 +302,7 @@ class IdentityUserService(BaseIdentityService):
         user = self.get_user(
             db,
             user_id,
+            current_user=current_user,
         )
 
         identity_user_repository.delete(

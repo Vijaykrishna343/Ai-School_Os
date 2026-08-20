@@ -46,7 +46,8 @@ describe('Academic Progression Workspace Component', () => {
     useAuthStore.setState({
       user: { id: 'admin-id', email: 'principal@school.com', school_id: 'school-1' } as any,
       roles: [{ id: 'role-1', name: 'Administrator', code: 'admin', permissions: [] }],
-      permissions: ['progression.view', 'progression_matrix.view', 'progression_matrix.manage', 'progression.execute'],
+      permissions: ['progression_matrix.view', 'progression_matrix.manage', 'progression.execute'],
+
       accessToken: 'token',
       isAuthenticated: true,
       isLoading: false,
@@ -113,7 +114,8 @@ describe('Academic Progression Workspace Component', () => {
 
   it('hides execution button when user lacks progression.execute permission', async () => {
     useAuthStore.setState({
-      permissions: ['progression.view', 'progression_matrix.view'],
+      permissions: ['progression_matrix.view'],
+
     });
 
     const mockPreviewResponse = {

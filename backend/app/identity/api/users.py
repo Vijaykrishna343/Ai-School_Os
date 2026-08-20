@@ -8,22 +8,17 @@ from app.identity.dependencies import (
     bootstrap_or_require_permission,
     get_identity_user_service,
 )
-from app.identity.dependencies.require_permission import (
-    require_permission,
-)
+from app.identity.dependencies.require_permission import require_permission
+from app.identity.models.user import IdentityUser
 from app.identity.schemas.user import (
     UserCreate,
     UserFilter,
     UserListResponse,
     UserResponse,
+    UserStatusUpdate,
     UserUpdate,
 )
-from app.identity.security.current_user import (
-    get_current_user,
-)
-from app.identity.services.user_service import (
-    IdentityUserService,
-)
+from app.identity.services.user_service import IdentityUserService
 
 router = APIRouter(
     tags=["Users"],
@@ -35,21 +30,18 @@ router = APIRouter(
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create User",
-    dependencies=[
-        Depends(bootstrap_or_require_permission("user.create")),
-    ],
 )
 def create_user(
     user: UserCreate,
+    current_user: IdentityUser = Depends(bootstrap_or_require_permission("user.create")),
     db: Session = Depends(get_db),
-    service: IdentityUserService = Depends(
-        get_identity_user_service,
-    ),
+    service: IdentityUserService = Depends(get_identity_user_service),
 ):
-    """Create a new user."""
+    """Create a new user with tenant scoping."""
     return service.create_user(
         db,
         user,
+        current_user=current_user,
     )
 
 
@@ -57,7 +49,6 @@ def create_user(
     "",
     response_model=UserListResponse,
     summary="List Users",
-    dependencies=[Depends(get_current_user)],
 )
 def get_users(
     school_id: UUID | None = Query(None),
@@ -67,12 +58,11 @@ def get_users(
     is_active: bool | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
+    current_user: IdentityUser = Depends(require_permission("user.view")),
     db: Session = Depends(get_db),
-    service: IdentityUserService = Depends(
-        get_identity_user_service,
-    ),
+    service: IdentityUserService = Depends(get_identity_user_service),
 ):
-    """List users with pagination and filters."""
+    """List users with tenant scoping and filters."""
     filters = UserFilter(
         school_id=school_id,
         email=email,
@@ -86,6 +76,7 @@ def get_users(
     return service.get_users(
         db,
         filters,
+        current_user=current_user,
     )
 
 
@@ -93,19 +84,18 @@ def get_users(
     "/{user_id}",
     response_model=UserResponse,
     summary="Get User",
-    dependencies=[Depends(get_current_user)],
 )
 def get_user(
     user_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("user.view")),
     db: Session = Depends(get_db),
-    service: IdentityUserService = Depends(
-        get_identity_user_service,
-    ),
+    service: IdentityUserService = Depends(get_identity_user_service),
 ):
-    """Retrieve a user by ID."""
+    """Retrieve a user by ID with tenant verification."""
     return service.get_user(
         db,
         user_id,
+        current_user=current_user,
     )
 
 
@@ -113,45 +103,64 @@ def get_user(
     "/{user_id}",
     response_model=UserResponse,
     summary="Update User",
-    dependencies=[
-        Depends(require_permission("user.update")),
-    ],
 )
 def update_user(
     user_id: UUID,
     user: UserUpdate,
+    current_user: IdentityUser = Depends(require_permission("user.update")),
     db: Session = Depends(get_db),
-    service: IdentityUserService = Depends(
-        get_identity_user_service,
-    ),
+    service: IdentityUserService = Depends(get_identity_user_service),
 ):
-    """Update a user."""
+    """Update a user with tenant verification."""
     return service.update_user(
         db,
         user_id,
         user,
+        current_user=current_user,
     )
+
+
+@router.put(
+    "/{user_id}/status",
+    response_model=UserResponse,
+    summary="Update User Status (Suspend/Reactivate)",
+)
+def update_user_status(
+    user_id: UUID,
+    status_data: UserStatusUpdate,
+    current_user: IdentityUser = Depends(require_permission("user.update")),
+    db: Session = Depends(get_db),
+    service: IdentityUserService = Depends(get_identity_user_service),
+):
+    """
+    Suspend or reactivate a user account.
+    School Admin can manage users within their school (except Super Admins & self).
+    """
+    return service.update_user_status(
+        db,
+        user_id,
+        status_data,
+        current_user=current_user,
+    )
+
 
 
 @router.delete(
     "/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete User",
-    dependencies=[
-        Depends(require_permission("user.delete")),
-    ],
 )
 def delete_user(
     user_id: UUID,
+    current_user: IdentityUser = Depends(require_permission("user.delete")),
     db: Session = Depends(get_db),
-    service: IdentityUserService = Depends(
-        get_identity_user_service,
-    ),
+    service: IdentityUserService = Depends(get_identity_user_service),
 ):
-    """Delete a user."""
+    """Delete a user with tenant verification."""
     service.delete_user(
         db,
         user_id,
+        current_user=current_user,
     )
 
     return Response(

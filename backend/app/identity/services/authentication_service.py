@@ -36,6 +36,7 @@ class AuthenticationService(BaseIdentityService):
         self,
         db: Session,
         credentials: UserLogin,
+        client_ip: str | None = None,
     ) -> UserLoginResponse:
         """
         Authenticate a user with school_code, email, and password.
@@ -60,6 +61,9 @@ class AuthenticationService(BaseIdentityService):
                 "Authentication failure: Invalid school code '%s'",
                 credentials.school_code,
             )
+            if client_ip:
+                from app.common.security.rate_limiter import rate_limiter
+                rate_limiter.record_failure(client_ip)
             raise BadRequestException(
                 "Invalid school code."
             )
@@ -80,6 +84,9 @@ class AuthenticationService(BaseIdentityService):
                 credentials.email,
                 credentials.school_code,
             )
+            if client_ip:
+                from app.common.security.rate_limiter import rate_limiter
+                rate_limiter.record_failure(client_ip)
             raise UnauthorizedException(
                 "Invalid email or password."
             )
@@ -93,6 +100,9 @@ class AuthenticationService(BaseIdentityService):
                 "Authentication failure: User account ID '%s' is inactive",
                 user.id,
             )
+            if client_ip:
+                from app.common.security.rate_limiter import rate_limiter
+                rate_limiter.record_failure(client_ip)
             raise UnauthorizedException(
                 "User account is inactive."
             )
@@ -109,9 +119,17 @@ class AuthenticationService(BaseIdentityService):
                 "Authentication failure: Invalid credentials for user ID '%s'",
                 user.id,
             )
+            if client_ip:
+                from app.common.security.rate_limiter import rate_limiter
+                rate_limiter.record_failure(client_ip)
             raise UnauthorizedException(
                 "Invalid email or password."
             )
+
+        # Successful authentication: reset rate limiter for this IP
+        if client_ip:
+            from app.common.security.rate_limiter import rate_limiter
+            rate_limiter.reset_attempts(client_ip)
 
         # ---------------------------------------
         # Tokens

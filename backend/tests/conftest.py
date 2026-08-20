@@ -34,17 +34,12 @@ def db_session(engine):
 
 
 @pytest.fixture
-def client(engine):
-    TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-
+def client(engine, db_session):
     def override_get_db():
-        session = TestingSessionLocal()
-        try:
-            yield session
-        finally:
-            session.close()
+        yield db_session
 
     fastapi_app.dependency_overrides[get_db] = override_get_db
     with TestClient(fastapi_app) as c:
         yield c
     fastapi_app.dependency_overrides.clear()
+

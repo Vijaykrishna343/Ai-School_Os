@@ -1133,3 +1133,189 @@ export interface TeacherSubstitutionDetail extends TeacherSubstitutionResponse {
   substitute_teacher: TeacherNested;
   timetable_entry: TimetableEntryDetail;
 }
+
+// =====================================================================
+// Identity & Access Management (IAM)
+// =====================================================================
+
+export interface User {
+  id: string;
+  school_id: string;
+  email: string;
+  username: string | null;
+  first_name: string;
+  last_name: string | null;
+  phone: string | null;
+  is_active: boolean;
+  status?: string;
+  suspended_at?: string | null;
+  suspension_reason?: string | null;
+  roles?: Role[];
+  is_super_admin?: boolean;
+  is_verified: boolean;
+  last_login: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserCreate {
+  school_id?: string;
+  email: string;
+  username?: string | null;
+  password: string;
+  first_name: string;
+  last_name?: string | null;
+  phone?: string | null;
+}
+
+export interface UserUpdate {
+  email?: string | null;
+  username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+  is_active?: boolean | null;
+}
+
+export interface Role {
+  id: string;
+  school_id: string | null;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  is_system_role?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RoleCreate {
+  school_id?: string | null;
+  name: string;
+  description?: string | null;
+  is_system_role?: boolean;
+}
+
+export interface RoleUpdate {
+  name?: string | null;
+  description?: string | null;
+}
+
+export interface Permission {
+  id: string;
+  name: string;
+  description: string | null;
+  module: string;
+  action: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PermissionFilter {
+  module?: string;
+  action?: string;
+  page?: number;
+  page_size?: number;
+}
+
+// =====================================================================
+// School & Tenant Settings
+// =====================================================================
+
+export type SchoolStatus =
+  | 'TRIAL'
+  | 'ACTIVE'
+  | 'PAYMENT_DUE'
+  | 'GRACE_PERIOD'
+  | 'SUSPENDED'
+  | 'BLOCKED'
+  | 'CANCELLED'
+  | 'INACTIVE'
+  | 'MAINTENANCE'
+  | 'ARCHIVED';
+
+export interface School {
+  id: string;
+  name: string;
+  code: string;
+  address: string | null;
+  address_line1?: string;
+  city?: string;
+  district?: string;
+  state?: string;
+  postal_code?: string;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  status: SchoolStatus;
+  subscription_tier?: string;
+  max_students?: number;
+  max_teachers?: number;
+  suspension_reason?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SchoolCreate {
+  name: string;
+  code: string;
+  address?: string | null;
+  address_line1?: string;
+  city?: string;
+  district?: string;
+  state?: string;
+  postal_code?: string;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+}
+
+export interface SchoolUpdate {
+  name?: string | null;
+  code?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+  status?: SchoolStatus | null;
+}
+
+
+// =====================================================================
+// Student Enrollment History & Transfer Certificate (TC)
+// =====================================================================
+
+export interface StudentEnrollmentHistoryResponse {
+  id: string;
+  student_id: string;
+  academic_year_id: string;
+  school_class_id: string;
+  section_id: string;
+  roll_number: string | null;
+  status: string;
+  promotion_decision: string | null;
+  remarks: string | null;
+  created_at: string;
+  academic_year?: AcademicYear;
+  school_class?: SchoolClass;
+  section?: Section;
+}
+
+export interface TransferCertificate {
+  id: string;
+  school_id: string;
+  student_id: string;
+  tc_number: string;
+  issue_date: string;
+  reason: string | null;
+  remarks: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface TransferCertificateCreate {
+  tc_number: string;
+  issue_date: string;
+  reason?: string | null;
+  remarks?: string | null;
+}
+

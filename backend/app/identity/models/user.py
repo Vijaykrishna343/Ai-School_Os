@@ -76,6 +76,22 @@ class IdentityUser(CommonModel):
         nullable=False,
     )
 
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default="ACTIVE",
+        nullable=False,
+    )
+
+    suspended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    suspension_reason: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
     is_verified: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
@@ -87,6 +103,7 @@ class IdentityUser(CommonModel):
         nullable=True,
     )
 
+
     school: Mapped["School"] = orm_relationship(
         "School",
         back_populates="identity_users",
@@ -96,3 +113,13 @@ class IdentityUser(CommonModel):
         secondary="identity_user_roles",
         back_populates="users",
     )
+
+    @property
+    def is_super_admin(self) -> bool:
+        """
+        Returns True if the user has active Super Admin role.
+        """
+        return any(
+            role.name == "Super Admin" and not getattr(role, "is_deleted", False)
+            for role in self.roles
+        )

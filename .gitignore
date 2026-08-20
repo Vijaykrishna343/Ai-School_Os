@@ -52,3 +52,9 @@ build/
 
 Thumbs.db
 .DS_Store
+
+# ==========================
+# Generated Inspection Artifacts
+# ==========================
+
+project-tree.txt

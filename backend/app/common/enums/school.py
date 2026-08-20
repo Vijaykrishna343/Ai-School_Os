@@ -2,7 +2,13 @@ from enum import Enum
 
 
 class SchoolStatus(str, Enum):
+    TRIAL = "TRIAL"
     ACTIVE = "ACTIVE"
+    PAYMENT_DUE = "PAYMENT_DUE"
+    GRACE_PERIOD = "GRACE_PERIOD"
+    SUSPENDED = "SUSPENDED"
+    BLOCKED = "BLOCKED"
+    CANCELLED = "CANCELLED"
     INACTIVE = "INACTIVE"
     MAINTENANCE = "MAINTENANCE"
     ARCHIVED = "ARCHIVED"

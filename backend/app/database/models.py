@@ -21,7 +21,9 @@ from app.models.academic_term import AcademicTerm
 from app.models.school_class import SchoolClass
 from app.models.section.section import Section
 from app.models.student.student import Student
+from app.models.student.student_certificate import StudentCertificate, CertificateType
 from app.models.teacher.teacher import Teacher
+from app.models.teacher.teacher_attendance import TeacherAttendance
 from app.models.subject.subject import Subject
 from app.models.exam import Exam, ExamSchedule
 from app.models.exam.student_exam_result import StudentExamResult
@@ -34,6 +36,8 @@ from app.models.grading import (
     ReportCardItemSnapshot,
 )
 from app.models.timetable import PeriodSlot, Classroom, Timetable, TimetableEntry, TeacherSubstitution
+from app.models.homework import Homework, HomeworkStatus, HomeworkSubmission, SubmissionStatus
+from app.models.document import Document, OwnerType, DocumentStatus, DocumentCategory
 
 # ==========================
 # Identity Models
@@ -79,4 +83,7 @@ __all__ = [
     "Timetable",
     "TimetableEntry",
     "TeacherSubstitution",
+    "Homework",
+    "HomeworkSubmission",
+    "Document",
 ]

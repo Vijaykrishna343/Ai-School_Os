@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from app.common.security.rate_limiter import (
+    enforce_login_rate_limit,
+    get_client_ip,
+)
 from app.dependencies import get_db
 from app.identity.dependencies import (
     get_authentication_service,
@@ -27,18 +31,22 @@ router = APIRouter(
     "/login",
     response_model=UserLoginResponse,
     summary="Login",
+    dependencies=[Depends(enforce_login_rate_limit)],
 )
 def login(
     credentials: UserLogin,
+    request: Request,
     db: Session = Depends(get_db),
     auth_service: AuthenticationService = Depends(
         get_authentication_service,
     ),
 ) -> UserLoginResponse:
     """Authenticate a user and return tokens."""
+    client_ip = get_client_ip(request)
     return auth_service.login(
         db,
         credentials,
+        client_ip=client_ip,
     )
 
 

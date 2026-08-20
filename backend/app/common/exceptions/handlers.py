@@ -36,6 +36,7 @@ def register_exception_handlers(
                 code=exc.code,
                 message=exc.message,
             ),
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)

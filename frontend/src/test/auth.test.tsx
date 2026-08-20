@@ -28,7 +28,7 @@ describe('Frontend Authentication & Login Experience', () => {
     vi.clearAllMocks();
   });
 
-  it('renders login page with email and password inputs', () => {
+  it('renders login page with school code, email and password inputs', () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -36,12 +36,13 @@ describe('Frontend Authentication & Login Experience', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'AI School OS' })).toBeInTheDocument();
+    expect(screen.getByLabelText('School Code')).toBeInTheDocument();
     expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /SIGN IN TO PORTAL/i })).toBeInTheDocument();
   });
 
-  it('validates empty inputs and displays client error message', async () => {
+  it('validates empty inputs and displays client error messages', async () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -52,12 +53,13 @@ describe('Frontend Authentication & Login Experience', () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
+      expect(screen.getByText(/School code is required/i)).toBeInTheDocument();
       expect(screen.getByText(/Email address is required/i)).toBeInTheDocument();
       expect(screen.getByText(/Password is required/i)).toBeInTheDocument();
     });
   });
 
-  it('handles successful backend authentication flow and updates auth store', async () => {
+  it('handles successful backend authentication flow with school_code and updates auth store', async () => {
     const mockTokenRes = {
       access_token: 'mock-access-token',
       refresh_token: 'mock-refresh-token',
@@ -91,6 +93,9 @@ describe('Frontend Authentication & Login Experience', () => {
       </MemoryRouter>
     );
 
+    fireEvent.change(screen.getByLabelText('School Code'), {
+      target: { value: 'VGS001' },
+    });
     fireEvent.change(screen.getByLabelText('Email Address'), {
       target: { value: 'admin@school.com' },
     });
@@ -102,6 +107,7 @@ describe('Frontend Authentication & Login Experience', () => {
 
     await waitFor(() => {
       expect(authService.login).toHaveBeenCalledWith({
+        school_code: 'VGS001',
         email: 'admin@school.com',
         password: 'SecurePass123!',
       });
@@ -123,6 +129,9 @@ describe('Frontend Authentication & Login Experience', () => {
       </MemoryRouter>
     );
 
+    fireEvent.change(screen.getByLabelText('School Code'), {
+      target: { value: 'VGS001' },
+    });
     fireEvent.change(screen.getByLabelText('Email Address'), {
       target: { value: 'admin@school.com' },
     });

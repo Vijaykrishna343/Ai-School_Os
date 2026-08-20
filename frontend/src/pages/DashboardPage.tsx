@@ -10,8 +10,9 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Building2 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, permissions } = useAuthStore();
   const navigate = useNavigate();
+  const isAdmin = permissions.includes('school.view');
 
   const {
     data: summary,
@@ -20,8 +21,8 @@ export const DashboardPage: React.FC = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['adminDashboardSummary'],
-    queryFn: dashboardApi.getAdminSummary,
+    queryKey: ['dashboardSummary', isAdmin ? 'admin' : 'teacher'],
+    queryFn: isAdmin ? dashboardApi.getAdminSummary : dashboardApi.getTeacherSummary,
   });
 
   if (isLoading) {
@@ -49,8 +50,8 @@ export const DashboardPage: React.FC = () => {
     return (
       <div className="p-6">
         <ErrorState
-          title="Administrative Command Center Error"
-          message={(error as any)?.message || 'Failed to fetch institutional summary data.'}
+          title={isAdmin ? "Administrative Command Center Error" : "Teacher Workstation Error"}
+          message={(error as any)?.message || 'Failed to fetch summary data.'}
           onRetry={() => refetch()}
         />
       </div>
@@ -62,14 +63,14 @@ export const DashboardPage: React.FC = () => {
       {/* Title Header */}
       <div className="border-b border-divider dark:border-stone-850 pb-5">
         <p className="text-[10px] font-mono uppercase tracking-widest text-ink-muted dark:text-stone-500">
-          SYSTEM_COMMAND_CENTER // OPERATIONAL_DOCKET
+          {isAdmin ? "SYSTEM_COMMAND_CENTER // OPERATIONAL_DOCKET" : "TEACHER_WORKSTATION // DAILY_OPERATIONS"}
         </p>
         <div className="flex items-center gap-3 mt-1.5">
           <div className="flex items-center justify-center w-7 h-7 bg-brand-500 text-white shrink-0">
             <Building2 className="w-4 h-4" />
           </div>
           <h1 className="text-3xl font-serif font-bold text-brand-500 dark:text-stone-100 tracking-tight leading-none">
-            Administrative Command Center
+            {isAdmin ? "Administrative Command Center" : "Teacher Workstation"}
           </h1>
         </div>
         <p className="text-xs text-ink-muted dark:text-stone-400 mt-2 font-sans">
@@ -116,37 +117,41 @@ export const DashboardPage: React.FC = () => {
           <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/70 dark:text-stone-500">REGISTRY_STUDENTS</span>
           <div className="mt-2 flex items-baseline justify-between">
             <span className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100">
-              {summary?.active_students ?? 0}
+              {summary?.active_students ?? summary?.assigned_students_count ?? 0}
             </span>
             <span className="text-[9px] font-mono text-ink-muted/40 uppercase">ACTIVE_ENROLLMENTS</span>
           </div>
         </div>
 
-        <div className="flex-1 p-4 flex flex-col justify-between min-h-[90px]">
-          <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/70 dark:text-stone-500">REGISTRY_FACULTY</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100">
-              {summary?.active_teachers ?? 0}
-            </span>
-            <span className="text-[9px] font-mono text-ink-muted/40 uppercase">ACTIVE_EMPLOYEES</span>
+        {isAdmin && (
+          <div className="flex-1 p-4 flex flex-col justify-between min-h-[90px]">
+            <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/70 dark:text-stone-500">REGISTRY_FACULTY</span>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100">
+                {summary?.active_teachers ?? 0}
+              </span>
+              <span className="text-[9px] font-mono text-ink-muted/40 uppercase">ACTIVE_EMPLOYEES</span>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex-1 p-4 flex flex-col justify-between min-h-[90px]">
-          <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/70 dark:text-stone-500">REGISTRY_GUARDIANS</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100">
-              {summary?.active_parents ?? 0}
-            </span>
-            <span className="text-[9px] font-mono text-ink-muted/40 uppercase">ASSOCIATED_FAMILIES</span>
+        {isAdmin && (
+          <div className="flex-1 p-4 flex flex-col justify-between min-h-[90px]">
+            <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/70 dark:text-stone-500">REGISTRY_GUARDIANS</span>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100">
+                {summary?.active_parents ?? 0}
+              </span>
+              <span className="text-[9px] font-mono text-ink-muted/40 uppercase">ASSOCIATED_FAMILIES</span>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex-1 p-4 flex flex-col justify-between min-h-[90px]">
           <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/70 dark:text-stone-500">CLASSES_ACTIVE</span>
           <div className="mt-2 flex items-baseline justify-between">
             <span className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100">
-              {summary?.active_classes ?? 0}
+              {summary?.active_classes ?? summary?.active_classes_count ?? 0}
             </span>
             <span className="text-[9px] font-mono text-ink-muted/40 uppercase">DEPARTMENTS</span>
           </div>
@@ -156,9 +161,9 @@ export const DashboardPage: React.FC = () => {
           <span className="text-[9px] font-mono uppercase tracking-widest text-ink-muted/70 dark:text-stone-500">SECTIONS_ACTIVE</span>
           <div className="mt-2 flex items-baseline justify-between">
             <span className="text-2xl font-serif font-bold text-brand-500 dark:text-stone-100">
-              {summary?.active_sections ?? 0}
+              {summary?.active_sections ?? summary?.active_sections_count ?? 0}
             </span>
-            <span className="text-[9px] font-mono text-ink-muted/40 uppercase">CLASS_UNITS</span>
+            <span className="text-[9px] font-mono text-ink-muted/40 uppercase">SECTIONS</span>
           </div>
         </div>
       </div>
