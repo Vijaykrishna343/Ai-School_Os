@@ -15,10 +15,12 @@ from app.identity.models.role import IdentityRole
 from app.identity.models.user_role import IdentityUserRole
 from app.identity.security.password import hash_password
 from app.identity.security.jwt_manager import jwt_manager
+from app.identity.seeders import seed_identity
 
 
 @pytest.fixture
 def setup_teacher_attendance_data(db_session: Session):
+    seed_identity(db_session)
     suffix = uuid.uuid4().hex[:6]
 
     # Create School A & B
@@ -36,6 +38,14 @@ def setup_teacher_attendance_data(db_session: Session):
         gender=Gender.FEMALE,
         phone=f"9000{suffix[:6]}",
         email=f"alice_{suffix}@school.edu",
+        date_of_birth=date(1990, 1, 1),
+        joining_date=date(2020, 6, 1),
+        qualification="M.Sc Math",
+        address_line1="123 Campus St",
+        city="Hyderabad",
+        district="Hyderabad",
+        state="Telangana",
+        postal_code="500001",
         status=TeacherStatus.ACTIVE,
     )
     teacher_a2 = Teacher(
@@ -46,6 +56,14 @@ def setup_teacher_attendance_data(db_session: Session):
         gender=Gender.MALE,
         phone=f"9001{suffix[:6]}",
         email=f"bob_{suffix}@school.edu",
+        date_of_birth=date(1990, 1, 1),
+        joining_date=date(2020, 6, 1),
+        qualification="M.Sc Science",
+        address_line1="123 Campus St",
+        city="Hyderabad",
+        district="Hyderabad",
+        state="Telangana",
+        postal_code="500001",
         status=TeacherStatus.ACTIVE,
     )
 
@@ -58,6 +76,14 @@ def setup_teacher_attendance_data(db_session: Session):
         gender=Gender.MALE,
         phone=f"9002{suffix[:6]}",
         email=f"charlie_{suffix}@school.edu",
+        date_of_birth=date(1990, 1, 1),
+        joining_date=date(2020, 6, 1),
+        qualification="M.Sc English",
+        address_line1="456 Campus St",
+        city="Hyderabad",
+        district="Hyderabad",
+        state="Telangana",
+        postal_code="500001",
         status=TeacherStatus.ACTIVE,
     )
     db_session.add_all([teacher_a1, teacher_a2, teacher_b1])
@@ -72,7 +98,10 @@ def setup_teacher_attendance_data(db_session: Session):
         school_id=school_a.id,
         email=f"admin_a_{suffix}@school.edu",
         password_hash=hash_password("AdminPass123!"),
+        first_name="Admin",
+        last_name="A",
         is_active=True,
+        status="ACTIVE",
     )
     db_session.add(admin_a)
     db_session.commit()
@@ -83,7 +112,10 @@ def setup_teacher_attendance_data(db_session: Session):
         school_id=school_a.id,
         email=f"alice_{suffix}@school.edu",
         password_hash=hash_password("TeacherPass123!"),
+        first_name="Alice",
+        last_name="Staff",
         is_active=True,
+        status="ACTIVE",
     )
     db_session.add(teacher_user_a)
     db_session.commit()
@@ -94,7 +126,10 @@ def setup_teacher_attendance_data(db_session: Session):
         school_id=school_b.id,
         email=f"admin_b_{suffix}@school.edu",
         password_hash=hash_password("AdminPass123!"),
+        first_name="Admin",
+        last_name="B",
         is_active=True,
+        status="ACTIVE",
     )
     db_session.add(admin_b)
     db_session.commit()
@@ -118,9 +153,8 @@ def setup_teacher_attendance_data(db_session: Session):
     }
 
 
-def test_01_teacher_attendance_list_and_summary(setup_teacher_attendance_data):
+def test_01_teacher_attendance_list_and_summary(client: TestClient, setup_teacher_attendance_data):
     data = setup_teacher_attendance_data
-    client = TestClient(app)
     headers = {"Authorization": f"Bearer {data['token_admin_a']}"}
 
     today_str = date.today().isoformat()
@@ -139,9 +173,8 @@ def test_01_teacher_attendance_list_and_summary(setup_teacher_attendance_data):
     assert len(list_items) >= 2
 
 
-def test_02_bulk_mark_teacher_attendance(setup_teacher_attendance_data):
+def test_02_bulk_mark_teacher_attendance(client: TestClient, setup_teacher_attendance_data):
     data = setup_teacher_attendance_data
-    client = TestClient(app)
     headers = {"Authorization": f"Bearer {data['token_admin_a']}"}
 
     today_str = date.today().isoformat()
@@ -175,9 +208,8 @@ def test_02_bulk_mark_teacher_attendance(setup_teacher_attendance_data):
     assert sum_data["absent_count"] >= 1
 
 
-def test_03_teacher_self_checkin_checkout(setup_teacher_attendance_data):
+def test_03_teacher_self_checkin_checkout(client: TestClient, setup_teacher_attendance_data):
     data = setup_teacher_attendance_data
-    client = TestClient(app)
     headers = {"Authorization": f"Bearer {data['token_teacher_a']}"}
 
     # Self Check In
@@ -192,9 +224,8 @@ def test_03_teacher_self_checkin_checkout(setup_teacher_attendance_data):
     assert res_out.json()["data"]["check_out_time"] is not None
 
 
-def test_04_teacher_attendance_tenant_isolation(setup_teacher_attendance_data):
+def test_04_teacher_attendance_tenant_isolation(client: TestClient, setup_teacher_attendance_data):
     data = setup_teacher_attendance_data
-    client = TestClient(app)
     headers_b = {"Authorization": f"Bearer {data['token_admin_b']}"}
 
     today_str = date.today().isoformat()

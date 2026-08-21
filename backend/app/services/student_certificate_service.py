@@ -10,6 +10,7 @@ from app.identity.models.user import IdentityUser
 from app.models.school.school import School
 from app.models.student.student import Student
 from app.models.student.student_certificate import StudentCertificate, CertificateType
+from app.models.audit_log import AuditLog
 from app.schemas.student.student_certificate import (
     StudentCertificateCreateTC,
     StudentCertificateCreateBonafide,
@@ -32,17 +33,15 @@ class StudentCertificateService:
         Generate a unique, sequential certificate number per school and type.
         Format: TC-2026-0001 or BC-2026-0001
         """
-        current_year = date.today().year
         prefix = "TC" if certificate_type == CertificateType.TRANSFER_CERTIFICATE else "BC"
-
-        stmt = select(func.count(StudentCertificate.id)).where(
-            StudentCertificate.school_id == school_id,
-            StudentCertificate.certificate_type == certificate_type,
-            StudentCertificate.is_deleted.is_(False),
-        )
-        count = db.scalar(stmt) or 0
-        seq = count + 1
-        return f"{prefix}-{current_year}-{seq:04d}"
+        year = date.today().year
+        count = db.scalar(
+            select(func.count(StudentCertificate.id)).where(
+                StudentCertificate.school_id == school_id,
+                StudentCertificate.certificate_type == certificate_type,
+            )
+        ) or 0
+        return f"{prefix}-{year}-{(count + 1):04d}"
 
     def issue_transfer_certificate(
         self,
@@ -53,7 +52,7 @@ class StudentCertificateService:
         issuer: IdentityUser,
     ) -> StudentCertificateResponse:
         """
-        Issue Transfer Certificate (TC) for a student and update student status to TRANSFERRED if requested.
+        Issue Transfer Certificate (TC) for a student.
         """
         student = db.get(Student, student_id)
         if not student or student.school_id != school_id or student.is_deleted:
@@ -81,20 +80,17 @@ class StudentCertificateService:
             student.status = StudentStatus.TRANSFERRED
 
         # Audit event
-        from app.services.audit_log_service import audit_log_service
-        audit_log_service.log_event(
-            db=db,
-            user_id=issuer.id,
-            user_email=issuer.email,
-            school_id=school_id,
-            action="STUDENT_TC_ISSUED",
-            entity_type="StudentCertificate",
-            entity_id=str(certificate.id),
-            details={
-                "student_id": str(student.id),
-                "certificate_number": cert_number,
-                "reason": data.reason_for_leaving,
-            },
+        db.add(
+            AuditLog(
+                school_id=school_id,
+                user_id=issuer.id,
+                user_email=issuer.email,
+                action="STUDENT_TC_ISSUED",
+                module="CERTIFICATES",
+                entity_type="StudentCertificate",
+                entity_id=str(certificate.id),
+                details=f"Student TC issued: {cert_number}",
+            )
         )
 
         db.commit()
@@ -136,20 +132,17 @@ class StudentCertificateService:
         db.add(certificate)
 
         # Audit event
-        from app.services.audit_log_service import audit_log_service
-        audit_log_service.log_event(
-            db=db,
-            user_id=issuer.id,
-            user_email=issuer.email,
-            school_id=school_id,
-            action="STUDENT_BONAFIDE_ISSUED",
-            entity_type="StudentCertificate",
-            entity_id=str(certificate.id),
-            details={
-                "student_id": str(student.id),
-                "certificate_number": cert_number,
-                "purpose": data.purpose,
-            },
+        db.add(
+            AuditLog(
+                school_id=school_id,
+                user_id=issuer.id,
+                user_email=issuer.email,
+                action="STUDENT_BONAFIDE_ISSUED",
+                module="CERTIFICATES",
+                entity_type="StudentCertificate",
+                entity_id=str(certificate.id),
+                details=f"Student Bonafide issued: {cert_number}",
+            )
         )
 
         db.commit()
@@ -232,7 +225,7 @@ class StudentCertificateService:
         school = db.get(School, school_id)
         student = db.get(Student, cert.student_id)
 
-        parent_name = f"{student.parent.first_name} {student.parent.last_name}" if student and student.parent else "Parent/Guardian"
+        parent_name = (student.parent.father_name or student.parent.mother_name or student.parent.guardian_name) if student and student.parent else "Parent/Guardian"
         class_name = student.school_class.name if student and student.school_class else "N/A"
         section_name = student.section.name if student and student.section else "N/A"
         school_name = school.name if school else "AI School OS Partner School"
@@ -378,7 +371,7 @@ class StudentCertificateService:
         if not student:
             student = db.get(Student, cert.student_id)
 
-        parent_name = f"{student.parent.first_name} {student.parent.last_name}" if student and student.parent else None
+        parent_name = (student.parent.father_name or student.parent.mother_name or student.parent.guardian_name) if student and student.parent else None
         class_name = student.school_class.name if student and student.school_class else None
         section_name = student.section.name if student and student.section else None
         issuer_name = f"{cert.issued_by.email}" if cert.issued_by else "School Administrator"

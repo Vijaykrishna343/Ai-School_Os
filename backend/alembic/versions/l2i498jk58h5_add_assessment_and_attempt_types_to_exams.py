@@ -62,11 +62,12 @@ def upgrade() -> None:
     op.execute("UPDATE exams SET attempt_type = 'RETEST', assessment_type = 'OTHER' WHERE CAST(exam_type AS text) = 'RETEST'")
     op.execute("UPDATE exams SET attempt_type = 'REGULAR', assessment_type = 'OTHER' WHERE CAST(exam_type AS text) = 'OTHER' OR exam_type IS NULL")
 
-    op.alter_column('exams', 'assessment_type', nullable=False, server_default='OTHER')
-    op.alter_column('exams', 'attempt_type', nullable=False, server_default='REGULAR')
+    with op.batch_alter_table('exams') as batch_op:
+        batch_op.alter_column('assessment_type', nullable=False, server_default='OTHER')
+        batch_op.alter_column('attempt_type', nullable=False, server_default='REGULAR')
+        batch_op.drop_column('exam_type')
 
     op.drop_index('ix_exams_exam_type', table_name='exams', if_exists=True)
-    op.drop_column('exams', 'exam_type')
 
     if is_postgres:
         op.execute("DROP TYPE IF EXISTS exam_type CASCADE")

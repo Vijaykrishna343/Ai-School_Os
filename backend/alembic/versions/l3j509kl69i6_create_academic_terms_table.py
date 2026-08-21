@@ -61,7 +61,8 @@ def upgrade() -> None:
     )
 
     # 3. Add academic_term_id to exams table
-    op.add_column('exams', sa.Column('academic_term_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('academic_terms.id', ondelete='SET NULL'), nullable=True))
+    with op.batch_alter_table('exams') as batch_op:
+        batch_op.add_column(sa.Column('academic_term_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('academic_terms.id', ondelete='SET NULL', name='fk_exams_academic_term_id'), nullable=True))
     op.create_index('ix_exams_academic_term_id', 'exams', ['academic_term_id'])
 
 

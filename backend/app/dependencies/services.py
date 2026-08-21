@@ -11,9 +11,17 @@ from app.repositories.parent import parent_repository
 from app.repositories.school import school_repository
 from app.repositories.school_class import school_class_repository
 from app.repositories.section import section_repository
-from app.repositories.student import student_repository
+from app.repositories.student import (
+    student_repository,
+    student_enrollment_history_repository,
+    transfer_certificate_repository,
+)
 from app.repositories.subject import subject_repository
 from app.repositories.teacher import teacher_repository
+from app.services.teacher.teacher_service import (
+    TeacherService,
+    teacher_service,
+)
 from app.services.academic_year_service import (
     AcademicYearService,
     academic_year_service,

@@ -36,7 +36,10 @@ class InMemoryRateLimiter:
             timestamps = self._attempts.get(key, [])
             # Evict timestamps older than window
             timestamps = [t for t in timestamps if t > cutoff]
-            self._attempts[key] = timestamps
+            if timestamps:
+                self._attempts[key] = timestamps
+            else:
+                self._attempts.pop(key, None)
 
             if len(timestamps) >= limit:
                 # Calculate retry after
@@ -153,10 +156,11 @@ rate_limiter = RateLimiterService()
 
 
 def get_client_ip(request: Request) -> str:
-    """Extract client IP from request headers or remote connection."""
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
+    """Extract client IP safely without trusting spoofed X-Forwarded-For headers by default."""
+    if getattr(settings, "TRUST_PROXY", False):
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            return forwarded_for.split(",")[0].strip()
     return request.client.host if request.client else "127.0.0.1"
 
 

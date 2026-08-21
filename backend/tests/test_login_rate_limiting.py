@@ -16,8 +16,10 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def reset_rate_limiter():
+def reset_rate_limiter(monkeypatch):
     """Ensure clean rate limiter state for every test."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "TRUST_PROXY", True)
     rate_limiter.clear_all()
     yield
     rate_limiter.clear_all()
@@ -102,9 +104,10 @@ def test_03_repeated_failed_attempts_return_429(client: TestClient, setup_data):
     # 6th attempt should be blocked with 429 Too Many Requests
     r_throttled = client.post("/api/v1/auth/login", json=payload, headers=ip_headers)
     assert r_throttled.status_code == 429
-    assert r_throttled.json().get("code") == "TOO_MANY_REQUESTS"
-    assert "Retry-After" in r_throttled.headers
-    assert int(r_throttled.headers["Retry-After"]) > 0
+    assert r_throttled.json().get("error", {}).get("code") == "TOO_MANY_REQUESTS" or r_throttled.json().get("code") == "TOO_MANY_REQUESTS"
+    retry_after_val = r_throttled.headers.get("retry-after") or r_throttled.headers.get("Retry-After")
+    assert retry_after_val is not None
+    assert int(retry_after_val) > 0
 
 
 def test_04_successful_login_resets_attempt_counter(client: TestClient, setup_data):

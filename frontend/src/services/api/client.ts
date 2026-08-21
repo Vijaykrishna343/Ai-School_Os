@@ -131,27 +131,45 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Standardized Error Parsing for 403, 404, 409, 422, 500
+    // Standardized Error Parsing for 400, 401, 403, 404, 409, 422, 500
     let errorMessage = 'An unexpected error occurred.';
     let validationErrors: Record<string, string> | null = null;
 
     if (data) {
       if (typeof data === 'object') {
-        errorMessage = data.error?.message || data.message || data.detail || errorMessage;
-        if (data.errors && typeof data.errors === 'object') {
+        const rawMessage = data.error?.message || data.message || data.detail;
+        if (typeof rawMessage === 'string' && rawMessage.trim()) {
+          errorMessage = rawMessage;
+        } else if (Array.isArray(data.detail)) {
+          // Format FastAPI / Pydantic validation error array
+          const messages = data.detail.map((err: any) => {
+            if (typeof err === 'string') return err;
+            if (err && typeof err === 'object') {
+              const field = Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : '';
+              const msg = err.msg || 'invalid value';
+              return field ? `${field}: ${msg}` : msg;
+            }
+            return 'validation error';
+          });
+          errorMessage = messages.join('; ') || 'Validation failed.';
+        } else if (data.detail && typeof data.detail === 'object') {
+          errorMessage = JSON.stringify(data.detail);
+        }
+
+        if (data.errors && typeof data.errors === 'object' && !Array.isArray(data.errors)) {
           validationErrors = data.errors;
         }
-      } else if (typeof data === 'string') {
+      } else if (typeof data === 'string' && data.trim()) {
         errorMessage = data;
       }
     }
 
     if (status === 403) {
-      errorMessage = errorMessage || 'You do not have permission to access this resource.';
+      errorMessage = errorMessage !== 'An unexpected error occurred.' ? errorMessage : 'You do not have permission to access this resource.';
     } else if (status === 404) {
-      errorMessage = errorMessage || 'The requested resource was not found.';
+      errorMessage = errorMessage !== 'An unexpected error occurred.' ? errorMessage : 'The requested resource was not found.';
     } else if (status === 409) {
-      errorMessage = errorMessage || 'A conflict occurred with the current state.';
+      errorMessage = errorMessage !== 'An unexpected error occurred.' ? errorMessage : 'A conflict occurred with the current state.';
     } else if (status === 500) {
       errorMessage = 'Internal server error. Please contact your administrator.';
     }

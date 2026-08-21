@@ -20,32 +20,34 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema: alter school_class_id and section_id FKs to RESTRICT."""
-    op.drop_constraint(
-        'student_enrollment_histories_school_class_id_fkey',
-        'student_enrollment_histories',
-        type_='foreignkey',
-    )
-    op.drop_constraint(
-        'student_enrollment_histories_section_id_fkey',
-        'student_enrollment_histories',
-        type_='foreignkey',
-    )
-    op.create_foreign_key(
-        'student_enrollment_histories_school_class_id_fkey',
-        'student_enrollment_histories',
-        'school_classes',
-        ['school_class_id'],
-        ['id'],
-        ondelete='RESTRICT',
-    )
-    op.create_foreign_key(
-        'student_enrollment_histories_section_id_fkey',
-        'student_enrollment_histories',
-        'sections',
-        ['section_id'],
-        ['id'],
-        ondelete='RESTRICT',
-    )
+    is_sqlite = op.get_bind().dialect.name == 'sqlite'
+    if not is_sqlite:
+        op.drop_constraint(
+            'student_enrollment_histories_school_class_id_fkey',
+            'student_enrollment_histories',
+            type_='foreignkey',
+        )
+        op.drop_constraint(
+            'student_enrollment_histories_section_id_fkey',
+            'student_enrollment_histories',
+            type_='foreignkey',
+        )
+        op.create_foreign_key(
+            'student_enrollment_histories_school_class_id_fkey',
+            'student_enrollment_histories',
+            'school_classes',
+            ['school_class_id'],
+            ['id'],
+            ondelete='RESTRICT',
+        )
+        op.create_foreign_key(
+            'student_enrollment_histories_section_id_fkey',
+            'student_enrollment_histories',
+            'sections',
+            ['section_id'],
+            ['id'],
+            ondelete='RESTRICT',
+        )
 
 
 def downgrade() -> None:

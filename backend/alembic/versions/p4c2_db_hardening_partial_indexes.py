@@ -18,14 +18,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # 1. Drop old strict unique constraints
-    op.drop_constraint('uq_academic_year_school_name', 'academic_years', type_='unique')
-    op.drop_constraint('uq_school_classes_school_id_name', 'school_classes', type_='unique')
-    op.drop_constraint('uq_sections_school_class_id_name', 'sections', type_='unique')
-    op.drop_constraint('uq_student_roll_number', 'students', type_='unique')
-    op.drop_constraint('uq_student_admission_number', 'students', type_='unique')
-    op.drop_constraint('uq_student_enrollment_history_year', 'student_enrollment_histories', type_='unique')
-    op.drop_constraint('uq_tc_school_number', 'transfer_certificates', type_='unique')
+    is_sqlite = op.get_bind().dialect.name == 'sqlite'
+    if not is_sqlite:
+        # 1. Drop old strict unique constraints
+        op.drop_constraint('uq_academic_year_school_name', 'academic_years', type_='unique')
+        op.drop_constraint('uq_school_classes_school_id_name', 'school_classes', type_='unique')
+        op.drop_constraint('uq_sections_school_class_id_name', 'sections', type_='unique')
+        op.drop_constraint('uq_student_roll_number', 'students', type_='unique')
+        op.drop_constraint('uq_student_admission_number', 'students', type_='unique')
+        op.drop_constraint('uq_student_enrollment_history_year', 'student_enrollment_histories', type_='unique')
+        op.drop_constraint('uq_tc_school_number', 'transfer_certificates', type_='unique')
 
     # 2. Create partial unique indexes (WHERE is_deleted = false / is_deleted = 0)
     op.create_index(

@@ -41,27 +41,28 @@ def upgrade() -> None:
         postgresql_where=sa.text('is_deleted = false AND school_class_id IS NULL'),
     )
 
-    # 4. Add database CHECK constraints for monetary amounts
-    op.create_check_constraint(
-        'ck_fee_items_amount_non_negative',
-        'fee_items',
-        sa.text('amount >= 0'),
-    )
-    op.create_check_constraint(
-        'ck_student_fee_items_amount_non_negative',
-        'student_fee_items',
-        sa.text('amount >= 0'),
-    )
-    op.create_check_constraint(
-        'ck_fee_discounts_amount_positive',
-        'fee_discounts',
-        sa.text('amount > 0'),
-    )
-    op.create_check_constraint(
-        'ck_fee_payments_amount_positive',
-        'fee_payments',
-        sa.text('amount > 0'),
-    )
+    is_sqlite = op.get_bind().dialect.name == 'sqlite'
+    if not is_sqlite:
+        op.create_check_constraint(
+            'ck_fee_items_amount_non_negative',
+            'fee_items',
+            sa.text('amount >= 0'),
+        )
+        op.create_check_constraint(
+            'ck_student_fee_items_amount_non_negative',
+            'student_fee_items',
+            sa.text('amount >= 0'),
+        )
+        op.create_check_constraint(
+            'ck_fee_discounts_amount_positive',
+            'fee_discounts',
+            sa.text('amount > 0'),
+        )
+        op.create_check_constraint(
+            'ck_fee_payments_amount_positive',
+            'fee_payments',
+            sa.text('amount > 0'),
+        )
 
 
 def downgrade() -> None:

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=False
+      - DATABASE_URL=postgresql://school_user:SecureProdPassword123%21@db:5432/school_erp
+      - SECRET_KEY=a_very_secure_and_random_production_secret_key_1234567890
+      - TRUST_PROXY=True
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=school_erp
+      - POSTGRES_USER=school_user
+      - POSTGRES_PASSWORD=SecureProdPassword123!
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U school_user -d school_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+volumes:
+  pgdata:

@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.v1.api import api_router
 from app.common.exceptions import register_exception_handlers
@@ -127,10 +128,54 @@ async def root() -> dict[str, object]:
 )
 async def health() -> dict[str, object]:
     """
-    Detailed health status endpoint returning app version and debug status.
+    Detailed health status endpoint returning app status.
     """
     return {
         "status": "healthy",
         "version": settings.APP_VERSION,
-        "debug": settings.DEBUG,
+        "environment": settings.ENVIRONMENT,
     }
+
+
+@app.get(
+    "/health/live",
+    tags=["Health"],
+    summary="Liveness Probe",
+)
+async def health_live() -> dict[str, object]:
+    """
+    K8s / Container Liveness probe.
+    """
+    return {"status": "alive"}
+
+
+@app.get(
+    "/health/ready",
+    tags=["Health"],
+    summary="Readiness Probe",
+)
+async def health_ready() -> JSONResponse:
+    """
+    K8s / Container Readiness probe checking DB connectivity.
+    """
+    from sqlalchemy import text
+    from app.database.session import engine
+
+    db_ok = False
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+            db_ok = True
+    except Exception as e:
+        logger.error("Readiness DB probe failed", error=str(e))
+
+    if db_ok:
+        return JSONResponse(
+            status_code=200,
+            content={"status": "ready", "database": "connected"},
+        )
+    else:
+        return JSONResponse(
+            status_code=530 if False else 503,
+            content={"status": "not_ready", "database": "disconnected"},
+        )

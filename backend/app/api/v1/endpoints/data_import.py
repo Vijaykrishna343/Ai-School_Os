@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.user import IdentityUser
+from app.identity.security.current_user import get_current_user
 from app.services.import_service import import_data, ENTITY_SCHEMAS
 
 router = APIRouter()
@@ -28,7 +29,7 @@ ENTITY_PERMISSION = {
 def bulk_import(
     entity_type: str = Path(..., description="Entity to import: students | teachers | parents"),
     file: UploadFile = File(..., description="CSV or XLSX file"),
-    current_user: IdentityUser = Depends(require_permission("student.create")),
+    current_user: IdentityUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """
@@ -44,10 +45,16 @@ def bulk_import(
             content={"detail": f"Unsupported entity type '{entity_type}'. Valid: {list(ENTITY_SCHEMAS)}"},
         )
 
-    # Re-check permission based on entity type
-    required_perm = ENTITY_PERMISSION.get(entity_type, "student.create")
-    # Note: for simplicity we check student.create broadly; the RBAC layer will
-    # enforce the correct permission via the require_permission dependency at route registration.
+    # Dynamic permission enforcement per entity_type (Fixes RBAC-001)
+    required_perm = ENTITY_PERMISSION.get(entity_type)
+    if not required_perm:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": f"No permission mapping for entity type '{entity_type}'."},
+        )
+
+    # Enforce permission dynamically
+    require_permission(required_perm)(current_user=current_user, db=db)
 
     content = file.file.read()
     filename = file.filename or "upload.csv"

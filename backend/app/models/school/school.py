@@ -125,7 +125,7 @@ class School(CommonModel):
         Enum(
             SchoolStatus,
             name="school_status",
-            native_enum=False,
+            native_enum=True,
             validate_strings=True,
         ),
         default=SchoolStatus.ACTIVE,

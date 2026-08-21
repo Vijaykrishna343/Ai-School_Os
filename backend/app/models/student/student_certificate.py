@@ -123,6 +123,16 @@ class StudentCertificate(CommonModel):
         nullable=True,
     )
 
+    certificate_data: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+
+    remarks: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
     # ------------------------------------------------------------------
     # Relationships
     # ------------------------------------------------------------------

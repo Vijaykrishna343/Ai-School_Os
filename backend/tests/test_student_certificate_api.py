@@ -19,10 +19,12 @@ from app.identity.models.role import IdentityRole
 from app.identity.models.user_role import IdentityUserRole
 from app.identity.security.password import hash_password
 from app.identity.security.jwt_manager import jwt_manager
+from app.identity.seeders import seed_identity
 
 
 @pytest.fixture
 def setup_certificate_data(db_session: Session):
+    seed_identity(db_session)
     suffix = uuid.uuid4().hex[:6]
 
     # Create School A & B
@@ -38,19 +40,19 @@ def setup_certificate_data(db_session: Session):
     db_session.commit()
 
     # Class & Section
-    class_a = SchoolClass(school_id=school_a.id, name=f"Class 10_{suffix}")
-    class_b = SchoolClass(school_id=school_b.id, name=f"Class 10_{suffix}")
+    class_a = SchoolClass(school_id=school_a.id, name=f"Class 10_{suffix}", display_order=1)
+    class_b = SchoolClass(school_id=school_b.id, name=f"Class 10_{suffix}", display_order=1)
     db_session.add_all([class_a, class_b])
     db_session.commit()
 
-    sec_a = Section(school_id=school_a.id, school_class_id=class_a.id, name="A")
-    sec_b = Section(school_id=school_b.id, school_class_id=class_b.id, name="A")
+    sec_a = Section(school_class_id=class_a.id, name="A")
+    sec_b = Section(school_class_id=class_b.id, name="A")
     db_session.add_all([sec_a, sec_b])
     db_session.commit()
 
     # Parent
-    parent_a = Parent(school_id=school_a.id, first_name="ParentA", last_name="User", phone=f"9100{suffix[:6]}", email=f"parenta_{suffix}@school.edu")
-    parent_b = Parent(school_id=school_b.id, first_name="ParentB", last_name="User", phone=f"9101{suffix[:6]}", email=f"parentb_{suffix}@school.edu")
+    parent_a = Parent(school_id=school_a.id, father_name="ParentA User", primary_phone=f"9100{suffix[:6]}", email=f"parenta_{suffix}@school.edu", address_line1="123 St", city="Hyderabad", district="Hyderabad", state="Telangana", postal_code="500001")
+    parent_b = Parent(school_id=school_b.id, father_name="ParentB User", primary_phone=f"9101{suffix[:6]}", email=f"parentb_{suffix}@school.edu", address_line1="456 St", city="Hyderabad", district="Hyderabad", state="Telangana", postal_code="500001")
     db_session.add_all([parent_a, parent_b])
     db_session.commit()
 
@@ -69,6 +71,11 @@ def setup_certificate_data(db_session: Session):
         date_of_birth=date(2010, 5, 15),
         admission_date=date(2020, 6, 1),
         status=StudentStatus.ACTIVE,
+        address_line1="123 Campus St",
+        city="Hyderabad",
+        district="Hyderabad",
+        state="Telangana",
+        postal_code="500001",
     )
     student_b = Student(
         school_id=school_b.id,
@@ -84,6 +91,11 @@ def setup_certificate_data(db_session: Session):
         date_of_birth=date(2010, 8, 20),
         admission_date=date(2020, 6, 1),
         status=StudentStatus.ACTIVE,
+        address_line1="456 Campus St",
+        city="Hyderabad",
+        district="Hyderabad",
+        state="Telangana",
+        postal_code="500001",
     )
     db_session.add_all([student_a, student_b])
     db_session.commit()
@@ -95,7 +107,10 @@ def setup_certificate_data(db_session: Session):
         school_id=school_a.id,
         email=f"admin_ca_{suffix}@school.edu",
         password_hash=hash_password("AdminPass123!"),
+        first_name="Admin",
+        last_name="A",
         is_active=True,
+        status="ACTIVE",
     )
     db_session.add(admin_a)
     db_session.commit()
@@ -106,7 +121,10 @@ def setup_certificate_data(db_session: Session):
         school_id=school_b.id,
         email=f"admin_cb_{suffix}@school.edu",
         password_hash=hash_password("AdminPass123!"),
+        first_name="Admin",
+        last_name="B",
         is_active=True,
+        status="ACTIVE",
     )
     db_session.add(admin_b)
     db_session.commit()
@@ -127,9 +145,8 @@ def setup_certificate_data(db_session: Session):
     }
 
 
-def test_01_issue_transfer_certificate(setup_certificate_data):
+def test_01_issue_transfer_certificate(client: TestClient, setup_certificate_data):
     data = setup_certificate_data
-    client = TestClient(app)
     headers = {"Authorization": f"Bearer {data['token_a']}"}
 
     student_id = str(data["student_a"].id)
@@ -152,9 +169,8 @@ def test_01_issue_transfer_certificate(setup_certificate_data):
     assert res_st.json()["data"]["status"] == "TRANSFERRED"
 
 
-def test_02_issue_bonafide_certificate(setup_certificate_data):
+def test_02_issue_bonafide_certificate(client: TestClient, setup_certificate_data):
     data = setup_certificate_data
-    client = TestClient(app)
     headers = {"Authorization": f"Bearer {data['token_a']}"}
 
     student_id = str(data["student_a"].id)
@@ -171,9 +187,8 @@ def test_02_issue_bonafide_certificate(setup_certificate_data):
     assert cert_data["purpose"] == "Passport Application"
 
 
-def test_03_get_certificate_print_view(setup_certificate_data):
+def test_03_get_certificate_print_view(client: TestClient, setup_certificate_data):
     data = setup_certificate_data
-    client = TestClient(app)
     headers = {"Authorization": f"Bearer {data['token_a']}"}
 
     student_id = str(data["student_a"].id)
@@ -189,9 +204,8 @@ def test_03_get_certificate_print_view(setup_certificate_data):
     assert "Daniel Student" in res_print.text
 
 
-def test_04_certificate_tenant_isolation(setup_certificate_data):
+def test_04_certificate_tenant_isolation(client: TestClient, setup_certificate_data):
     data = setup_certificate_data
-    client = TestClient(app)
     headers_b = {"Authorization": f"Bearer {data['token_b']}"}
 
     student_a_id = str(data["student_a"].id)

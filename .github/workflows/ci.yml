@@ -1,0 +1,94 @@
+name: AI School OS CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  backend-test:
+    name: Backend Tests & Migration Audit
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: school_erp_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt pytest pytest-cov
+
+      - name: Run Alembic Migration Verification
+        env:
+          DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/school_erp_ci
+        run: |
+          cd backend
+          python -m alembic heads
+          python -m alembic upgrade head
+
+      - name: Run Backend Unit & Integration Tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/school_erp_ci
+          SECRET_KEY: test_secret_key_for_ci_pipeline_only_1234567890
+        run: |
+          cd backend
+          python -m pytest
+
+      - name: Run Security & RBAC Regression Suite
+        env:
+          DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/school_erp_ci
+          SECRET_KEY: test_secret_key_for_ci_pipeline_only_1234567890
+        run: |
+          cd backend
+          python -m pytest tests/test_master_security_regression.py tests/test_phase_24_5_security_and_integrity.py -v
+
+  frontend-build:
+    name: Frontend Typecheck & Production Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run TypeScript Type Check
+        run: |
+          cd frontend
+          npx tsc --noEmit
+
+      - name: Build Frontend Bundle
+        run: |
+          cd frontend
+          npm run build

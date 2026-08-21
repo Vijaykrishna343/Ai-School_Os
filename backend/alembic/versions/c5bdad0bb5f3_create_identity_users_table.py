@@ -166,17 +166,28 @@ def upgrade() -> None:
     # Composite Unique Constraints
     # ==========================================================
 
-    op.create_unique_constraint(
-        "uq_identity_users_school_email",
-        "identity_users",
-        ["school_id", "email"],
-    )
-
-    op.create_unique_constraint(
-        "uq_identity_users_school_username",
-        "identity_users",
-        ["school_id", "username"],
-    )
+    is_sqlite = op.get_bind().dialect.name == 'sqlite'
+    if not is_sqlite:
+        op.create_unique_constraint(
+            "uq_identity_users_school_email",
+            "identity_users",
+            ["school_id", "email"],
+        )
+        op.create_unique_constraint(
+            "uq_identity_users_school_username",
+            "identity_users",
+            ["school_id", "username"],
+        )
+    else:
+        with op.batch_alter_table("identity_users") as batch_op:
+            batch_op.create_unique_constraint(
+                "uq_identity_users_school_email",
+                ["school_id", "email"],
+            )
+            batch_op.create_unique_constraint(
+                "uq_identity_users_school_username",
+                ["school_id", "username"],
+            )
 
 
 def downgrade() -> None:

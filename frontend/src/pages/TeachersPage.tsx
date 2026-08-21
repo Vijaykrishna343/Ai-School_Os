@@ -590,16 +590,18 @@ export const TeachersPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-mono uppercase text-ink-muted">First Name *</label>
+              <label htmlFor="first_name" className="text-[11px] font-mono uppercase text-ink-muted">First Name *</label>
               <Input
+                id="first_name"
                 value={teacherForm.first_name}
                 onChange={(e) => setTeacherForm({ ...teacherForm, first_name: e.target.value })}
                 error={validationErrors?.first_name}
               />
             </div>
             <div>
-              <label className="text-[11px] font-mono uppercase text-ink-muted">Last Name *</label>
+              <label htmlFor="last_name" className="text-[11px] font-mono uppercase text-ink-muted">Last Name *</label>
               <Input
+                id="last_name"
                 value={teacherForm.last_name}
                 onChange={(e) => setTeacherForm({ ...teacherForm, last_name: e.target.value })}
                 error={validationErrors?.last_name}
@@ -609,8 +611,9 @@ export const TeachersPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-mono uppercase text-ink-muted">Email Address *</label>
+              <label htmlFor="email" className="text-[11px] font-mono uppercase text-ink-muted">Email Address *</label>
               <Input
+                id="email"
                 type="email"
                 value={teacherForm.email}
                 onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
@@ -618,8 +621,9 @@ export const TeachersPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="text-[11px] font-mono uppercase text-ink-muted">Phone Number *</label>
+              <label htmlFor="phone" className="text-[11px] font-mono uppercase text-ink-muted">Phone Number *</label>
               <Input
+                id="phone"
                 value={teacherForm.phone}
                 onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
                 error={validationErrors?.phone}
@@ -629,16 +633,18 @@ export const TeachersPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-mono uppercase text-ink-muted">Qualification *</label>
+              <label htmlFor="qualification" className="text-[11px] font-mono uppercase text-ink-muted">Qualification *</label>
               <Input
+                id="qualification"
                 value={teacherForm.qualification}
                 onChange={(e) => setTeacherForm({ ...teacherForm, qualification: e.target.value })}
                 error={validationErrors?.qualification}
               />
             </div>
             <div>
-              <label className="text-[11px] font-mono uppercase text-ink-muted">Specialization</label>
+              <label htmlFor="specialization" className="text-[11px] font-mono uppercase text-ink-muted">Specialization</label>
               <Input
+                id="specialization"
                 value={teacherForm.specialization}
                 onChange={(e) => setTeacherForm({ ...teacherForm, specialization: e.target.value })}
               />

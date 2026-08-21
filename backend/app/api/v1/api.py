@@ -187,6 +187,12 @@ api_router.include_router(
 )
 
 api_router.include_router(
+    teacher_attendance_router,
+    prefix="/teachers/attendance",
+    tags=["Teacher Attendance"],
+)
+
+api_router.include_router(
     teacher_router,
     prefix="/teachers",
     tags=["Teachers"],
@@ -335,11 +341,7 @@ api_router.include_router(
     tags=["Audit Logs"],
 )
 
-api_router.include_router(
-    teacher_attendance_router,
-    prefix="/teachers/attendance",
-    tags=["Teacher Attendance"],
-)
+
 
 api_router.include_router(
     student_certificate_router,

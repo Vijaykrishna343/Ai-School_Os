@@ -79,8 +79,8 @@ describe('TeachersPage Component', () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText('Faculty Directory')).toBeInTheDocument();
-    expect(screen.getByText('OFFICE OF THE REGISTRAR')).toBeInTheDocument();
+    expect(screen.getByText('Teacher & Staff Workstation')).toBeInTheDocument();
+    expect(screen.getByText('STAFF_MANAGEMENT // DIRECTORY_AND_ATTENDANCE')).toBeInTheDocument();
   });
 
   it('loads and displays teachers list', async () => {
@@ -110,7 +110,7 @@ describe('TeachersPage Component', () => {
       </QueryClientProvider>
     );
 
-    const searchInput = screen.getByPlaceholderText(/Search by teacher name/i);
+    const searchInput = screen.getByPlaceholderText(/Search teacher by name or ID.../i);
     fireEvent.change(searchInput, { target: { value: 'Severus' } });
 
     await waitFor(() => {
@@ -150,7 +150,7 @@ describe('TeachersPage Component', () => {
       </QueryClientProvider>
     );
 
-    const addButton = screen.getByText('+ Add Teacher');
+    const addButton = screen.getByText('+ Register New Staff');
     fireEvent.click(addButton);
 
     expect(screen.getByText('Add New Teacher')).toBeInTheDocument();
@@ -199,9 +199,8 @@ describe('TeachersPage Component', () => {
 
     fireEvent.click(screen.getByText('View'));
 
-    expect(screen.getByText('FACULTY DOSSIER')).toBeInTheDocument();
-    expect(screen.getByText('EMPLOYEE_ID: EMP-9999')).toBeInTheDocument();
-    expect(screen.getByText('Minerva McGonagall')).toBeInTheDocument();
+    expect(screen.getByText('Teacher Comprehensive Profile')).toBeInTheDocument();
+    expect(screen.getByText('albus@hogwarts.edu')).toBeInTheDocument();
   });
 
   it('opens delete confirmation modal when clicking delete button', async () => {
@@ -236,18 +235,15 @@ describe('TeachersPage Component', () => {
       </QueryClientProvider>
     );
 
-    const addButton = screen.getByText('+ Add Teacher');
+    const addButton = screen.getByText('+ Register New Staff');
     fireEvent.click(addButton);
 
     // Fill in required fields
     fireEvent.change(screen.getByLabelText(/First Name \*/i), { target: { value: 'Minerva' } });
+    fireEvent.change(screen.getByLabelText(/Last Name \*/i), { target: { value: 'McGonagall' } });
     fireEvent.change(screen.getByLabelText(/Qualification \*/i), { target: { value: 'B.Ed' } });
-    fireEvent.change(screen.getByLabelText(/Phone \*/i), { target: { value: '9876543211' } });
-    fireEvent.change(screen.getByLabelText(/Email \*/i), { target: { value: 'minerva@hogwarts.edu' } });
-    fireEvent.change(screen.getByLabelText(/Address Line 1 \*/i), { target: { value: 'Gryffindor' } });
-    fireEvent.change(screen.getByLabelText(/City \*/i), { target: { value: 'Hogsmeade' } });
-    fireEvent.change(screen.getByLabelText(/District \*/i), { target: { value: 'Highlands' } });
-    fireEvent.change(screen.getByLabelText(/State \*/i), { target: { value: 'Scotland' } });
+    fireEvent.change(screen.getByLabelText(/Phone Number \*/i), { target: { value: '9876543211' } });
+    fireEvent.change(screen.getByLabelText(/Email Address \*/i), { target: { value: 'minerva@hogwarts.edu' } });
 
     // Submit
     fireEvent.click(screen.getByRole('button', { name: 'Create Teacher' }));
@@ -278,7 +274,7 @@ describe('TeachersPage Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('No faculty records matching current registry filters.')).toBeInTheDocument();
+      expect(screen.getByText('No teachers found in registry.')).toBeInTheDocument();
     });
   });
 });

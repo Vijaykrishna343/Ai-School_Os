@@ -113,8 +113,8 @@ class Document(CommonModel):
         nullable=False,
     )
 
-    uploaded_by_id: Mapped[UUID] = mapped_column(
-        nullable=False,
+    uploaded_by_id: Mapped[UUID | None] = mapped_column(
+        nullable=True,
     )
 
     uploaded_at: Mapped[datetime] = mapped_column(

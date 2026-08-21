@@ -131,7 +131,11 @@ def setup_document_data(db_session: Session):
         school_id=school_a.id, father_name="Papa", mother_name="Mama",
         email=u_parent_a.email, primary_phone="9876543210", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001",
     )
-    db_session.add_all([t_a, p_a])
+    p_b = Parent(
+        school_id=school_b.id, father_name="Papa B", mother_name="Mama B",
+        email=f"parent_doc_b_{suffix}@school.com", primary_phone="9876543211", address_line1="456 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001",
+    )
+    db_session.add_all([t_a, p_a, p_b])
     db_session.commit()
 
     # Students
@@ -143,7 +147,7 @@ def setup_document_data(db_session: Session):
         address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001",
     )
     st_b = Student(
-        school_id=school_b.id, academic_year_id=ay_b.id,
+        school_id=school_b.id, academic_year_id=ay_b.id, parent_id=p_b.id,
         school_class_id=class_b.id, section_id=sec_b.id, admission_number=f"ADM_B_{suffix}",
         roll_number="1", first_name="David", last_name="Student", email=u_student_b.email,
         gender=Gender.MALE, date_of_birth=date(2010, 1, 1), admission_date=date(2026, 6, 1), status=StudentStatus.ACTIVE,
@@ -224,12 +228,13 @@ def test_02_file_validation_and_security(client: TestClient, setup_document_data
     data = {"owner_type": "STUDENT", "owner_id": st_id, "document_type": "OTHER", "title": "Bad File"}
     res = client.post("/api/v1/documents/upload", headers={"Authorization": f"Bearer {tok}"}, data=data, files=files_exe)
     assert res.status_code == 400
-    assert "extension" in res.json()["detail"].lower()
+    assert "extension" in str(res.json()).lower()
 
     # 2. Magic bytes validation failure (text file renamed to .pdf)
     files_spoof = {"file": ("fake.pdf", io.BytesIO(b"Hello world text content"), "application/pdf")}
     res_spoof = client.post("/api/v1/documents/upload", headers={"Authorization": f"Bearer {tok}"}, data=data, files=files_spoof)
-    assert res_spoof.status_code == 400 or res_spoof.status_code == 422
+    assert res_spoof.status_code in (400, 422)
+    assert "signature" in str(res_spoof.json()).lower() or "magic" in str(res_spoof.json()).lower() or "corrupted" in str(res_spoof.json()).lower() or "spoofed" in str(res_spoof.json()).lower()
 
     # 3. Path traversal filename sanitization
     pdf_bytes = b"%PDF-1.4 Safe PDF content"

@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     DOCUMENT_STORAGE_PATH: str = str(BASE_DIR / "storage" / "documents")
     DOCUMENT_MAX_SIZE_MB: int = 10
     STORAGE_PROVIDER: str = "local"
+    TRUST_PROXY: bool = False
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
@@ -56,6 +57,15 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "SECRET_KEY is insecure or using default placeholder in production environment."
                 )
+
+            if "postgres:postgres" in self.DATABASE_URL.lower() or "user:pass" in self.DATABASE_URL.lower():
+                raise ValueError("DATABASE_URL contains default/placeholder credentials in production environment.")
+
+            origins = self.ALLOWED_ORIGINS
+            if isinstance(origins, str):
+                origins = [o.strip() for o in origins.split(",") if o.strip()]
+            if "*" in origins:
+                raise ValueError("Wildcard '*' ALLOWED_ORIGINS is prohibited in production environment.")
 
         return self
 

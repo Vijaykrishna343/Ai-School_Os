@@ -98,17 +98,9 @@ class HomeworkService:
             teacher = db.scalar(
                 select(Teacher).where(
                     Teacher.school_id == school_id,
-                    Teacher.user_id == current_user.id,
+                    Teacher.email == current_user.email,
                 )
             )
-            if not teacher:
-                # Fallback: query teacher by email
-                teacher = db.scalar(
-                    select(Teacher).where(
-                        Teacher.school_id == school_id,
-                        Teacher.email == current_user.email,
-                    )
-                )
             if not teacher:
                 # If still not found, check if teacher exists for school
                 teacher = db.scalar(
@@ -264,7 +256,7 @@ class HomeworkService:
             students = db.scalars(stmt).all()
 
             subject = db.get(Subject, hw.subject_id)
-            subject_name = subject.name if subject else "Subject"
+            subject_name = (getattr(subject, "subject_name", None) or getattr(subject, "name", "Subject")) if subject else "Subject"
 
             for st in students:
                 notification_service.create_in_app_notification(
