@@ -188,8 +188,27 @@ def export_attendance(
     db: Session = Depends(get_db),
 ) -> StreamingResponse:
     from sqlalchemy import select
+    from app.common.authorization import enforce_relationship_access
     from app.models.attendance.attendance import Attendance
     from app.models.student.student import Student
+
+    allowed_scope = enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=None,
+    )
+
+    attendance_headers = ["date", "admission_number", "Student Name", "status", "remarks"]
+
+    if isinstance(allowed_scope, list):
+        if not allowed_scope:
+            return _csv_response([], "attendance_export.csv", headers_schema=attendance_headers)
+        scope_filter = Attendance.student_id.in_(allowed_scope)
+    elif isinstance(allowed_scope, UUID):
+        scope_filter = Attendance.student_id == allowed_scope
+    else:
+        scope_filter = None
 
     q = select(Attendance, Student).join(
         Student, Attendance.student_id == Student.id
@@ -198,6 +217,9 @@ def export_attendance(
         Attendance.is_deleted.is_(False),
         Student.is_deleted.is_(False),
     )
+    if scope_filter is not None:
+        q = q.where(scope_filter)
+
     if section_id:
         q = q.where(Attendance.section_id == section_id)
     if date_from:
@@ -218,7 +240,6 @@ def export_attendance(
         }
         for att, stu in records
     ]
-    attendance_headers = ["date", "admission_number", "Student Name", "status", "remarks"]
     return _csv_response(rows, "attendance_export.csv", headers_schema=attendance_headers)
 
 
@@ -229,10 +250,30 @@ def export_fees(
     db: Session = Depends(get_db),
 ) -> StreamingResponse:
     from sqlalchemy import select
+    from app.common.authorization import enforce_relationship_access
     from app.models.fees.fee_payment import FeePayment
     from app.models.fees.student_fee_assignment import StudentFeeAssignment
     from app.models.student.student import Student
     from app.models.fees.fee_structure import FeeStructure
+
+    allowed_scope = enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=None,
+    )
+
+    fee_headers = ["receipt_number", "payment_date", "student_name", "admission_number",
+                   "fee_structure", "amount_paid", "payment_mode", "reference_number"]
+
+    if isinstance(allowed_scope, list):
+        if not allowed_scope:
+            return _csv_response([], "fee_payments_export.csv", headers_schema=fee_headers)
+        scope_filter = StudentFeeAssignment.student_id.in_(allowed_scope)
+    elif isinstance(allowed_scope, UUID):
+        scope_filter = StudentFeeAssignment.student_id == allowed_scope
+    else:
+        scope_filter = None
 
     q = (
         select(FeePayment, StudentFeeAssignment, Student, FeeStructure)
@@ -244,6 +285,9 @@ def export_fees(
             FeePayment.is_deleted.is_(False),
         )
     )
+    if scope_filter is not None:
+        q = q.where(scope_filter)
+
     if academic_year_id:
         q = q.where(StudentFeeAssignment.academic_year_id == academic_year_id)
     q = q.order_by(FeePayment.payment_date, Student.admission_number)
@@ -262,7 +306,7 @@ def export_fees(
         }
         for fp, sfa, stu, fs in records
     ]
-    return _csv_response(rows, "fee_payments_export.csv")
+    return _csv_response(rows, "fee_payments_export.csv", headers_schema=fee_headers)
 
 
 @router.get("/exam-results", summary="Export Exam Results as CSV")
@@ -272,11 +316,31 @@ def export_exam_results(
     db: Session = Depends(get_db),
 ) -> StreamingResponse:
     from sqlalchemy import select
+    from app.common.authorization import enforce_relationship_access
     from app.models.exam.student_exam_result import StudentExamResult
     from app.models.exam.exam_schedule import ExamSchedule
     from app.models.exam.exam import Exam
     from app.models.student.student import Student
     from app.models.subject.subject import Subject
+
+    allowed_scope = enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=None,
+    )
+
+    exam_headers = ["exam_name", "subject", "student_name", "admission_number",
+                    "roll_number", "marks_obtained", "max_marks"]
+
+    if isinstance(allowed_scope, list):
+        if not allowed_scope:
+            return _csv_response([], "exam_results_export.csv", headers_schema=exam_headers)
+        scope_filter = StudentExamResult.student_id.in_(allowed_scope)
+    elif isinstance(allowed_scope, UUID):
+        scope_filter = StudentExamResult.student_id == allowed_scope
+    else:
+        scope_filter = None
 
     q = (
         select(StudentExamResult, ExamSchedule, Exam, Student, Subject)
@@ -289,6 +353,9 @@ def export_exam_results(
             StudentExamResult.is_deleted.is_(False),
         )
     )
+    if scope_filter is not None:
+        q = q.where(scope_filter)
+
     if exam_id:
         q = q.where(Exam.id == exam_id)
     q = q.order_by(Exam.name, Subject.subject_name, Student.admission_number)
@@ -306,6 +373,4 @@ def export_exam_results(
         }
         for res, sched, ex, stu, sub in records
     ]
-    exam_headers = ["exam_name", "subject", "student_name", "admission_number",
-                    "roll_number", "marks_obtained", "max_marks"]
     return _csv_response(rows, "exam_results_export.csv", headers_schema=exam_headers)

@@ -3,14 +3,21 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.common.authorization import enforce_relationship_access
 from app.common.enums.fees import (
     FeeStructureStatus,
     PaymentMode,
     StudentFeeAssignmentStatus,
 )
+from app.common.exceptions import NotFoundException
 from app.dependencies import get_db, get_fee_service
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.user import IdentityUser
+from app.schemas.fees.cash_session import (
+    CashSessionCloseRequest,
+    CashSessionOpenRequest,
+    CashSessionResponse,
+)
 from app.schemas.fees.fees import (
     FeeDiscountCreate,
     FeePaymentCreate,
@@ -26,6 +33,7 @@ from app.schemas.fees.fees import (
     StudentFeeAssignmentResponse,
     StudentFeeItemCreate,
 )
+from app.services.cash_session_service import cash_session_service
 from app.services.fee_service import FeeService
 
 router = APIRouter()
@@ -237,8 +245,47 @@ def list_student_fee_assignments(
     service: FeeService = Depends(get_fee_service),
 ) -> StudentFeeAssignmentListResponse:
     """
-    List paginated Student Fee Assignments scoped to current user's school.
+    List paginated Student Fee Assignments scoped to current user's school and authorized relationships.
     """
+    allowed_scope = enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=student_id,
+    )
+
+    if isinstance(allowed_scope, list):
+        if not allowed_scope:
+            return StudentFeeAssignmentListResponse(
+                items=[],
+                total=0,
+                page=page,
+                page_size=page_size,
+                total_pages=0,
+            )
+        return service.list_assignments(
+            db=db,
+            current_school_id=current_user.school_id,
+            academic_year_id=academic_year_id,
+            student_id=None,
+            fee_structure_id=fee_structure_id,
+            status=status,
+            student_ids=allowed_scope,
+            page=page,
+            page_size=page_size,
+        )
+    elif isinstance(allowed_scope, UUID):
+        return service.list_assignments(
+            db=db,
+            current_school_id=current_user.school_id,
+            academic_year_id=academic_year_id,
+            student_id=allowed_scope,
+            fee_structure_id=fee_structure_id,
+            status=status,
+            page=page,
+            page_size=page_size,
+        )
+
     return service.list_assignments(
         db=db,
         current_school_id=current_user.school_id,
@@ -263,13 +310,22 @@ def get_student_fee_assignment(
     service: FeeService = Depends(get_fee_service),
 ) -> StudentFeeAssignmentResponse:
     """
-    Retrieve details of a Student Fee Assignment.
+    Retrieve details of a Student Fee Assignment if authorized.
     """
-    return service.get_assignment(
+    assignment_resp = service.get_assignment(
         db=db,
         assignment_id=assignment_id,
         current_school_id=current_user.school_id,
     )
+
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=assignment_resp.student_id,
+    )
+
+    return assignment_resp
 
 
 @router.delete(
@@ -464,13 +520,22 @@ def get_fee_payment(
     service: FeeService = Depends(get_fee_service),
 ) -> FeePaymentResponse:
     """
-    Retrieve payment details by payment ID.
+    Retrieve payment details by payment ID if authorized.
     """
-    return service.get_payment(
-        db=db,
-        payment_id=payment_id,
-        current_school_id=current_user.school_id,
+    payment = service.payment_repo.get_by_id_and_school(
+        db, payment_id, current_user.school_id
     )
+    if payment is None or payment.is_deleted:
+        raise NotFoundException("FeePayment", str(payment_id))
+
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=payment.assignment.student_id,
+    )
+
+    return FeePaymentResponse.model_validate(payment)
 
 
 @router.get(
@@ -485,10 +550,93 @@ def get_payment_receipt(
     service: FeeService = Depends(get_fee_service),
 ) -> FeeReceiptResponse:
     """
-    Generate and retrieve the receipt representation for a successful payment.
+    Generate and retrieve the receipt representation for a successful payment if authorized.
     """
+    payment = service.payment_repo.get_by_id_and_school(
+        db, payment_id, current_user.school_id
+    )
+    if payment is None or payment.is_deleted:
+        raise NotFoundException("FeePayment", str(payment_id))
+
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=payment.assignment.student_id,
+    )
+
     return service.get_receipt(
         db=db,
         payment_id=payment_id,
         current_school_id=current_user.school_id,
     )
+
+
+# ------------------------------------------------------------------
+# Accountant Cash Drawer & End-of-Day Reconciliation
+# ------------------------------------------------------------------
+
+
+@router.post(
+    "/cash-drawer/open",
+    response_model=CashSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Open Accountant Cash Drawer Session",
+)
+def open_cash_drawer_session(
+    data: CashSessionOpenRequest,
+    current_user: IdentityUser = Depends(require_permission("fees.create")),
+    db: Session = Depends(get_db),
+) -> CashSessionResponse:
+    """
+    Open an accountant cash drawer session with an initial opening balance.
+    """
+    return cash_session_service.open_session(
+        db=db,
+        school_id=current_user.school_id,
+        user_id=current_user.id,
+        data=data,
+    )
+
+
+@router.get(
+    "/cash-drawer/active",
+    response_model=CashSessionResponse,
+    summary="Get Active Cash Drawer Session",
+)
+def get_active_cash_drawer_session(
+    current_user: IdentityUser = Depends(require_permission("fees.create")),
+    db: Session = Depends(get_db),
+) -> CashSessionResponse:
+    """
+    Retrieve live status and aggregated payment expected totals for the active cash session.
+    """
+    return cash_session_service.get_active_session(
+        db=db,
+        school_id=current_user.school_id,
+        user_id=current_user.id,
+    )
+
+
+@router.post(
+    "/cash-drawer/{session_id}/close",
+    response_model=CashSessionResponse,
+    summary="Close Accountant Cash Drawer Session",
+)
+def close_cash_drawer_session(
+    session_id: UUID,
+    data: CashSessionCloseRequest,
+    current_user: IdentityUser = Depends(require_permission("fees.create")),
+    db: Session = Depends(get_db),
+) -> CashSessionResponse:
+    """
+    Reconcile counted cash, compute variance against authoritative DB collections, and close session.
+    """
+    return cash_session_service.close_session(
+        db=db,
+        school_id=current_user.school_id,
+        user_id=current_user.id,
+        session_id=session_id,
+        data=data,
+    )
+

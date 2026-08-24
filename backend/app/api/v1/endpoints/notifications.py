@@ -7,15 +7,22 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.common.authorization import (
+    enforce_relationship_access,
+    resolve_parent_linked_student_ids,
+    resolve_student_id_for_user,
+    resolve_user_role_names,
+)
 from app.dependencies import get_db
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.user import IdentityUser
 from app.models.notification import NotificationChannel, NotificationRecipientType
+from app.schemas.background_job import BatchNotificationAsyncRequest
 from app.services.notification_service import notification_service
 
 router = APIRouter()
@@ -38,13 +45,97 @@ def list_notifications(
     current_user: IdentityUser = Depends(require_permission("school.view")),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
-    from sqlalchemy import select, func
+    from sqlalchemy import select, func, or_
     from app.models.notification import Notification, NotificationStatus
+    from app.models.parent.parent import Parent
+
+    # Enforce basic relationship check
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+    )
+
+    role_names = resolve_user_role_names(db, current_user)
 
     q = select(Notification).where(
         Notification.school_id == current_user.school_id,
         Notification.is_deleted.is_(False),
     )
+
+    if "Parent" in role_names and not current_user.is_super_admin:
+        linked_student_ids = resolve_parent_linked_student_ids(db, current_user.school_id, current_user)
+        if not linked_student_ids:
+            return JSONResponse(content={
+                "success": True,
+                "data": {
+                    "items": [],
+                    "total": 0,
+                    "page": page,
+                    "page_size": page_size,
+                },
+            })
+
+        # Resolve Parent Profile ID if present
+        parent = None
+        if getattr(current_user, "email", None):
+            parent = db.scalar(
+                select(Parent).where(
+                    Parent.email == current_user.email,
+                    Parent.school_id == current_user.school_id,
+                    Parent.is_deleted.is_(False),
+                )
+            )
+        if not parent and getattr(current_user, "phone", None):
+            parent = db.scalar(
+                select(Parent).where(
+                    (Parent.primary_phone == current_user.phone) | (Parent.secondary_phone == current_user.phone),
+                    Parent.school_id == current_user.school_id,
+                    Parent.is_deleted.is_(False),
+                )
+            )
+
+        parent_conditions = []
+        if parent:
+            parent_conditions.append(
+                (Notification.recipient_type == NotificationRecipientType.PARENT) & (Notification.recipient_id == parent.id)
+            )
+        if current_user.email:
+            parent_conditions.append(Notification.recipient_contact == current_user.email)
+        if getattr(current_user, "phone", None):
+            parent_conditions.append(Notification.recipient_contact == current_user.phone)
+
+        parent_conditions.append(
+            Notification.recipient_id.in_(linked_student_ids)
+        )
+        parent_conditions.append(
+            Notification.template_key == "general_announcement"
+        )
+
+        q = q.where(or_(*parent_conditions))
+
+    elif "Student" in role_names and not current_user.is_super_admin:
+        student_id = resolve_student_id_for_user(db, current_user.school_id, current_user)
+        if not student_id:
+            return JSONResponse(content={
+                "success": True,
+                "data": {
+                    "items": [],
+                    "total": 0,
+                    "page": page,
+                    "page_size": page_size,
+                },
+            })
+
+        student_conditions = [
+            Notification.recipient_id == student_id,
+            Notification.template_key == "general_announcement",
+        ]
+        if current_user.email:
+            student_conditions.append(Notification.recipient_contact == current_user.email)
+
+        q = q.where(or_(*student_conditions))
+
     if status_filter:
         try:
             q = q.where(Notification.status == NotificationStatus(status_filter.upper()))
@@ -88,6 +179,10 @@ def send_announcement(
     current_user: IdentityUser = Depends(require_permission("school.update")),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
+    if not body.recipient_contact or not body.recipient_contact.strip():
+        from app.common.exceptions import BadRequestException
+        raise BadRequestException("Recipient contact must be provided.")
+
     notification = notification_service.send_announcement(
         db=db,
         school_id=current_user.school_id,
@@ -113,6 +208,48 @@ def send_announcement(
     )
 
 
+@router.post(
+    "/batch-send-async",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Asynchronously Dispatch Batch Notifications",
+)
+def batch_send_notifications_async(
+    body: BatchNotificationAsyncRequest,
+    background_tasks: BackgroundTasks,
+    current_user: IdentityUser = Depends(require_permission("school.update")),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    from app.models.background_job import JobType
+    from app.repositories.job_repository import job_repository
+    from app.services.async_job_runner import async_job_runner
+
+    job = job_repository.create_job(
+        db=db,
+        school_id=current_user.school_id,
+        user_id=current_user.id,
+        job_type=JobType.BULK_NOTIFICATION_DISPATCH,
+        payload=body.model_dump(mode="json"),
+        idempotency_key=body.idempotency_key,
+        total_items=len(body.recipients),
+    )
+    db.commit()
+
+    background_tasks.add_task(async_job_runner.process_job, current_user.school_id, job.id)
+
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "success": True,
+            "data": {
+                "job_id": str(job.id),
+                "status": job.status,
+                "job_type": job.job_type,
+                "total_recipients": len(body.recipients),
+            },
+        },
+    )
+
+
 @router.get("/templates", summary="List Notification Templates")
 def list_templates(
     current_user: IdentityUser = Depends(require_permission("school.view")),
@@ -125,3 +262,16 @@ def list_templates(
             for key, tpl in NOTIFICATION_TEMPLATES.items()
         },
     })
+
+
+@router.get("/delivery-metrics", summary="Get Notification Delivery Metrics")
+def get_delivery_metrics(
+    current_user: IdentityUser = Depends(require_permission("school.view")),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    metrics = notification_service.get_delivery_metrics(db=db, school_id=current_user.school_id)
+    return JSONResponse(content={
+        "success": True,
+        "data": metrics,
+    })
+

@@ -84,6 +84,7 @@ class StudentFeeAssignmentRepository(BaseRepository[StudentFeeAssignment]):
         student_id: UUID | None = None,
         fee_structure_id: UUID | None = None,
         status: StudentFeeAssignmentStatus | None = None,
+        student_ids: list[UUID] | None = None,
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[StudentFeeAssignment], int]:
@@ -94,6 +95,9 @@ class StudentFeeAssignmentRepository(BaseRepository[StudentFeeAssignment]):
             StudentFeeAssignment.school_id == school_id,
             StudentFeeAssignment.is_deleted.is_(False),
         )
+
+        if student_ids is not None:
+            query = query.where(StudentFeeAssignment.student_id.in_(student_ids))
 
         if academic_year_id is not None:
             query = query.where(StudentFeeAssignment.academic_year_id == academic_year_id)

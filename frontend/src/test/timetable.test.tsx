@@ -248,7 +248,7 @@ describe('TimetablePage Component', () => {
 
     fireEvent.click(screen.getByText('Teacher Substitutions'));
     await waitFor(() => {
-      expect(screen.getByText('TEACHER_SUBSTITUTION_LOG')).toBeInTheDocument();
+      expect(screen.getByText(/TEACHER_SUBSTITUTION_LOG/)).toBeInTheDocument();
     });
   });
 

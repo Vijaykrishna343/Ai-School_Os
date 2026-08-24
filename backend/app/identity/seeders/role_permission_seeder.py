@@ -45,6 +45,8 @@ ROLE_PERMISSIONS_MATRIX: dict[str, list[str]] = {
         "teacher_attendance.*",
         "homework.*",
         "documents.*",
+        "notification.*",
+        "substitution.*",
     ],
     "Principal": [
         "academic_term.view",
@@ -65,10 +67,11 @@ ROLE_PERMISSIONS_MATRIX: dict[str, list[str]] = {
         "reports.*",
         "homework.*",
         "documents.*",
+        "notification.*",
         "timetable.*",
         "period_slot.*",
         "classroom.*",
-        "teacher_substitution.*",
+        "substitution.*",
     ],
     "Vice Principal": [
         "academic_term.view",
@@ -94,6 +97,9 @@ ROLE_PERMISSIONS_MATRIX: dict[str, list[str]] = {
         "documents.download",
         "documents.update",
         "documents.verify",
+        "notification.view",
+        "notification.send",
+        "substitution.*",
     ],
     "Teacher": [
         "attendance.create",

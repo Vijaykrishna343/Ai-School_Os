@@ -1,3 +1,4 @@
+from .cash_session import CashSession
 from .fee_payment import FeePayment
 from .fee_structure import FeeItem, FeeStructure
 from .student_fee_assignment import (
@@ -13,4 +14,6 @@ __all__ = [
     "StudentFeeItem",
     "FeeDiscount",
     "FeePayment",
+    "CashSession",
 ]
+

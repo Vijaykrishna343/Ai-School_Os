@@ -72,6 +72,9 @@ from app.api.v1.endpoints.data_export import (
 from app.api.v1.endpoints.notifications import (
     router as notifications_router,
 )
+from app.api.v1.endpoints.jobs import (
+    router as jobs_router,
+)
 from app.api.v1.endpoints.audit_logs import (
     router as audit_logs_router,
 )
@@ -336,6 +339,12 @@ api_router.include_router(
 )
 
 api_router.include_router(
+    jobs_router,
+    prefix="/jobs",
+    tags=["Background Jobs"],
+)
+
+api_router.include_router(
     audit_logs_router,
     prefix="/audit-logs",
     tags=["Audit Logs"],
@@ -359,3 +368,11 @@ api_router.include_router(
     prefix="/documents",
     tags=["Documents"],
 )
+
+from app.api.v1.endpoints.health import router as health_router
+
+api_router.include_router(
+    health_router,
+    tags=["Health Probes"],
+)
+

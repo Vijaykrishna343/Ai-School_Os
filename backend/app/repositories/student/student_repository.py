@@ -218,6 +218,7 @@ class StudentRepository(BaseRepository[Student]):
         *,
         school_id: UUID | None = None,
         parent_id: UUID | None = None,
+        student_ids: list[UUID] | None = None,
         academic_year_id: UUID | None = None,
         school_class_id: UUID | None = None,
         section_id: UUID | None = None,
@@ -244,6 +245,11 @@ class StudentRepository(BaseRepository[Student]):
         if parent_id is not None:
             filters.append(
                 Student.parent_id == parent_id,
+            )
+
+        if student_ids is not None:
+            filters.append(
+                Student.id.in_(student_ids),
             )
 
         if academic_year_id is not None:

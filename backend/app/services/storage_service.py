@@ -121,15 +121,17 @@ class StorageService:
         rel_key = f"school_{school_id.hex}/{owner_type.lower()}_{owner_id.hex}/{doc_uuid}{ext}"
         abs_path = self.storage_root / rel_key
 
-        # Create parent directories
-        abs_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Write bytes
-        with open(abs_path, "wb") as f:
-            f.write(file_bytes)
+        # Create parent directories & write bytes
+        try:
+            abs_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(abs_path, "wb") as f:
+                f.write(file_bytes)
+        except OSError as exc:
+            raise BadRequestException(f"Storage error: File write failed due to permissions or disk error ({exc}).")
 
         checksum = self.calculate_checksum(file_bytes)
         return rel_key, checksum
+
 
     def read_file(self, storage_key: str) -> bytes:
         """

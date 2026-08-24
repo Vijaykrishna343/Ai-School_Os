@@ -8,6 +8,10 @@ from app.dependencies import get_db, get_teacher_substitution_service
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models import IdentityUser
 from app.schemas.timetable.teacher_substitution import (
+    AffectedSlotsResponse,
+    AutoAssignSubstitutionsRequest,
+    AutoAssignSubstitutionsResponse,
+    SubstituteRecommendationsResponse,
     TeacherSubstitutionCreate,
     TeacherSubstitutionDetailResponse,
     TeacherSubstitutionFilter,
@@ -17,6 +21,74 @@ from app.schemas.timetable.teacher_substitution import (
 from app.services.teacher_substitution_service import TeacherSubstitutionService
 
 router = APIRouter()
+
+
+@router.get(
+    "/affected-slots",
+    response_model=AffectedSlotsResponse,
+    summary="Get Affected Timetable Slots For Teacher Absences",
+)
+def get_affected_slots(
+    substitution_date: date = Query(...),
+    school_class_id: UUID | None = Query(default=None),
+    db: Session = Depends(get_db),
+    current_user: IdentityUser = Depends(require_permission("substitution.view")),
+    service: TeacherSubstitutionService = Depends(get_teacher_substitution_service),
+) -> AffectedSlotsResponse:
+    """
+    Get all timetable slots affected by absent or on-leave teachers on a specific date.
+    """
+    return service.get_affected_slots(
+        db,
+        current_school_id=current_user.school_id,
+        substitution_date=substitution_date,
+        school_class_id=school_class_id,
+    )
+
+
+@router.get(
+    "/recommendations",
+    response_model=SubstituteRecommendationsResponse,
+    summary="Get Ranked Substitute Teacher Recommendations",
+)
+def get_substitute_recommendations(
+    timetable_entry_id: UUID = Query(...),
+    substitution_date: date = Query(...),
+    db: Session = Depends(get_db),
+    current_user: IdentityUser = Depends(require_permission("substitution.view")),
+    service: TeacherSubstitutionService = Depends(get_teacher_substitution_service),
+) -> SubstituteRecommendationsResponse:
+    """
+    Evaluate, score, and rank candidate substitute teachers for a timetable entry and date.
+    """
+    return service.get_recommendations(
+        db,
+        current_school_id=current_user.school_id,
+        timetable_entry_id=timetable_entry_id,
+        substitution_date=substitution_date,
+    )
+
+
+@router.post(
+    "/auto-assign",
+    response_model=AutoAssignSubstitutionsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Auto-Assign Optimal Substitutions For Date",
+)
+def auto_assign_substitutions(
+    body: AutoAssignSubstitutionsRequest,
+    db: Session = Depends(get_db),
+    current_user: IdentityUser = Depends(require_permission("substitution.create")),
+    service: TeacherSubstitutionService = Depends(get_teacher_substitution_service),
+) -> AutoAssignSubstitutionsResponse:
+    """
+    Automatically assign optimal substitute teachers for all unassigned affected slots on a date.
+    """
+    return service.auto_assign_substitutions(
+        db,
+        current_school_id=current_user.school_id,
+        req=body,
+    )
 
 
 @router.post(

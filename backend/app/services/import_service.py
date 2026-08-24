@@ -533,3 +533,247 @@ def import_data(
         result.errors.append(RowError(0, None, f"Fatal error — all changes rolled back: {exc}"))
 
     return result
+
+
+def preview_student_import(
+    db: Session,
+    file_content: bytes,
+    filename: str,
+    school_id: UUID,
+) -> dict:
+    from sqlalchemy import select, func
+    from app.models.student.student import Student
+    from app.common.enums.student import Gender
+
+    fname_lower = filename.lower()
+    if fname_lower.endswith((".xlsx", ".xls")):
+        rows = parse_xlsx_bytes(file_content)
+    elif fname_lower.endswith(".csv"):
+        rows = parse_csv_bytes(file_content)
+    else:
+        return {
+            "total_rows": 0,
+            "valid_rows_count": 0,
+            "invalid_rows_count": 1,
+            "warning_rows_count": 0,
+            "duplicate_candidates": [],
+            "invalid_references": [],
+            "can_commit": False,
+            "rows_preview": [
+                {
+                    "row_number": 0,
+                    "status": "BLOCKING_ERROR",
+                    "admission_number": "",
+                    "first_name": "",
+                    "last_name": "",
+                    "class_name": "",
+                    "section_name": "",
+                    "errors": ["Unsupported format. Upload .csv or .xlsx"],
+                    "warnings": [],
+                }
+            ],
+        }
+
+    if not rows:
+        return {
+            "total_rows": 0,
+            "valid_rows_count": 0,
+            "invalid_rows_count": 1,
+            "warning_rows_count": 0,
+            "duplicate_candidates": [],
+            "invalid_references": [],
+            "can_commit": False,
+            "rows_preview": [
+                {
+                    "row_number": 0,
+                    "status": "BLOCKING_ERROR",
+                    "admission_number": "",
+                    "first_name": "",
+                    "last_name": "",
+                    "class_name": "",
+                    "section_name": "",
+                    "errors": ["File is empty or has no data rows"],
+                    "warnings": [],
+                }
+            ],
+        }
+
+    schema = ENTITY_SCHEMAS["students"]
+    actual_cols = set(rows[0].keys())
+    missing = schema["required"] - actual_cols
+    if missing:
+        return {
+            "total_rows": len(rows),
+            "valid_rows_count": 0,
+            "invalid_rows_count": len(rows),
+            "warning_rows_count": 0,
+            "duplicate_candidates": [],
+            "invalid_references": [f"Missing required columns: {sorted(missing)}"],
+            "can_commit": False,
+            "rows_preview": [],
+        }
+
+    valid_genders = {g.value for g in Gender}
+    seen_admissions = set()
+    duplicate_candidates = set()
+    invalid_references = set()
+
+    rows_preview = []
+    valid_count = 0
+    invalid_count = 0
+    warning_count = 0
+
+    for i, row in enumerate(rows, start=2):
+        row_errors = []
+        row_warnings = []
+
+        fn = row.get("first_name", "").strip()
+        ln = row.get("last_name", "").strip()
+        adm = row.get("admission_number", "").strip()
+        gen = row.get("gender", "").strip().upper()
+        c_name = row.get("class_name", "").strip()
+        s_name = row.get("section_name", "").strip()
+
+        if not fn:
+            row_errors.append("Required field 'first_name' is empty")
+        if not ln:
+            row_errors.append("Required field 'last_name' is empty")
+        if not adm:
+            row_errors.append("Required field 'admission_number' is empty")
+        if not gen:
+            row_errors.append("Required field 'gender' is empty")
+        elif gen not in valid_genders:
+            row_errors.append(f"Invalid gender '{gen}'. Valid: {sorted(valid_genders)}")
+
+        # Check DB duplicate
+        if adm:
+            if adm.lower() in seen_admissions:
+                row_errors.append(f"Duplicate admission number '{adm}' in file batch")
+                duplicate_candidates.add(adm)
+            else:
+                seen_admissions.add(adm.lower())
+                dup_db = db.execute(
+                    select(Student).where(
+                        Student.school_id == school_id,
+                        func.lower(Student.admission_number) == adm.lower(),
+                        Student.is_deleted.is_(False),
+                    )
+                ).scalar_one_or_none()
+                if dup_db:
+                    row_errors.append(f"Admission number '{adm}' already exists in database")
+                    duplicate_candidates.add(adm)
+
+        # Check academic year
+        ay_name = row.get("academic_year_name", "").strip()
+        academic_year = _get_academic_year_by_name(db, school_id, ay_name) if ay_name else _get_current_academic_year(db, school_id)
+        if not academic_year:
+            row_errors.append("No active academic year found in school")
+            invalid_references.add("Academic Year")
+
+        if not row.get("roll_number", "").strip():
+            row_warnings.append("roll_number is empty (will default to admission_number)")
+        if not row.get("parent_phone", "").strip():
+            row_warnings.append("parent_phone is empty (will generate default parent profile)")
+
+        if row_errors:
+            status_val = "BLOCKING_ERROR"
+            invalid_count += 1
+        elif row_warnings:
+            status_val = "WARNING"
+            warning_count += 1
+            valid_count += 1
+        else:
+            status_val = "VALID"
+            valid_count += 1
+
+        rows_preview.append(
+            {
+                "row_number": i,
+                "status": status_val,
+                "admission_number": adm,
+                "first_name": fn,
+                "last_name": ln,
+                "class_name": c_name,
+                "section_name": s_name,
+                "errors": row_errors,
+                "warnings": row_warnings,
+            }
+        )
+
+    return {
+        "total_rows": len(rows),
+        "valid_rows_count": valid_count,
+        "invalid_rows_count": invalid_count,
+        "warning_rows_count": warning_count,
+        "duplicate_candidates": sorted(list(duplicate_candidates)),
+        "invalid_references": sorted(list(invalid_references)),
+        "can_commit": (invalid_count == 0),
+        "rows_preview": rows_preview,
+    }
+
+
+def commit_student_import(
+    db: Session,
+    file_content: bytes,
+    filename: str,
+    school_id: UUID,
+    atomic_mode: bool = True,
+) -> dict:
+    preview = preview_student_import(db, file_content, filename, school_id)
+
+    if atomic_mode and not preview["can_commit"]:
+        return {
+            "success": False,
+            "committed_rows": 0,
+            "skipped_rows": preview["total_rows"],
+            "failed_rows": preview["invalid_rows_count"],
+            "message": f"Atomic commit failed: {preview['invalid_rows_count']} rows have blocking validation errors. 0 students created.",
+            "errors": [
+                {"row_number": r["row_number"], "errors": r["errors"]}
+                for r in preview["rows_preview"] if r["status"] == "BLOCKING_ERROR"
+            ],
+        }
+
+    # Perform atomic or partial import
+    result = ImportResult(entity_type="students")
+    fname_lower = filename.lower()
+    if fname_lower.endswith((".xlsx", ".xls")):
+        rows = parse_xlsx_bytes(file_content)
+    else:
+        rows = parse_csv_bytes(file_content)
+
+    savepoint = db.begin_nested()
+    try:
+        _import_students(db, rows or [], school_id, result)
+        if atomic_mode and result.invalid_rows > 0:
+            savepoint.rollback()
+            return {
+                "success": False,
+                "committed_rows": 0,
+                "skipped_rows": result.total_rows,
+                "failed_rows": result.invalid_rows,
+                "message": "Atomic import failed during database stage. All student creations rolled back.",
+                "errors": [{"row_number": e.row_number, "message": e.message} for e in result.errors],
+            }
+        db.commit()
+    except Exception as exc:
+        savepoint.rollback()
+        logger.exception("Atomic student import exception: %s", exc)
+        return {
+            "success": False,
+            "committed_rows": 0,
+            "skipped_rows": result.total_rows,
+            "failed_rows": result.total_rows,
+            "message": f"Fatal database error during import. All changes rolled back: {exc}",
+            "errors": [{"row_number": 0, "message": str(exc)}],
+        }
+
+    return {
+        "success": True,
+        "committed_rows": result.inserted_rows,
+        "skipped_rows": result.skipped_rows,
+        "failed_rows": result.invalid_rows,
+        "message": f"Successfully onboarded {result.inserted_rows} student records.",
+        "errors": [{"row_number": e.row_number, "message": e.message} for e in result.errors],
+    }
+

@@ -93,3 +93,86 @@ class TeacherSubstitutionFilter(BaseModel):
     end_date: date | None = None
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=10, ge=1, le=100)
+
+
+class SubstituteCandidateRecommendation(BaseModel):
+    """
+    Candidate recommendation for a timetable substitution slot.
+    """
+
+    teacher_id: UUID
+    teacher_name: str
+    employee_id: str
+    qualification: str | None = None
+    specialization: str | None = None
+    score: int
+    match_reasons: list[str] = Field(default_factory=list)
+    is_available: bool = True
+
+
+class SubstituteRecommendationsResponse(BaseModel):
+    """
+    Response containing ranked substitute candidate recommendations.
+    """
+
+    timetable_entry_id: UUID
+    substitution_date: date
+    candidates: list[SubstituteCandidateRecommendation] = Field(default_factory=list)
+
+
+class AffectedTimetableSlotItem(BaseModel):
+    """
+    Affected timetable slot due to teacher absence on a date.
+    """
+
+    timetable_entry_id: UUID
+    timetable_id: UUID
+    class_name: str
+    section_name: str
+    period_slot_name: str
+    start_time: str
+    end_time: str
+    day_of_week: str
+    subject_name: str
+    subject_code: str
+    original_teacher_id: UUID
+    original_teacher_name: str
+    substitution_id: UUID | None = None
+    substitute_teacher_id: UUID | None = None
+    substitute_teacher_name: str | None = None
+    status: str  # "UNASSIGNED" | "ASSIGNED"
+
+
+class AffectedSlotsResponse(BaseModel):
+    """
+    Summary and items response of affected timetable slots for a date.
+    """
+
+    substitution_date: date
+    total_affected_slots: int
+    unassigned_count: int
+    assigned_count: int
+    items: list[AffectedTimetableSlotItem] = Field(default_factory=list)
+
+
+class AutoAssignSubstitutionsRequest(BaseModel):
+    """
+    Request payload for bulk auto-assigning substitutions.
+    """
+
+    substitution_date: date
+    school_class_id: UUID | None = None
+    override_existing: bool = False
+
+
+class AutoAssignSubstitutionsResponse(BaseModel):
+    """
+    Response details for bulk auto-assign execution.
+    """
+
+    substitution_date: date
+    total_unassigned_processed: int
+    assigned_count: int
+    skipped_count: int
+    created_substitutions: list[TeacherSubstitutionDetailResponse] = Field(default_factory=list)
+

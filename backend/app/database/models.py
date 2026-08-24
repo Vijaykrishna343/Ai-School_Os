@@ -37,7 +37,9 @@ from app.models.grading import (
 )
 from app.models.timetable import PeriodSlot, Classroom, Timetable, TimetableEntry, TeacherSubstitution
 from app.models.homework import Homework, HomeworkStatus, HomeworkSubmission, SubmissionStatus
+from app.models.fees import FeePayment, CashSession
 from app.models.document import Document, OwnerType, DocumentStatus, DocumentCategory
+from app.models.background_job import BackgroundJob, JobStatus, JobType
 
 # ==========================
 # Identity Models
@@ -86,4 +88,7 @@ __all__ = [
     "Homework",
     "HomeworkSubmission",
     "Document",
+    "FeePayment",
+    "CashSession",
 ]
+

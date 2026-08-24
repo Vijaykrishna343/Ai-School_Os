@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.common.authorization import enforce_relationship_access
 from app.dependencies import get_db
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.role import IdentityRole
@@ -84,14 +85,23 @@ def list_homework(
     teacher_id: UUID | None = Query(None),
     student_id: UUID | None = Query(None),
     db: Session = Depends(get_db),
-    user_context: tuple[IdentityUser, str] = Depends(get_current_user_with_role),
+    user: IdentityUser = Depends(get_current_user),
 ):
-    user, role_name = user_context
+    allowed_scope = enforce_relationship_access(
+        db=db,
+        school_id=user.school_id,
+        current_user=user,
+        target_student_id=student_id,
+    )
+
+    if isinstance(allowed_scope, list) and len(allowed_scope) == 0:
+        return HomeworkListResponse(items=[], total=0, page=page, page_size=page_size, total_pages=0)
+
     return homework_service.list_homework(
         db=db,
         school_id=user.school_id,
         current_user=user,
-        user_role=role_name,
+        allowed_scope=allowed_scope,
         page=page,
         page_size=page_size,
         school_class_id=school_class_id,
@@ -106,7 +116,7 @@ def list_homework(
 @router.get(
     "/summary",
     response_model=HomeworkSummaryResponse,
-    dependencies=[Depends(require_permission("homework.view"))],
+    dependencies=[Depends(require_permission("homework.create"))],
 )
 def get_homework_summary(
     teacher_id: UUID | None = Query(None),
@@ -245,10 +255,21 @@ def list_homework_submissions(
     db: Session = Depends(get_db),
     user: IdentityUser = Depends(get_current_user),
 ):
+    allowed_scope = enforce_relationship_access(
+        db=db,
+        school_id=user.school_id,
+        current_user=user,
+        target_student_id=None,
+    )
+
+    if isinstance(allowed_scope, list) and len(allowed_scope) == 0:
+        return HomeworkSubmissionListResponse(items=[], total=0, page=page, page_size=page_size, total_pages=0)
+
     return homework_service.list_submissions_for_homework(
         db=db,
         school_id=user.school_id,
         homework_id=homework_id,
+        allowed_scope=allowed_scope,
         page=page,
         page_size=page_size,
     )

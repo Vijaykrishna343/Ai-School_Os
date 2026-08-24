@@ -174,12 +174,18 @@ apiClient.interceptors.response.use(
       errorMessage = 'Internal server error. Please contact your administrator.';
     }
 
+    const correlationId = 
+      (error.response?.headers && (error.response.headers['x-correlation-id'] || error.response.headers['x-request-id']))
+      || data?.error?.correlation_id;
+
     const formattedErr: ApiError = {
       message: errorMessage,
       status: status,
       errors: validationErrors,
+      correlationId: correlationId,
     };
 
     return Promise.reject(formattedErr);
   }
 );
+

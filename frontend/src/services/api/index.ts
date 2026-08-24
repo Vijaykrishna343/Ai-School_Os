@@ -32,4 +32,5 @@ export * from './teacherAttendanceApi';
 export * from './studentCertificatesApi';
 export * from './homeworkApi';
 export * from './documentsApi';
+export * from './jobsApi';
 

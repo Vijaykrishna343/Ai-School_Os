@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.common.authorization import enforce_relationship_access
 from app.dependencies import get_db, get_student_exam_result_service
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.user import IdentityUser
@@ -62,9 +63,55 @@ def get_student_exam_results(
     """
     Retrieve paginated student exam results matching query parameters.
     """
+    allowed_scope = enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=None,
+    )
+
+    effective_student_ids: list[UUID] | None = None
+    effective_student_id: UUID | None = None
+
+    if isinstance(allowed_scope, list):
+        if not allowed_scope:
+            return StudentExamResultListResponse(
+                items=[],
+                total=0,
+                page=page,
+                page_size=page_size,
+                total_pages=0,
+            )
+        if student_id is not None:
+            if student_id in allowed_scope:
+                effective_student_ids = [student_id]
+            else:
+                return StudentExamResultListResponse(
+                    items=[],
+                    total=0,
+                    page=page,
+                    page_size=page_size,
+                    total_pages=0,
+                )
+        else:
+            effective_student_ids = allowed_scope
+    elif isinstance(allowed_scope, UUID):
+        if student_id is not None and student_id != allowed_scope:
+            return StudentExamResultListResponse(
+                items=[],
+                total=0,
+                page=page,
+                page_size=page_size,
+                total_pages=0,
+            )
+        effective_student_ids = [allowed_scope]
+    else:
+        effective_student_id = student_id
+
     filters = StudentExamResultFilter(
         exam_schedule_id=exam_schedule_id,
-        student_id=student_id,
+        student_id=effective_student_id,
+        student_ids=effective_student_ids,
         page=page,
         page_size=page_size,
     )
@@ -73,7 +120,6 @@ def get_student_exam_results(
         filters=filters,
         school_id=current_user.school_id,
     )
-
 
 
 @router.get(
@@ -92,11 +138,20 @@ def get_student_exam_result(
     """
     Retrieve a student exam result by ID.
     """
-    return service.get_student_exam_result(
+    result = service.get_student_exam_result(
         db=db,
         result_id=result_id,
         school_id=current_user.school_id,
     )
+
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=result.student_id,
+    )
+
+    return result
 
 
 @router.put(

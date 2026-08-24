@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.common.authorization import resolve_user_role_names
 from app.common.enums import AttendanceStatus
+from app.common.exceptions import ForbiddenException
 from app.common.responses import ApiResponse
 from app.dependencies import get_db
 from app.identity.dependencies.require_permission import require_permission
@@ -27,6 +29,10 @@ def list_teacher_attendance(
     current_user: IdentityUser = Depends(require_permission("teacher_attendance.view")),
     db: Session = Depends(get_db),
 ) -> dict[str, object]:
+    role_names = resolve_user_role_names(db, current_user)
+    if ("Parent" in role_names or "Student" in role_names) and not current_user.is_super_admin:
+        raise ForbiddenException("Access denied.")
+
     results = teacher_attendance_service.list_attendance(
         db,
         school_id=current_user.school_id,
@@ -45,6 +51,10 @@ def get_teacher_attendance_summary(
     current_user: IdentityUser = Depends(require_permission("teacher_attendance.view")),
     db: Session = Depends(get_db),
 ) -> dict[str, object]:
+    role_names = resolve_user_role_names(db, current_user)
+    if ("Parent" in role_names or "Student" in role_names) and not current_user.is_super_admin:
+        raise ForbiddenException("Access denied.")
+
     summary = teacher_attendance_service.get_summary(
         db,
         school_id=current_user.school_id,

@@ -42,4 +42,25 @@ export const substitutionsApi = {
   deleteSubstitution: async (id: string): Promise<void> => {
     await apiClient.delete(`/teacher-substitutions/${id}`);
   },
+
+  getAffectedSlots: async (date: string, classId?: string): Promise<any> => {
+    return await apiClient.get('/teacher-substitutions/affected-slots', {
+      params: { substitution_date: date, school_class_id: classId || undefined },
+    });
+  },
+
+  getRecommendations: async (entry_id: string, date: string): Promise<any> => {
+    return await apiClient.get('/teacher-substitutions/recommendations', {
+      params: { timetable_entry_id: entry_id, substitution_date: date },
+    });
+  },
+
+  autoAssign: async (date: string, classId?: string, override = false): Promise<any> => {
+    return await apiClient.post('/teacher-substitutions/auto-assign', {
+      substitution_date: date,
+      school_class_id: classId || undefined,
+      override_existing: override,
+    });
+  },
 };
+

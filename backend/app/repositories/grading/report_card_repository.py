@@ -68,6 +68,8 @@ class ReportCardRepository(BaseRepository[ReportCard]):
             query = query.where(ReportCard.section_id == filters.section_id)
         if filters.student_id:
             query = query.where(ReportCard.student_id == filters.student_id)
+        if filters.student_ids is not None:
+            query = query.where(ReportCard.student_id.in_(filters.student_ids))
         if filters.status:
             query = query.where(ReportCard.status == filters.status)
 

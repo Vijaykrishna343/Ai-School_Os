@@ -13,11 +13,15 @@ class ErrorResponse:
         *,
         code: ErrorCode,
         message: str,
+        correlation_id: str | None = None,
     ) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "success": False,
             "error": {
                 "code": code,
                 "message": message,
             },
         }
+        if correlation_id:
+            payload["error"]["correlation_id"] = correlation_id
+        return payload

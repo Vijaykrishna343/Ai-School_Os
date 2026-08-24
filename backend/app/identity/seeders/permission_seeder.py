@@ -196,6 +196,10 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "documents.delete", "module": "documents", "action": "delete", "description": "Delete document"},
     {"name": "documents.verify", "module": "documents", "action": "verify", "description": "Verify or reject document"},
     {"name": "documents.manage", "module": "documents", "action": "manage", "description": "Manage document storage"},
+
+    # Notifications & Announcements
+    {"name": "notification.view", "module": "notification", "action": "view", "description": "View notifications"},
+    {"name": "notification.send", "module": "notification", "action": "send", "description": "Send notifications and announcements"},
 ]
 
 

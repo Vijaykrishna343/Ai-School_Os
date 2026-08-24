@@ -347,19 +347,45 @@ export const TimetablePage: React.FC = () => {
   // ===== Tab 4: Teacher Substitutions =====
   const [subDateFilter, setSubDateFilter] = useState('');
 
+  const targetSubDate = subDateFilter || new Date().toISOString().split('T')[0];
+
   const { data: subsData, refetch: refetchSubs, isError: isSubsError, error: subsError } = useQuery({
-    queryKey: ['ttSubsList', subDateFilter],
+    queryKey: ['ttSubsList', targetSubDate],
     queryFn: () => substitutionsApi.getSubstitutions({
-      substitution_date: subDateFilter || undefined,
+      substitution_date: targetSubDate,
       page_size: 100,
     }),
     enabled: hasPerm('substitution.view') && activeTab === 'substitutions',
   });
 
+  const { data: affectedSlotsData, refetch: refetchAffected } = useQuery({
+    queryKey: ['ttAffectedSlots', targetSubDate],
+    queryFn: () => substitutionsApi.getAffectedSlots(targetSubDate),
+    enabled: hasPerm('substitution.view') && activeTab === 'substitutions',
+  });
+
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [subForm, setSubForm] = useState<Partial<TeacherSubstitutionCreate>>({
-    timetable_entry_id: '', substitution_date: new Date().toISOString().split('T')[0], substitute_teacher_id: '', remarks: '',
+    timetable_entry_id: '', substitution_date: targetSubDate, substitute_teacher_id: '', remarks: '',
   });
+
+  const { data: recsData } = useQuery({
+    queryKey: ['ttRecommendations', subForm.timetable_entry_id, subForm.substitution_date],
+    queryFn: () => substitutionsApi.getRecommendations(subForm.timetable_entry_id!, subForm.substitution_date!),
+    enabled: !!subForm.timetable_entry_id && !!subForm.substitution_date && isSubModalOpen,
+  });
+
+  const handleAutoAssign = async () => {
+    clearMessages();
+    try {
+      const res = await substitutionsApi.autoAssign(targetSubDate);
+      setSuccessMessage(`Auto-assigned ${res.assigned_count} substitute teacher(s) for ${targetSubDate}.`);
+      refetchSubs();
+      refetchAffected();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to auto-assign substitutions.');
+    }
+  };
 
   const handleSaveSub = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,13 +394,14 @@ export const TimetablePage: React.FC = () => {
       await substitutionsApi.createSubstitution({
         school_id: '',
         timetable_entry_id: subForm.timetable_entry_id || '',
-        substitution_date: subForm.substitution_date || '',
+        substitution_date: subForm.substitution_date || targetSubDate,
         substitute_teacher_id: subForm.substitute_teacher_id || '',
         remarks: subForm.remarks || null,
       });
       setSuccessMessage('Substitution recorded successfully.');
       setIsSubModalOpen(false);
       refetchSubs();
+      refetchAffected();
     } catch (err: any) {
       setErrorMessage(err.message || 'Conflict: substitute teacher may already be booked.');
     }
@@ -386,6 +413,7 @@ export const TimetablePage: React.FC = () => {
     try {
       await substitutionsApi.deleteSubstitution(id);
       refetchSubs();
+      refetchAffected();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to delete substitution.');
     }
@@ -666,18 +694,36 @@ export const TimetablePage: React.FC = () => {
       )}
 
       {/* ============================================================= */}
-      {/* TAB 4 — TEACHER SUBSTITUTIONS */}
+      {/* TAB 4 — TEACHER SUBSTITUTIONS & INTELLIGENT ENGINE */}
       {/* ============================================================= */}
       {activeTab === 'substitutions' && (
         <div className="bg-white border border-slate-200 dark:border-slate-800 p-4 rounded-none space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-2">
-            <p className="text-xs font-mono uppercase tracking-wider text-slate-500">TEACHER_SUBSTITUTION_LOG</p>
+            <div>
+              <p className="text-xs font-mono uppercase tracking-wider text-slate-500">INTELLIGENT_SUBSTITUTION_CONSOLE (TEACHER_SUBSTITUTION_LOG)</p>
+              {affectedSlotsData && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant={affectedSlotsData.unassigned_count > 0 ? "error" : "success"}>
+                    {affectedSlotsData.unassigned_count} Unassigned Slot(s)
+                  </Badge>
+                  <Badge variant="default">
+                    {affectedSlotsData.assigned_count} Assigned
+                  </Badge>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center gap-3">
               <Input type="date" value={subDateFilter} onChange={(e) => setSubDateFilter(e.target.value)} className="text-xs" />
               {hasPerm('substitution.create') && (
-                <Button onClick={() => { setSubForm({ timetable_entry_id: '', substitution_date: subDateFilter || new Date().toISOString().split('T')[0], substitute_teacher_id: '', remarks: '' }); setIsSubModalOpen(true); }}>
-                  Record Substitution
-                </Button>
+                <>
+                  <Button variant="secondary" onClick={handleAutoAssign} disabled={!affectedSlotsData || affectedSlotsData.unassigned_count === 0}>
+                    Auto-Assign Substitutes
+                  </Button>
+                  <Button onClick={() => { setSubForm({ timetable_entry_id: '', substitution_date: targetSubDate, substitute_teacher_id: '', remarks: '' }); setIsSubModalOpen(true); }}>
+                    Record Substitution
+                  </Button>
+                </>
               )}
             </div>
           </div>

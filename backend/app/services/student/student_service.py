@@ -661,6 +661,7 @@ class StudentService(
             db=db,
             school_id=filters.school_id,
             parent_id=filters.parent_id,
+            student_ids=filters.student_ids,
             academic_year_id=filters.academic_year_id,
             school_class_id=filters.school_class_id,
             section_id=filters.section_id,

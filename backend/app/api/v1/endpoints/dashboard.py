@@ -4,7 +4,9 @@ Admin Dashboard Summary Endpoints.
 Provides HTTP routes for retrieving admin/principal dashboard summary metrics.
 """
 
-from fastapi import APIRouter, Depends
+from typing import Optional
+from uuid import UUID
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.common.responses import ApiResponse
@@ -67,3 +69,57 @@ def get_teacher_dashboard_summary(
         message="Teacher dashboard summary retrieved successfully.",
         data=summary.model_dump(mode="json"),
     )
+
+
+@router.get(
+    "/parent/summary",
+    response_model=dict,
+    summary="Get Parent Dashboard Summary",
+)
+def get_parent_dashboard_summary(
+    student_id: Optional[UUID] = Query(None, description="Optional target child student ID for multi-child switching"),
+    current_user: IdentityUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    service: DashboardService = Depends(get_dashboard_service),
+) -> dict[str, object]:
+    """
+    Get aggregated portal summary for authenticated parent user.
+    Strictly enforces relationship authorization for target student ID.
+    Handles multi-child switching and zero-child states.
+    """
+    summary = service.get_parent_summary(
+        db,
+        user=current_user,
+        requested_student_id=student_id,
+    )
+
+    return ApiResponse.success(
+        message="Parent dashboard summary retrieved successfully.",
+        data=summary.model_dump(mode="json"),
+    )
+
+
+@router.get(
+    "/student/summary",
+    response_model=dict,
+    summary="Get Student Dashboard Summary",
+)
+def get_student_dashboard_summary(
+    current_user: IdentityUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    service: DashboardService = Depends(get_dashboard_service),
+) -> dict[str, object]:
+    """
+    Get self-service portal summary for authenticated student user.
+    Strictly enforces Student -> Self relationship authorization.
+    """
+    summary = service.get_student_summary(
+        db,
+        user=current_user,
+    )
+
+    return ApiResponse.success(
+        message="Student dashboard summary retrieved successfully.",
+        data=summary.model_dump(mode="json"),
+    )
+

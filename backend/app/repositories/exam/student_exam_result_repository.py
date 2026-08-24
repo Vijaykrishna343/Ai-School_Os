@@ -96,6 +96,11 @@ class StudentExamResultRepository(BaseRepository[StudentExamResult]):
                 StudentExamResult.student_id == filters.student_id
             )
 
+        if filters.student_ids is not None:
+            query = query.where(
+                StudentExamResult.student_id.in_(filters.student_ids)
+            )
+
         total = (
             db.scalar(select(func.count()).select_from(query.subquery()))
             or 0

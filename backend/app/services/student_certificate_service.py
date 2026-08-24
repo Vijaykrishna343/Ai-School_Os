@@ -158,9 +158,10 @@ class StudentCertificateService:
         student_id: UUID | None = None,
         page: int = 1,
         page_size: int = 20,
+        allowed_scope: UUID | list[UUID] | None = None,
     ) -> StudentCertificateListResponse:
         """
-        List issued tenant certificates with pagination.
+        List issued tenant certificates with pagination and relationship scoping.
         """
         stmt = (
             select(StudentCertificate)
@@ -169,10 +170,33 @@ class StudentCertificateService:
                 StudentCertificate.is_deleted.is_(False),
             )
         )
+
+        # Scoping based on allowed_scope from enforce_relationship_access
+        if isinstance(allowed_scope, list):
+            # Parent user scope (linked student IDs)
+            if not allowed_scope:
+                stmt = stmt.where(StudentCertificate.id.is_(None))
+            else:
+                stmt = stmt.where(StudentCertificate.student_id.in_(allowed_scope))
+                if student_id:
+                    if student_id in allowed_scope:
+                        stmt = stmt.where(StudentCertificate.student_id == student_id)
+                    else:
+                        stmt = stmt.where(StudentCertificate.id.is_(None))
+
+        elif isinstance(allowed_scope, UUID):
+            # Student user scope (authenticated student ID)
+            stmt = stmt.where(StudentCertificate.student_id == allowed_scope)
+            if student_id and student_id != allowed_scope:
+                stmt = stmt.where(StudentCertificate.id.is_(None))
+
+        else:
+            # Staff / Admin operational access
+            if student_id:
+                stmt = stmt.where(StudentCertificate.student_id == student_id)
+
         if certificate_type:
             stmt = stmt.where(StudentCertificate.certificate_type == certificate_type)
-        if student_id:
-            stmt = stmt.where(StudentCertificate.student_id == student_id)
 
         total_stmt = select(func.count()).select_from(stmt.subquery())
         total = db.scalar(total_stmt) or 0

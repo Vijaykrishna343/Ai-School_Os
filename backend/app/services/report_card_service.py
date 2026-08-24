@@ -48,6 +48,13 @@ from app.repositories.student.student_repository import (
     student_repository,
 )
 from app.schemas.grading.report_card import (
+    BatchReportCardBatchFinalizeRequest,
+    BatchReportCardBatchFinalizeResponse,
+    BatchReportCardBatchGenerateRequest,
+    BatchReportCardBatchGenerateResponse,
+    BatchReportCardPreviewRequest,
+    BatchReportCardPreviewResponse,
+    BatchStudentStatusItem,
     ReportCardFilter,
     ReportCardGenerateRequest,
     ReportCardListResponse,
@@ -410,5 +417,265 @@ class ReportCardService:
         logger.info("Report card ID: %s published by user ID: %s", report_card_id, current_user_id)
         return updated
 
+    def preview_batch_report_cards(
+        self,
+        db: Session,
+        request_data: BatchReportCardPreviewRequest,
+        current_school_id: UUID,
+    ) -> BatchReportCardPreviewResponse:
+        school_id = current_school_id
+        ay = self.academic_year_repository.get(db, request_data.academic_year_id)
+        if not ay or ay.school_id != school_id or ay.is_deleted:
+            raise NotFoundException("Academic Year", str(request_data.academic_year_id))
+
+        term = None
+        if request_data.academic_term_id:
+            term = self.academic_term_repository.get(db, request_data.academic_term_id)
+            if not term or term.school_id != school_id or term.is_deleted:
+                raise NotFoundException("Academic Term", str(request_data.academic_term_id))
+
+        # Fetch section students
+        query = select(Student).where(
+            Student.school_id == school_id,
+            Student.school_class_id == request_data.school_class_id,
+            Student.section_id == request_data.section_id,
+            Student.is_deleted.is_(False),
+        ).order_by(Student.roll_number, Student.last_name, Student.first_name)
+        students = list(db.scalars(query))
+
+        if not students:
+            return BatchReportCardPreviewResponse(
+                total_students=0, eligible_count=0, missing_data_count=0, draft_count=0, finalized_count=0, items=[]
+            )
+
+        student_ids = [s.id for s in students]
+
+        # Fetch existing report cards
+        existing_cards_stmt = select(ReportCard).where(
+            ReportCard.school_id == school_id,
+            ReportCard.academic_year_id == ay.id,
+            ReportCard.student_id.in_(student_ids),
+            ReportCard.is_deleted.is_(False),
+        )
+        if term:
+            existing_cards_stmt = existing_cards_stmt.where(ReportCard.academic_term_id == term.id)
+        else:
+            existing_cards_stmt = existing_cards_stmt.where(ReportCard.academic_term_id.is_(None))
+
+        existing_cards_map: dict[UUID, ReportCard] = {c.student_id: c for c in db.scalars(existing_cards_stmt)}
+
+        # Fetch exam schedules
+        schedule_query = (
+            select(ExamSchedule)
+            .options(joinedload(ExamSchedule.exam), joinedload(ExamSchedule.subject))
+            .join(Exam, ExamSchedule.exam_id == Exam.id)
+            .where(
+                ExamSchedule.school_id == school_id,
+                ExamSchedule.academic_year_id == ay.id,
+                ExamSchedule.section_id == request_data.section_id,
+                ExamSchedule.is_deleted.is_(False),
+                Exam.is_deleted.is_(False),
+            )
+        )
+        if term:
+            schedule_query = schedule_query.where(
+                (Exam.academic_term_id == term.id)
+                | (
+                    Exam.academic_term_id.is_(None)
+                    & (Exam.start_date >= term.start_date)
+                    & (Exam.end_date <= term.end_date)
+                )
+            )
+        schedules = list(db.scalars(schedule_query))
+        schedule_ids = [sch.id for sch in schedules]
+
+        results_map: dict[tuple[UUID, UUID], StudentExamResult] = {}
+        if schedule_ids:
+            results_stmt = select(StudentExamResult).where(
+                StudentExamResult.student_id.in_(student_ids),
+                StudentExamResult.exam_schedule_id.in_(schedule_ids),
+                StudentExamResult.is_deleted.is_(False),
+            )
+            for res in db.scalars(results_stmt):
+                results_map[(res.student_id, res.exam_schedule_id)] = res
+
+        items: list[BatchStudentStatusItem] = []
+        eligible_count = 0
+        missing_data_count = 0
+        draft_count = 0
+        finalized_count = 0
+
+        for student in students:
+            card = existing_cards_map.get(student.id)
+            full_name = f"{student.first_name} {student.last_name}".strip()
+            if card:
+                if card.status in (ReportCardStatus.FINALIZED, ReportCardStatus.PUBLISHED):
+                    st = "FINALIZED"
+                    finalized_count += 1
+                else:
+                    st = "DRAFT"
+                    draft_count += 1
+                items.append(
+                    BatchStudentStatusItem(
+                        student_id=student.id,
+                        student_name=full_name,
+                        roll_number=student.roll_number,
+                        admission_number=student.admission_number,
+                        status=st,
+                        missing_exams=[],
+                        report_card_id=card.id,
+                    )
+                )
+            else:
+                missing_exams = []
+                for sch in schedules:
+                    if (student.id, sch.id) not in results_map:
+                        subj_name = getattr(sch.subject, "subject_name", getattr(sch.subject, "name", "Subject"))
+                        missing_exams.append(f"{sch.exam.name} - {subj_name}")
+
+                if missing_exams:
+                    st = "MISSING_DATA"
+                    missing_data_count += 1
+                else:
+                    st = "ELIGIBLE"
+                    eligible_count += 1
+
+                items.append(
+                    BatchStudentStatusItem(
+                        student_id=student.id,
+                        student_name=full_name,
+                        roll_number=student.roll_number,
+                        admission_number=student.admission_number,
+                        status=st,
+                        missing_exams=missing_exams,
+                        report_card_id=None,
+                    )
+                )
+
+        return BatchReportCardPreviewResponse(
+            total_students=len(students),
+            eligible_count=eligible_count,
+            missing_data_count=missing_data_count,
+            draft_count=draft_count,
+            finalized_count=finalized_count,
+            items=items,
+        )
+
+    def batch_generate_report_cards(
+        self,
+        db: Session,
+        request_data: BatchReportCardBatchGenerateRequest,
+        current_school_id: UUID,
+    ) -> BatchReportCardBatchGenerateResponse:
+        gen_req = ReportCardGenerateRequest(
+            school_id=current_school_id,
+            academic_year_id=request_data.academic_year_id,
+            academic_term_id=request_data.academic_term_id,
+            school_class_id=request_data.school_class_id,
+            section_id=request_data.section_id,
+        )
+
+        preview = self.preview_batch_report_cards(
+            db,
+            BatchReportCardPreviewRequest(
+                school_class_id=request_data.school_class_id,
+                section_id=request_data.section_id,
+                academic_year_id=request_data.academic_year_id,
+                academic_term_id=request_data.academic_term_id,
+            ),
+            current_school_id,
+        )
+
+        cards = self.generate_report_cards(
+            db,
+            request_data=gen_req,
+            current_school_id=current_school_id,
+        )
+
+        items: list[BatchStudentStatusItem] = []
+        generated_count = 0
+        updated_count = 0
+        skipped_finalized = preview.finalized_count
+
+        card_map = {c.student_id: c for c in cards}
+
+        for prev_item in preview.items:
+            if prev_item.status == "FINALIZED":
+                items.append(prev_item)
+            elif prev_item.student_id in card_map:
+                c = card_map[prev_item.student_id]
+                if prev_item.report_card_id:
+                    updated_count += 1
+                else:
+                    generated_count += 1
+                items.append(
+                    BatchStudentStatusItem(
+                        student_id=prev_item.student_id,
+                        student_name=prev_item.student_name,
+                        roll_number=prev_item.roll_number,
+                        admission_number=prev_item.admission_number,
+                        status="DRAFT",
+                        missing_exams=[],
+                        report_card_id=c.id,
+                    )
+                )
+            else:
+                items.append(prev_item)
+
+        return BatchReportCardBatchGenerateResponse(
+            total_processed=preview.total_students,
+            generated_count=generated_count,
+            updated_count=updated_count,
+            skipped_finalized_count=skipped_finalized,
+            missing_data_count=preview.missing_data_count,
+            items=items,
+        )
+
+    def batch_finalize_report_cards(
+        self,
+        db: Session,
+        request_data: BatchReportCardBatchFinalizeRequest,
+        current_user_id: UUID,
+        current_school_id: UUID,
+    ) -> BatchReportCardBatchFinalizeResponse:
+        school_id = current_school_id
+        stmt = select(ReportCard).where(
+            ReportCard.school_id == school_id,
+            ReportCard.school_class_id == request_data.school_class_id,
+            ReportCard.section_id == request_data.section_id,
+            ReportCard.academic_year_id == request_data.academic_year_id,
+            ReportCard.is_deleted.is_(False),
+        )
+        if request_data.academic_term_id:
+            stmt = stmt.where(ReportCard.academic_term_id == request_data.academic_term_id)
+
+        if request_data.report_card_ids:
+            stmt = stmt.where(ReportCard.id.in_(request_data.report_card_ids))
+
+        cards = list(db.scalars(stmt))
+        finalized_count = 0
+        already_finalized_count = 0
+        skipped_count = 0
+
+        for card in cards:
+            if card.status == ReportCardStatus.DRAFT:
+                card.status = ReportCardStatus.FINALIZED
+                card.finalized_at = datetime.now(timezone.utc)
+                card.finalized_by_user_id = current_user_id
+                self.repository.update(db, card)
+                finalized_count += 1
+            elif card.status in (ReportCardStatus.FINALIZED, ReportCardStatus.PUBLISHED):
+                already_finalized_count += 1
+            else:
+                skipped_count += 1
+
+        return BatchReportCardBatchFinalizeResponse(
+            total_processed=len(cards),
+            finalized_count=finalized_count,
+            already_finalized_count=already_finalized_count,
+            skipped_count=skipped_count,
+        )
+
 
 report_card_service = ReportCardService()
+

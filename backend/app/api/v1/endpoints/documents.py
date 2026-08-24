@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile,
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.common.authorization import enforce_relationship_access
 from app.dependencies import get_db
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.role import IdentityRole
@@ -89,11 +90,31 @@ def list_documents(
     user_context: tuple[IdentityUser, str] = Depends(get_current_user_with_role),
 ):
     user, role_name = user_context
+
+    # Enforce relationship access via central primitive
+    target_student_id = owner_id if owner_type == OwnerType.STUDENT else None
+    allowed_scope = enforce_relationship_access(
+        db=db,
+        school_id=user.school_id,
+        current_user=user,
+        target_student_id=target_student_id,
+    )
+
+    if isinstance(allowed_scope, list) and len(allowed_scope) == 0:
+        return DocumentListResponse(
+            items=[],
+            total=0,
+            page=page,
+            page_size=page_size,
+            pages=0,
+        )
+
     return document_service.list_documents(
         db=db,
         school_id=user.school_id,
         current_user=user,
         user_role=role_name,
+        allowed_scope=allowed_scope,
         page=page,
         page_size=page_size,
         owner_type=owner_type,
@@ -106,7 +127,7 @@ def list_documents(
 @router.get(
     "/summary",
     response_model=DocumentSummaryResponse,
-    dependencies=[Depends(require_permission("documents.view"))],
+    dependencies=[Depends(require_permission("documents.update"))],
 )
 def get_document_summary(
     db: Session = Depends(get_db),

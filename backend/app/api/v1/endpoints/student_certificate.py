@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
+from app.common.authorization import enforce_relationship_access
 from app.common.responses import ApiResponse
 from app.dependencies import get_db
 from app.identity.dependencies.require_permission import require_permission
@@ -12,6 +13,7 @@ from app.models.student.student_certificate import CertificateType
 from app.schemas.student.student_certificate import (
     StudentCertificateCreateTC,
     StudentCertificateCreateBonafide,
+    StudentCertificateListResponse,
 )
 from app.services.student_certificate_service import student_certificate_service
 
@@ -67,6 +69,26 @@ def list_certificates(
     current_user: IdentityUser = Depends(require_permission("student.tc.view")),
     db: Session = Depends(get_db),
 ) -> dict[str, object]:
+    allowed_scope = enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=student_id,
+    )
+
+    if isinstance(allowed_scope, list) and len(allowed_scope) == 0:
+        empty_res = StudentCertificateListResponse(
+            items=[],
+            total=0,
+            page=page,
+            page_size=page_size,
+            total_pages=0,
+        )
+        return ApiResponse.success(
+            message="Certificates history retrieved successfully.",
+            data=empty_res.model_dump(mode="json"),
+        )
+
     result = student_certificate_service.list_certificates(
         db,
         school_id=current_user.school_id,
@@ -74,6 +96,7 @@ def list_certificates(
         student_id=student_id,
         page=page,
         page_size=page_size,
+        allowed_scope=allowed_scope,
     )
     return ApiResponse.success(
         message="Certificates history retrieved successfully.",
@@ -92,6 +115,12 @@ def get_certificate(
         school_id=current_user.school_id,
         certificate_id=certificate_id,
     )
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=result.student_id,
+    )
     return ApiResponse.success(
         message="Certificate details retrieved successfully.",
         data=result.model_dump(mode="json"),
@@ -104,9 +133,24 @@ def get_certificate_print_view(
     current_user: IdentityUser = Depends(require_permission("student.tc.view")),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
+    cert_details = student_certificate_service.get_certificate(
+        db,
+        school_id=current_user.school_id,
+        certificate_id=certificate_id,
+    )
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=cert_details.student_id,
+    )
     html_content = student_certificate_service.get_printable_html(
         db,
         school_id=current_user.school_id,
         certificate_id=certificate_id,
     )
-    return HTMLResponse(content=html_content, status_code=status.HTTP_200_OK)
+    headers = {
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    }
+    return HTMLResponse(content=html_content, status_code=status.HTTP_200_OK, headers=headers)

@@ -54,7 +54,7 @@ def create_school_and_user(db, school_name, school_code, permissions_list):
     role = IdentityRole(
         id=uuid.uuid4(),
         school_id=school.id,
-        name=f"ROLE_RC_{uuid.uuid4().hex[:6]}",
+        name=f"Role_RC_{uuid.uuid4().hex[:6]}",
         description="RC Role",
         is_system=False,
     )

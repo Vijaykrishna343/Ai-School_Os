@@ -489,6 +489,7 @@ class FeeService:
         student_id: UUID | None = None,
         fee_structure_id: UUID | None = None,
         status: StudentFeeAssignmentStatus | None = None,
+        student_ids: list[UUID] | None = None,
         page: int = 1,
         page_size: int = 10,
     ) -> StudentFeeAssignmentListResponse:
@@ -499,6 +500,7 @@ class FeeService:
             student_id=student_id,
             fee_structure_id=fee_structure_id,
             status=status,
+            student_ids=student_ids,
             page=page,
             page_size=page_size,
         )

@@ -11,6 +11,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.common.authorization import enforce_relationship_access
 from app.common.enums import AttendanceStatus
 from app.common.responses import ApiResponse
 from app.dependencies import get_attendance_service, get_db
@@ -103,12 +104,67 @@ def list_attendance(
     """
     Retrieve paginated attendance records filtered by section, class, student, date, or status.
     """
+    allowed_scope = enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=None,
+    )
+
+    effective_student_ids: list[UUID] | None = None
+    effective_student_id: UUID | None = None
+
+    if isinstance(allowed_scope, list):
+        if not allowed_scope:
+            return ApiResponse.success(
+                data={
+                    "items": [],
+                    "total": 0,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": 0,
+                },
+                message="Attendance records retrieved successfully.",
+            )
+        if student_id is not None:
+            if student_id in allowed_scope:
+                effective_student_ids = [student_id]
+            else:
+                return ApiResponse.success(
+                    data={
+                        "items": [],
+                        "total": 0,
+                        "page": page,
+                        "page_size": page_size,
+                        "total_pages": 0,
+                    },
+                    message="Attendance records retrieved successfully.",
+                )
+        else:
+            effective_student_ids = allowed_scope
+    elif isinstance(allowed_scope, UUID):
+        if student_id is not None and student_id != allowed_scope:
+            return ApiResponse.success(
+                data={
+                    "items": [],
+                    "total": 0,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": 0,
+                },
+                message="Attendance records retrieved successfully.",
+            )
+        effective_student_ids = [allowed_scope]
+    else:
+        effective_student_id = student_id
+
     items, total, total_pages = service.list_attendance(
         db,
         current_user=current_user,
         section_id=section_id,
         school_class_id=school_class_id,
-        student_id=student_id,
+        student_id=effective_student_id,
+        student_ids=effective_student_ids,
         attendance_date=attendance_date,
         status=status,
         page=page,
@@ -147,6 +203,13 @@ def get_attendance(
         db,
         current_user=current_user,
         attendance_id=attendance_id,
+    )
+
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=attendance.student_id,
     )
 
     return ApiResponse.success(

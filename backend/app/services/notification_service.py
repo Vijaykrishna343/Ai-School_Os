@@ -247,5 +247,73 @@ class NotificationService:
             template_variables={"title": title, "message": message},
         )
 
+    def get_delivery_metrics(
+
+        self,
+        db: Session,
+        school_id: UUID,
+    ) -> dict[str, any]:
+        """
+        Get structured delivery metrics for notifications within a school tenant.
+        """
+        total = db.query(Notification).filter(Notification.school_id == school_id).count()
+        sent_count = db.query(Notification).filter(
+            Notification.school_id == school_id,
+            Notification.status == NotificationStatus.SENT,
+        ).count()
+        failed_count = db.query(Notification).filter(
+            Notification.school_id == school_id,
+            Notification.status == NotificationStatus.FAILED,
+        ).count()
+        pending_count = db.query(Notification).filter(
+            Notification.school_id == school_id,
+            Notification.status == NotificationStatus.PENDING,
+        ).count()
+
+        failure_rate = round((failed_count / total * 100), 2) if total > 0 else 0.0
+
+        return {
+            "total_notifications": total,
+            "sent_count": sent_count,
+            "failed_count": failed_count,
+            "pending_count": pending_count,
+            "failure_rate_percent": failure_rate,
+        }
+
+    def retry_failed_notification(
+        self,
+        db: Session,
+        school_id: UUID,
+        notification_id: UUID,
+    ) -> Notification:
+        """
+        Retries dispatching a previously FAILED or PENDING notification within a school tenant.
+        """
+        from app.common.exceptions import NotFoundException
+        notification = db.query(Notification).filter(
+            Notification.id == notification_id,
+            Notification.school_id == school_id,
+        ).first()
+
+        if not notification:
+            raise NotFoundException("Notification not found.")
+
+        provider = self._get_provider(notification.channel)
+        try:
+            status, error = provider.send(notification)
+            notification.status = status
+            notification.error_message = error
+            if status == NotificationStatus.SENT:
+                notification.sent_at = datetime.now(timezone.utc)
+        except Exception as exc:
+            logger.exception("Notification retry dispatch error: %s", exc)
+            notification.status = NotificationStatus.FAILED
+            notification.error_message = str(exc)
+
+        db.flush()
+        return notification
+
 
 notification_service = NotificationService()
+
+

@@ -64,6 +64,7 @@ class StudentExamResultFilter(BaseModel):
 
     exam_schedule_id: UUID | None = None
     student_id: UUID | None = None
+    student_ids: list[UUID] | None = None
     school_id: UUID | None = None
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=10, ge=1, le=100)

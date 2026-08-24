@@ -11,6 +11,11 @@ from fastapi import UploadFile
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
+from app.common.authorization import (
+    enforce_relationship_access,
+    resolve_parent_linked_student_ids,
+    resolve_student_id_for_user,
+)
 from app.common.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.identity.models.user import IdentityUser
 from app.models.audit_log import AuditLog
@@ -85,20 +90,8 @@ class DocumentService:
             if owner_type != OwnerType.STUDENT:
                 raise ForbiddenException("Parents can only access student documents.")
 
-            parent = db.scalar(
-                select(Parent).where(Parent.email == current_user.email, Parent.school_id == school_id)
-            )
-            if not parent:
-                raise ForbiddenException("Parent profile not found for current user.")
-
-            child = db.scalar(
-                select(Student).where(
-                    Student.id == owner_id,
-                    Student.parent_id == parent.id,
-                    Student.school_id == school_id,
-                )
-            )
-            if not child:
+            linked_student_ids = resolve_parent_linked_student_ids(db, school_id, current_user)
+            if not linked_student_ids or owner_id not in linked_student_ids:
                 raise ForbiddenException("Access denied. You can only access documents belonging to your children.")
             return
 
@@ -107,10 +100,8 @@ class DocumentService:
             if owner_type != OwnerType.STUDENT:
                 raise ForbiddenException("Students can only access student documents.")
 
-            student = db.scalar(
-                select(Student).where(Student.email == current_user.email, Student.school_id == school_id)
-            )
-            if not student or student.id != owner_id:
+            authenticated_student_id = resolve_student_id_for_user(db, school_id, current_user)
+            if not authenticated_student_id or authenticated_student_id != owner_id:
                 raise ForbiddenException("Access denied. You can only access your own documents.")
             return
 
@@ -225,6 +216,7 @@ class DocumentService:
         school_id: UUID,
         current_user: IdentityUser,
         user_role: str,
+        allowed_scope: UUID | list[UUID] | None = None,
         page: int = 1,
         page_size: int = 20,
         owner_type: OwnerType | None = None,
@@ -241,30 +233,36 @@ class DocumentService:
             Document.is_current.is_(True),
         )
 
-        # Apply Parent / Student relationship scoping
-        if user_role == "Parent":
-            parent = db.scalar(
-                select(Parent).where(Parent.email == current_user.email, Parent.school_id == school_id)
-            )
-            if parent:
-                children = db.scalars(
-                    select(Student).where(Student.parent_id == parent.id, Student.school_id == school_id)
-                ).all()
-                child_ids = [c.id for c in children]
-                stmt = stmt.where(Document.owner_type == OwnerType.STUDENT, Document.owner_id.in_(child_ids))
-            else:
+        # Scoping based on allowed_scope from enforce_relationship_access
+        if isinstance(allowed_scope, list):
+            # Parent user scope (linked student IDs)
+            if not allowed_scope or (owner_type and owner_type != OwnerType.STUDENT):
                 stmt = stmt.where(Document.id.is_(None))
+            else:
+                stmt = stmt.where(
+                    Document.owner_type == OwnerType.STUDENT,
+                    Document.owner_id.in_(allowed_scope),
+                )
+                if owner_id:
+                    if owner_id in allowed_scope:
+                        stmt = stmt.where(Document.owner_id == owner_id)
+                    else:
+                        stmt = stmt.where(Document.id.is_(None))
 
-        elif user_role == "Student":
-            student = db.scalar(
-                select(Student).where(Student.email == current_user.email, Student.school_id == school_id)
-            )
-            if student:
-                stmt = stmt.where(Document.owner_type == OwnerType.STUDENT, Document.owner_id == student.id)
-            else:
+        elif isinstance(allowed_scope, UUID):
+            # Student user scope (authenticated student ID)
+            if owner_type and owner_type != OwnerType.STUDENT:
                 stmt = stmt.where(Document.id.is_(None))
+            else:
+                stmt = stmt.where(
+                    Document.owner_type == OwnerType.STUDENT,
+                    Document.owner_id == allowed_scope,
+                )
+                if owner_id and owner_id != allowed_scope:
+                    stmt = stmt.where(Document.id.is_(None))
 
         else:
+            # Staff / Admin operational access
             if owner_type:
                 stmt = stmt.where(Document.owner_type == owner_type)
             if owner_id:

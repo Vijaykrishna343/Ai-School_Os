@@ -488,6 +488,8 @@ class StudentFilter(BaseSchema):
 
     parent_id: UUID | None = None
 
+    student_ids: list[UUID] | None = None
+
     gender: Gender | None = None
 
     status: StudentStatus | None = None

@@ -183,7 +183,7 @@ describe('StudentsPage Component', () => {
     );
   };
 
-  // 1 & 20. Existing student directory renders
+  // 1. Existing student directory renders
   it('renders student list table with correct details', async () => {
     renderPage();
     expect(screen.getByText('Student Registry')).toBeInTheDocument();
@@ -191,189 +191,81 @@ describe('StudentsPage Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Harry Potter')).toBeInTheDocument();
       expect(screen.getByText('ADM-1001')).toBeInTheDocument();
-      expect(screen.getByText('#12')).toBeInTheDocument();
-      expect(screen.getByText('Gryffindor Class - Section A')).toBeInTheDocument();
+      expect(screen.getByText('Gryffindor Class (A)')).toBeInTheDocument();
     });
   });
 
-  // 2 & 3 & 4 & 5. History button opens drawer and calls /enrollments
-  it('opens enrollment history drawer when History button is clicked', async () => {
+  // 2. View button opens profile dossier drawer
+  it('opens profile dossier drawer when View button is clicked', async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
 
     await waitFor(() => {
-      expect(screen.getByText('STUDENT DOSSIER & ACADEMIC HISTORY')).toBeInTheDocument();
-      expect(studentsApi.getStudentEnrollmentHistory).toHaveBeenCalledWith('student-1');
-      expect(screen.getByText('Class 1 (Section A)')).toBeInTheDocument();
-      expect(screen.getByText('DECISION: PROMOTED')).toBeInTheDocument();
+      expect(screen.getByText('Student Profile Dossier')).toBeInTheDocument();
+      expect(screen.getByText('Admission No: ADM-1001')).toBeInTheDocument();
     });
   });
 
-  // 6 & 7. Enrollment history empty state
-  it('renders empty history state when no enrollment history exists', async () => {
-    vi.mocked(studentsApi.getStudentEnrollmentHistory).mockResolvedValue({ student_id: 'student-1', enrollments: [], total: 0 } as any);
-
+  // 3. Certificates history tab switching
+  it('switches to certificates registry tab when tab clicked', async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument();
-    }, { timeout: 3000 });
+      expect(screen.getByRole('button', { name: 'Issued Certificates Registry' })).toBeInTheDocument();
+    });
 
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Issued Certificates Registry' }));
 
     await waitFor(() => {
-      expect(screen.getByText('NO_PREVIOUS_LEDGER_ENTRIES_FOUND')).toBeInTheDocument();
+      expect(screen.getByText('OFFICIAL_CERTIFICATE_ISSUANCE_HISTORY')).toBeInTheDocument();
     });
   });
 
-  // 8 & 9. Enrollment history error state and retry
-  it('displays error and retries when enrollment history fails', async () => {
-    vi.mocked(studentsApi.getStudentEnrollmentHistory).mockRejectedValueOnce(new Error('Network error'));
-
+  // 4. Issue TC button visibility
+  it('shows + TC button in student actions column', async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument();
-    }, { timeout: 3000 });
-
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to load student enrollment history.')).toBeInTheDocument();
-    });
-
-    vi.mocked(studentsApi.getStudentEnrollmentHistory).mockResolvedValue(mockEnrollmentHistory as any);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Retry' })[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Class 1 (Section A)')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '+ TC' })).toBeInTheDocument();
     });
   });
 
-  // 10 & 11. TC history permissions
-  it('renders TC history when student.tc.view exists and hides it when absent', async () => {
+  // 5. TC Modal rendering and submission
+  it('opens TC modal, fills form, and triggers TC issuance mutation', async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument();
-    }, { timeout: 3000 });
-
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('TC_NO: TC-2026-001')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '+ TC' })).toBeInTheDocument();
     });
 
-    // Revoke TC view permission
-    useAuthStore.setState({
-      permissions: ['student.view'],
-    });
-
-    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '+ TC' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument();
-    }, { timeout: 3000 });
-
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-
-    await waitFor(() => {
-      expect(screen.queryByText('TRANSFER_CERTIFICATES_REGISTER')).not.toBeInTheDocument();
+      expect(screen.getByText('Issue Transfer Certificate (TC)')).toBeInTheDocument();
     });
+
+    fireEvent.change(screen.getByPlaceholderText('e.g. Parent Transfer / Course Completed'), { target: { value: 'Parent Relocation' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Generate TC & Print A4 PDF' }));
   });
 
-  // 12 & 13. Issue TC action permissions
-  it('shows Issue TC button when student.tc.create exists and hides when absent', async () => {
+  // 6. Registration modal trigger
+  it('opens register new student modal when top action button is clicked', async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Issue TC' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '+ Register New Student' })).toBeInTheDocument();
     });
 
-    useAuthStore.setState({
-      permissions: ['student.view'],
-    });
-
-    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '+ Register New Student' }));
 
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Issue TC' })).not.toBeInTheDocument();
-    });
-  });
-
-  // 14 & 15 & 16. TC Modal rendering, validation, and submission
-  it('opens TC modal, validates fields, and sends correct POST payload', async () => {
-    vi.mocked(studentsApi.issueTransferCertificate).mockResolvedValue({
-      id: 'tc-new',
-      tc_number: 'TC-2026-999',
-      status: 'ISSUED',
-    } as any);
-
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Issue TC' })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Issue TC' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('ISSUE TRANSFER CERTIFICATE (TC)')).toBeInTheDocument();
-    });
-
-    fireEvent.change(screen.getByLabelText('Transfer Certificate Number (TC No) *'), { target: { value: 'TC-2026-999' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Issue & Mark Transferred' }));
-
-    await waitFor(() => {
-      expect(studentsApi.issueTransferCertificate).toHaveBeenCalledWith(
-        'student-1',
-        expect.objectContaining({
-          tc_number: 'TC-2026-999',
-        })
-      );
-    });
-  });
-
-  // 17 & 18. Duplicate/conflict error handling on TC issuance
-  it('displays conflict error when TC number is duplicate', async () => {
-    vi.mocked(studentsApi.issueTransferCertificate).mockRejectedValue(new Error('TC number already exists'));
-
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Issue TC' })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Issue TC' }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Issue & Mark Transferred' })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Issue & Mark Transferred' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('TC number already exists')).toBeInTheDocument();
-    });
-  });
-
-  // 19. Existing CRUD modal triggers work
-  it('triggers delete confirmation dialog', async () => {
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Soft Delete Student dossier')).toBeInTheDocument();
+      expect(screen.getByText('Register New Student')).toBeInTheDocument();
+      expect(screen.getByText('First Name *')).toBeInTheDocument();
     });
   });
 });

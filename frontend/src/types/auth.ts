@@ -11,6 +11,7 @@ export interface User {
   is_super_admin?: boolean;
   is_verified?: boolean;
   last_login?: string | null;
+  roles?: UserRole[];
 }
 
 

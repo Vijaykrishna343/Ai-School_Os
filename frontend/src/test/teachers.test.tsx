@@ -153,9 +153,9 @@ describe('TeachersPage Component', () => {
     const addButton = screen.getByText('+ Register New Staff');
     fireEvent.click(addButton);
 
-    expect(screen.getByText('Add New Teacher')).toBeInTheDocument();
+    expect(screen.getByText('Register New Staff Member')).toBeInTheDocument();
     expect(screen.getByLabelText(/First Name \*/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Emergency Contact/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Qualification \*/i)).toBeInTheDocument();
   });
 
   it('opens edit modal when clicking edit button on a row', async () => {
@@ -174,13 +174,13 @@ describe('TeachersPage Component', () => {
 
     fireEvent.click(screen.getByText('Edit'));
 
-    expect(screen.getByText('Edit Teacher — EMP-9999')).toBeInTheDocument();
+    expect(screen.getByText('Edit Teacher Record')).toBeInTheDocument();
     // Verify prefilled value
     const firstNameInput = screen.getByLabelText(/First Name \*/i) as HTMLInputElement;
     expect(firstNameInput.value).toBe('Albus');
     
-    // Status dropdown should exist in edit mode
-    expect(screen.getByLabelText(/Employment Status \*/i)).toBeInTheDocument();
+    // Qualification input should exist in edit mode
+    expect(screen.getByLabelText(/Qualification \*/i)).toBeInTheDocument();
   });
 
   it('opens dossier when clicking view button on a row', async () => {
@@ -200,7 +200,7 @@ describe('TeachersPage Component', () => {
     fireEvent.click(screen.getByText('View'));
 
     expect(screen.getByText('Teacher Comprehensive Profile')).toBeInTheDocument();
-    expect(screen.getByText('albus@hogwarts.edu')).toBeInTheDocument();
+    expect(screen.getAllByText('albus@hogwarts.edu')[0]).toBeInTheDocument();
   });
 
   it('opens delete confirmation modal when clicking delete button', async () => {

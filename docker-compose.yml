@@ -8,11 +8,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ENVIRONMENT=production
-      - DEBUG=False
-      - DATABASE_URL=postgresql://school_user:SecureProdPassword123%21@db:5432/school_erp
-      - SECRET_KEY=a_very_secure_and_random_production_secret_key_1234567890
-      - TRUST_PROXY=True
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DEBUG=${DEBUG:-False}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-school_user}:${POSTGRES_PASSWORD:-change_me_in_prod}@db:5432/${POSTGRES_DB:-school_erp}}
+      - SECRET_KEY=${SECRET_KEY:-change_this_to_a_secure_random_secret_in_production}
+      - TRUST_PROXY=${TRUST_PROXY:-True}
     depends_on:
       db:
         condition: service_healthy
@@ -21,13 +21,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_DB=school_erp
-      - POSTGRES_USER=school_user
-      - POSTGRES_PASSWORD=SecureProdPassword123!
+      - POSTGRES_DB=${POSTGRES_DB:-school_erp}
+      - POSTGRES_USER=${POSTGRES_USER:-school_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change_me_in_prod}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U school_user -d school_erp"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-school_user} -d $${POSTGRES_DB:-school_erp}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,3 +35,4 @@ services:
 
 volumes:
   pgdata:
+

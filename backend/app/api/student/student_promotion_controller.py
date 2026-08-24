@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 
+from app.common.authorization import enforce_relationship_access
 from app.common.responses.api_response import ApiResponse
 from app.dependencies.database import get_db
 from app.dependencies.services import get_student_promotion_service
@@ -228,6 +229,13 @@ def get_student_transfer_certificates(
     """
     Get all Transfer Certificates issued for a student.
     """
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=student_id,
+    )
+
     tcs = service.get_student_transfer_certificates(
         db=db,
         student_id=student_id,

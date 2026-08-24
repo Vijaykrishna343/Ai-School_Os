@@ -89,6 +89,69 @@ class ReportCardFilter(BaseModel):
     school_class_id: UUID | None = None
     section_id: UUID | None = None
     student_id: UUID | None = None
+    student_ids: list[UUID] | None = None
     status: ReportCardStatus | None = None
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=10, ge=1, le=100)
+
+
+class BatchStudentStatusItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    student_id: UUID
+    student_name: str
+    roll_number: str | None = None
+    admission_number: str
+    status: str  # ELIGIBLE | MISSING_DATA | DRAFT | FINALIZED | FAILED
+    missing_exams: list[str] = Field(default_factory=list)
+    report_card_id: UUID | None = None
+
+
+class BatchReportCardPreviewRequest(BaseModel):
+    school_class_id: UUID
+    section_id: UUID
+    academic_year_id: UUID
+    academic_term_id: UUID | None = None
+
+
+class BatchReportCardPreviewResponse(BaseModel):
+    total_students: int
+    eligible_count: int
+    missing_data_count: int
+    draft_count: int
+    finalized_count: int
+    items: list[BatchStudentStatusItem]
+
+
+class BatchReportCardBatchGenerateRequest(BaseModel):
+    school_class_id: UUID
+    section_id: UUID
+    academic_year_id: UUID
+    academic_term_id: UUID | None = None
+    force_include_missing_data: bool = False
+    retry_failed_only: bool = False
+
+
+class BatchReportCardBatchGenerateResponse(BaseModel):
+    total_processed: int
+    generated_count: int
+    updated_count: int
+    skipped_finalized_count: int
+    missing_data_count: int
+    items: list[BatchStudentStatusItem]
+
+
+class BatchReportCardBatchFinalizeRequest(BaseModel):
+    school_class_id: UUID
+    section_id: UUID
+    academic_year_id: UUID
+    academic_term_id: UUID | None = None
+    report_card_ids: list[UUID] | None = None
+
+
+class BatchReportCardBatchFinalizeResponse(BaseModel):
+    total_processed: int
+    finalized_count: int
+    already_finalized_count: int
+    skipped_count: int
+

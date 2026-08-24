@@ -99,6 +99,7 @@ class AttendanceRepository(BaseRepository[Attendance]):
         section_id: UUID | None = None,
         school_class_id: UUID | None = None,
         student_id: UUID | None = None,
+        student_ids: list[UUID] | None = None,
         attendance_date: date | None = None,
         status: AttendanceStatus | None = None,
         page: int = 1,
@@ -121,6 +122,8 @@ class AttendanceRepository(BaseRepository[Attendance]):
             filters.append(Attendance.school_class_id == school_class_id)
         if student_id is not None:
             filters.append(Attendance.student_id == student_id)
+        if student_ids is not None:
+            filters.append(Attendance.student_id.in_(student_ids))
         if attendance_date is not None:
             filters.append(Attendance.attendance_date == attendance_date)
         if status is not None:

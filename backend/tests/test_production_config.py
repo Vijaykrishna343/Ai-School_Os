@@ -95,3 +95,13 @@ def test_development_env_usable():
     )
     assert cfg.ENVIRONMENT == "development"
     assert cfg.DEBUG is True
+
+
+def test_security_headers_injected(client):
+    """Security headers must be present in responses."""
+    res = client.get("/healthz")
+    assert res.headers.get("X-Content-Type-Options") == "nosniff"
+    assert res.headers.get("X-Frame-Options") == "DENY"
+    assert res.headers.get("X-XSS-Protection") == "1; mode=block"
+    assert res.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+

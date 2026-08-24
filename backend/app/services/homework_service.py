@@ -358,7 +358,7 @@ class HomeworkService:
         db: Session,
         school_id: UUID,
         current_user: IdentityUser,
-        user_role: str,
+        allowed_scope: UUID | list[UUID] | None = None,
         page: int = 1,
         page_size: int = 10,
         school_class_id: UUID | None = None,
@@ -370,51 +370,52 @@ class HomeworkService:
     ) -> HomeworkListResponse:
         stmt = select(Homework).where(Homework.school_id == school_id)
 
-        # Role-based filtering
-        if user_role == "Student":
-            student = None
-            if student_id:
-                student = db.scalar(
-                    select(Student).where(Student.id == student_id, Student.school_id == school_id)
-                )
-            if not student:
-                student = db.scalar(
-                    select(Student).where(Student.email == current_user.email, Student.school_id == school_id)
-                )
-            if student:
-                stmt = stmt.where(
-                    Homework.school_class_id == student.school_class_id,
-                    or_(Homework.section_id == student.section_id, Homework.section_id.is_(None)),
-                    Homework.status.in_([HomeworkStatus.PUBLISHED, HomeworkStatus.CLOSED]),
-                )
-            else:
-                stmt = stmt.where(Homework.status.in_([HomeworkStatus.PUBLISHED, HomeworkStatus.CLOSED]))
+        # Relationship-based scoping
+        if isinstance(allowed_scope, list):
+            # Parent Role (allowed_scope = list of linked Student UUIDs)
+            if not allowed_scope:
+                return HomeworkListResponse(items=[], total=0, page=page, page_size=page_size, total_pages=0)
 
-        elif user_role == "Parent":
-            parent = db.scalar(
-                select(Parent).where(Parent.email == current_user.email, Parent.school_id == school_id)
+            children = db.scalars(
+                select(Student).where(
+                    Student.id.in_(allowed_scope),
+                    Student.school_id == school_id,
+                    Student.is_deleted == False,
+                )
+            ).all()
+
+            if not children:
+                return HomeworkListResponse(items=[], total=0, page=page, page_size=page_size, total_pages=0)
+
+            conditions = []
+            for ch in children:
+                conditions.append(
+                    and_(
+                        Homework.school_class_id == ch.school_class_id,
+                        or_(Homework.section_id == ch.section_id, Homework.section_id.is_(None)),
+                    )
+                )
+            stmt = stmt.where(or_(*conditions), Homework.status.in_([HomeworkStatus.PUBLISHED, HomeworkStatus.CLOSED]))
+
+        elif isinstance(allowed_scope, UUID):
+            # Student Role (allowed_scope = authenticated Student UUID)
+            student = db.scalar(
+                select(Student).where(
+                    Student.id == allowed_scope,
+                    Student.school_id == school_id,
+                    Student.is_deleted == False,
+                )
             )
-            if parent:
-                children = db.scalars(
-                    select(Student).where(Student.parent_id == parent.id, Student.school_id == school_id)
-                ).all()
+            if not student:
+                return HomeworkListResponse(items=[], total=0, page=page, page_size=page_size, total_pages=0)
 
-                if children:
-                    conditions = []
-                    for ch in children:
-                        conditions.append(
-                            and_(
-                                Homework.school_class_id == ch.school_class_id,
-                                or_(Homework.section_id == ch.section_id, Homework.section_id.is_(None)),
-                            )
-                        )
-                    stmt = stmt.where(or_(*conditions), Homework.status.in_([HomeworkStatus.PUBLISHED, HomeworkStatus.CLOSED]))
-                else:
-                    stmt = stmt.where(Homework.status.in_([HomeworkStatus.PUBLISHED, HomeworkStatus.CLOSED]))
-            else:
-                stmt = stmt.where(Homework.status.in_([HomeworkStatus.PUBLISHED, HomeworkStatus.CLOSED]))
+            stmt = stmt.where(
+                Homework.school_class_id == student.school_class_id,
+                or_(Homework.section_id == student.section_id, Homework.section_id.is_(None)),
+                Homework.status.in_([HomeworkStatus.PUBLISHED, HomeworkStatus.CLOSED]),
+            )
 
-        # Additional query filters
+        # Additional query filters (SQL AND logic)
         if school_class_id:
             stmt = stmt.where(Homework.school_class_id == school_class_id)
         if section_id:
@@ -571,6 +572,7 @@ class HomeworkService:
         db: Session,
         school_id: UUID,
         homework_id: UUID,
+        allowed_scope: UUID | list[UUID] | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> HomeworkSubmissionListResponse:
@@ -587,6 +589,13 @@ class HomeworkService:
             HomeworkSubmission.school_id == school_id,
             HomeworkSubmission.homework_id == homework_id,
         )
+
+        if isinstance(allowed_scope, list):
+            if not allowed_scope:
+                return HomeworkSubmissionListResponse(items=[], total=0, page=page, page_size=page_size, total_pages=0)
+            stmt = stmt.where(HomeworkSubmission.student_id.in_(allowed_scope))
+        elif isinstance(allowed_scope, UUID):
+            stmt = stmt.where(HomeworkSubmission.student_id == allowed_scope)
 
         total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
         total_pages = max(1, (total + page_size - 1) // page_size)

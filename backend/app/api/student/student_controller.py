@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.api.student.student_dependency import (
     get_student_service,
 )
+from app.common.authorization import enforce_relationship_access
 from app.common.responses.api_response import (
     ApiResponse,
 )
@@ -88,6 +89,30 @@ def get_students(
     # Enforce authoritative tenant boundary
     filters.school_id = current_user.school_id
 
+    # Enforce relationship access boundary
+    allowed_scope = enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=None,
+    )
+
+    if isinstance(allowed_scope, list):
+        if not allowed_scope:
+            return ApiResponse.success(
+                data={
+                    "items": [],
+                    "total": 0,
+                    "page": filters.page,
+                    "page_size": filters.page_size,
+                    "total_pages": 0,
+                },
+                message="Students retrieved successfully.",
+            )
+        filters.student_ids = allowed_scope
+    elif isinstance(allowed_scope, UUID):
+        filters.student_ids = [allowed_scope]
+
     result = service.get_students(
         db=db,
         filters=filters,
@@ -117,6 +142,13 @@ def get_student(
     """
     Retrieve a student by ID.
     """
+    enforce_relationship_access(
+        db,
+        school_id=current_user.school_id,
+        current_user=current_user,
+        target_student_id=student_id,
+    )
+
     student = service.get_student(
         db=db,
         student_id=student_id,
