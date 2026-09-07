@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -199,3 +199,62 @@ class ReceptionInquiryListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class AnalyticsPeriod(BaseModel):
+    start_date: date
+    end_date: date
+
+
+class VisitorAnalyticsMetrics(BaseModel):
+    total: int
+    checked_in: int
+    checked_out: int
+    currently_active: int
+
+
+class InquiryAnalyticsMetrics(BaseModel):
+    total: int
+    pending: int
+    in_progress: int
+    resolved: int
+    cancelled: int
+
+
+class AppointmentAnalyticsMetrics(BaseModel):
+    total: int
+    upcoming: int
+    completed: int
+
+
+class PurposeCountItem(BaseModel):
+    purpose: str
+    count: int
+
+
+class HostTypeCountItem(BaseModel):
+    host_type: str
+    count: int
+
+
+class OperationalAnalyticsMetrics(BaseModel):
+    avg_visitor_duration_minutes: float | None = None
+    peak_checkin_hour: int | None = None
+    visitors_by_purpose: list[PurposeCountItem] = Field(default_factory=list)
+    visitors_by_host_type: list[HostTypeCountItem] = Field(default_factory=list)
+
+
+class DailyTrendItem(BaseModel):
+    date: date
+    count: int
+
+
+class ReceptionAnalyticsResponse(BaseModel):
+    period: AnalyticsPeriod
+    visitors: VisitorAnalyticsMetrics
+    inquiries: InquiryAnalyticsMetrics
+    appointments: AppointmentAnalyticsMetrics
+    operational_metrics: OperationalAnalyticsMetrics
+    visitor_trend: list[DailyTrendItem] = Field(default_factory=list)
+    inquiry_trend: list[DailyTrendItem] = Field(default_factory=list)
+

@@ -59,10 +59,10 @@ from .services import (
     get_dashboard_service,
     get_visitor_service,
     get_reception_inquiry_service,
+    get_reception_analytics_service,
 )
 
 __all__ = [
-
     # Database
     "get_db",
     # Repository dependencies
@@ -124,4 +124,5 @@ __all__ = [
     "get_dashboard_service",
     "get_visitor_service",
     "get_reception_inquiry_service",
+    "get_reception_analytics_service",
 ]

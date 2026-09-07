@@ -454,6 +454,10 @@ from app.services.reception_inquiry_service import (
     ReceptionInquiryService,
     reception_inquiry_service,
 )
+from app.services.reception_analytics_service import (
+    ReceptionAnalyticsService,
+    reception_analytics_service,
+)
 
 
 def get_visitor_service() -> VisitorService:
@@ -464,5 +468,11 @@ def get_visitor_service() -> VisitorService:
 def get_reception_inquiry_service() -> ReceptionInquiryService:
     """Return the ReceptionInquiryService singleton."""
     return reception_inquiry_service
+
+
+def get_reception_analytics_service() -> ReceptionAnalyticsService:
+    """Return the ReceptionAnalyticsService singleton."""
+    return reception_analytics_service
+
 
 

@@ -143,6 +143,33 @@ vi.mock('@/services/api/receptionApi', () => ({
       status: 'RESOLVED',
       notes: 'Provided brochure and fee slip',
     }),
+
+    getAnalytics: vi.fn().mockResolvedValue({
+      period: { start_date: '2026-08-09', end_date: '2026-09-07' },
+      visitors: { total: 25, checked_in: 5, checked_out: 20, currently_active: 5 },
+      inquiries: { total: 18, pending: 4, in_progress: 3, resolved: 10, cancelled: 1 },
+      appointments: { total: 8, upcoming: 3, completed: 5 },
+      operational_metrics: {
+        avg_visitor_duration_minutes: 45.5,
+        peak_checkin_hour: 10,
+        visitors_by_purpose: [
+          { purpose: 'Parent Meeting', count: 12 },
+          { purpose: 'Fee Payment', count: 8 },
+        ],
+        visitors_by_host_type: [
+          { host_type: 'TEACHER', count: 15 },
+          { host_type: 'STAFF', count: 10 },
+        ],
+      },
+      visitor_trend: [
+        { date: '2026-09-06', count: 10 },
+        { date: '2026-09-07', count: 15 },
+      ],
+      inquiry_trend: [
+        { date: '2026-09-06', count: 8 },
+        { date: '2026-09-07', count: 10 },
+      ],
+    }),
   },
 }));
 
@@ -337,6 +364,49 @@ describe('ReceptionPage Workstation UI', () => {
 
     await waitFor(() => {
       expect(receptionApi.updateInquiry).toHaveBeenCalledWith('inq-1', expect.objectContaining({ status: 'RESOLVED' }));
+    });
+  });
+
+  it('8. Renders Analytics & Reporting tab with operational metrics and trends', async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ReceptionPage />
+      </QueryClientProvider>
+    );
+
+    const analyticsTab = await screen.findByRole('button', { name: /Analytics & Reporting/i });
+    fireEvent.click(analyticsTab);
+
+    await waitFor(() => {
+      expect(receptionApi.getAnalytics).toHaveBeenCalled();
+    });
+
+    expect(screen.getByText('Reception Analytics & Operational Trends')).toBeInTheDocument();
+    expect(screen.getByText('Visitor Check-In Activity Trend')).toBeInTheDocument();
+    expect(screen.getByText('Inquiry Volume Activity Trend')).toBeInTheDocument();
+    expect(screen.getByText('Inquiry Status Distribution')).toBeInTheDocument();
+    expect(screen.getByText('Top Visitor Purposes')).toBeInTheDocument();
+    expect(screen.getByText('Visitors by Host Category')).toBeInTheDocument();
+  });
+
+  it('9. Handles date range preset filtering in Analytics tab', async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ReceptionPage />
+      </QueryClientProvider>
+    );
+
+    const analyticsTab = await screen.findByRole('button', { name: /Analytics & Reporting/i });
+    fireEvent.click(analyticsTab);
+
+    const todayBtn = await screen.findByRole('button', { name: /^Today$/i });
+    fireEvent.click(todayBtn);
+
+    await waitFor(() => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      expect(receptionApi.getAnalytics).toHaveBeenCalledWith(
+        expect.objectContaining({ start_date: todayStr, end_date: todayStr })
+      );
     });
   });
 });

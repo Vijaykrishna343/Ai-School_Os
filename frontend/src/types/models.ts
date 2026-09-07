@@ -1414,4 +1414,63 @@ export interface ReceptionInquiryUpdate {
   notes?: string | null;
 }
 
+export interface AnalyticsPeriod {
+  start_date: string;
+  end_date: string;
+}
+
+export interface VisitorAnalyticsMetrics {
+  total: number;
+  checked_in: number;
+  checked_out: number;
+  currently_active: number;
+}
+
+export interface InquiryAnalyticsMetrics {
+  total: number;
+  pending: number;
+  in_progress: number;
+  resolved: number;
+  cancelled: number;
+}
+
+export interface AppointmentAnalyticsMetrics {
+  total: number;
+  upcoming: number;
+  completed: number;
+}
+
+export interface PurposeCountItem {
+  purpose: string;
+  count: number;
+}
+
+export interface HostTypeCountItem {
+  host_type: string;
+  count: number;
+}
+
+export interface OperationalAnalyticsMetrics {
+  avg_visitor_duration_minutes?: number | null;
+  peak_checkin_hour?: number | null;
+  visitors_by_purpose: PurposeCountItem[];
+  visitors_by_host_type: HostTypeCountItem[];
+}
+
+export interface DailyTrendItem {
+  date: string;
+  count: number;
+}
+
+export interface ReceptionAnalyticsResponse {
+  period: AnalyticsPeriod;
+  visitors: VisitorAnalyticsMetrics;
+  inquiries: InquiryAnalyticsMetrics;
+  appointments: AppointmentAnalyticsMetrics;
+  operational_metrics: OperationalAnalyticsMetrics;
+  visitor_trend: DailyTrendItem[];
+  inquiry_trend: DailyTrendItem[];
+}
+
+
 

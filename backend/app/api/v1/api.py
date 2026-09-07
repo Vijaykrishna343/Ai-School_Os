@@ -430,6 +430,7 @@ api_router.include_router(
 
 from app.api.v1.endpoints.visitors import router as visitors_router
 from app.api.v1.endpoints.reception_inquiries import router as reception_inquiries_router
+from app.api.v1.endpoints.reception_analytics import router as reception_analytics_router
 
 api_router.include_router(
     visitors_router,
@@ -442,6 +443,13 @@ api_router.include_router(
     prefix="/reception/inquiries",
     tags=["Visitors & Reception Management"],
 )
+
+api_router.include_router(
+    reception_analytics_router,
+    prefix="/reception/analytics",
+    tags=["Visitors & Reception Management"],
+)
+
 
 
 

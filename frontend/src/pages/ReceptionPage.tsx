@@ -17,12 +17,18 @@ import {
   FileText,
   HelpCircle,
   RefreshCw,
+  BarChart3,
+  TrendingUp,
+  PieChart,
+  Users,
+  Activity,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { receptionApi } from '@/services/api/receptionApi';
 import {
   HostType,
   IdProofType,
+  ReceptionAnalyticsResponse,
   ReceptionInquiry,
   ReceptionInquiryStatus,
   VisitorDetail,
@@ -47,7 +53,15 @@ export const ReceptionPage: React.FC = () => {
   const canUpdateInquiry = hasPermission('reception.update');
 
   // State
-  const [activeTab, setActiveTab] = useState<'overview' | 'visitors' | 'inquiries'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'visitors' | 'inquiries' | 'analytics'>('overview');
+
+  // Analytics state
+  const [analyticsData, setAnalyticsData] = useState<ReceptionAnalyticsResponse | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState<boolean>(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [datePreset, setDatePreset] = useState<'today' | '7days' | '30days' | 'custom'>('30days');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
 
   // Stats / Overview
   const [activeVisitorsCount, setActiveVisitorsCount] = useState<number>(0);
@@ -195,6 +209,43 @@ export const ReceptionPage: React.FC = () => {
     }
   };
 
+  // Load Analytics
+  const loadAnalytics = async () => {
+    if (!canViewInquiries && !canViewVisitors) return;
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      let start_date: string | undefined;
+      let end_date: string | undefined;
+      const today = new Date().toISOString().split('T')[0];
+
+      if (datePreset === 'today') {
+        start_date = today;
+        end_date = today;
+      } else if (datePreset === '7days') {
+        const d = new Date();
+        d.setDate(d.getDate() - 6);
+        start_date = d.toISOString().split('T')[0];
+        end_date = today;
+      } else if (datePreset === '30days') {
+        const d = new Date();
+        d.setDate(d.getDate() - 29);
+        start_date = d.toISOString().split('T')[0];
+        end_date = today;
+      } else if (datePreset === 'custom') {
+        if (customStartDate) start_date = customStartDate;
+        if (customEndDate) end_date = customEndDate;
+      }
+
+      const res = await receptionApi.getAnalytics({ start_date, end_date });
+      setAnalyticsData(res);
+    } catch (err: any) {
+      setAnalyticsError(err.message || 'Failed to load reception analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadOverviewCounts();
   }, []);
@@ -206,7 +257,10 @@ export const ReceptionPage: React.FC = () => {
     if (activeTab === 'inquiries' || activeTab === 'overview') {
       loadInquiries();
     }
-  }, [activeTab, visitorStatusFilter, visitorSearch, visitorPage, inquiryStatusFilter, inquirySearch, inquiryPage]);
+    if (activeTab === 'analytics') {
+      loadAnalytics();
+    }
+  }, [activeTab, visitorStatusFilter, visitorSearch, visitorPage, inquiryStatusFilter, inquirySearch, inquiryPage, datePreset, customStartDate, customEndDate]);
 
   // Handle Check-In Submit
   const handleCheckInSubmit = async (e: React.FormEvent) => {
@@ -539,6 +593,18 @@ export const ReceptionPage: React.FC = () => {
             }`}
           >
             Inquiries & Appointments
+          </button>
+        )}
+        {(canViewInquiries || canViewVisitors) && (
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`pb-3 transition-colors border-b-2 font-semibold flex items-center gap-1.5 ${
+              activeTab === 'analytics'
+                ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                : 'border-transparent text-ink-muted hover:text-ink dark:text-stone-400'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" /> Analytics & Reporting
           </button>
         )}
       </div>
@@ -909,6 +975,440 @@ export const ReceptionPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tab 4: Analytics & Reporting */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          {/* Controls & Period Selector Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-brand-500" />
+              <div>
+                <h3 className="text-sm font-semibold text-ink dark:text-stone-100">Reception Analytics & Operational Trends</h3>
+                <p className="text-xs text-ink-muted dark:text-stone-400">
+                  {analyticsData
+                    ? `Showing metrics from ${analyticsData.period.start_date} to ${analyticsData.period.end_date}`
+                    : 'Loading reception operational metrics...'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <div className="flex items-center bg-paper-dim dark:bg-stone-800 p-1 rounded-lg border border-divider dark:border-stone-700">
+                <button
+                  onClick={() => setDatePreset('today')}
+                  className={`px-2.5 py-1 rounded font-medium transition ${
+                    datePreset === 'today'
+                      ? 'bg-brand-500 text-white shadow-xs'
+                      : 'text-ink-muted dark:text-stone-400 hover:text-ink'
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => setDatePreset('7days')}
+                  className={`px-2.5 py-1 rounded font-medium transition ${
+                    datePreset === '7days'
+                      ? 'bg-brand-500 text-white shadow-xs'
+                      : 'text-ink-muted dark:text-stone-400 hover:text-ink'
+                  }`}
+                >
+                  7 Days
+                </button>
+                <button
+                  onClick={() => setDatePreset('30days')}
+                  className={`px-2.5 py-1 rounded font-medium transition ${
+                    datePreset === '30days'
+                      ? 'bg-brand-500 text-white shadow-xs'
+                      : 'text-ink-muted dark:text-stone-400 hover:text-ink'
+                  }`}
+                >
+                  30 Days
+                </button>
+                <button
+                  onClick={() => setDatePreset('custom')}
+                  className={`px-2.5 py-1 rounded font-medium transition ${
+                    datePreset === 'custom'
+                      ? 'bg-brand-500 text-white shadow-xs'
+                      : 'text-ink-muted dark:text-stone-400 hover:text-ink'
+                  }`}
+                >
+                  Custom
+                </button>
+              </div>
+
+              {datePreset === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="px-2 py-1 rounded border border-divider dark:border-stone-700 bg-paper dark:bg-stone-800 text-ink dark:text-stone-100"
+                  />
+                  <span className="text-ink-muted">to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="px-2 py-1 rounded border border-divider dark:border-stone-700 bg-paper dark:bg-stone-800 text-ink dark:text-stone-100"
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={loadAnalytics}
+                disabled={analyticsLoading}
+                className="p-2 rounded-lg bg-paper-dim dark:bg-stone-800 border border-divider dark:border-stone-700 text-ink-muted hover:text-ink dark:text-stone-300"
+                title="Refresh Analytics"
+              >
+                <RefreshCw className={`w-4 h-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Analytics Error */}
+          {analyticsError && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/50 dark:border-rose-900 dark:text-rose-200 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{analyticsError}</span>
+            </div>
+          )}
+
+          {/* Loading Indicator */}
+          {analyticsLoading && !analyticsData && (
+            <div className="p-12 text-center text-ink-muted dark:text-stone-400 text-xs flex items-center justify-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin text-brand-500" />
+              <span>Computing reception analytics and daily trends...</span>
+            </div>
+          )}
+
+          {/* Analytics Content */}
+          {analyticsData && (
+            <div className="space-y-6 text-xs">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* 1. Total Visitors */}
+                <div className="p-4 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-1">
+                  <div className="flex items-center justify-between text-ink-muted dark:text-stone-400 font-medium">
+                    <span>Total Visitors</span>
+                    <Users className="w-4 h-4 text-indigo-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-ink dark:text-stone-100">{analyticsData.visitors.total}</p>
+                  <p className="text-[11px] text-ink-muted dark:text-stone-400">
+                    {analyticsData.visitors.checked_out} checked out ({analyticsData.visitors.checked_in} active)
+                  </p>
+                </div>
+
+                {/* 2. Active Visitors */}
+                <div className="p-4 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-1">
+                  <div className="flex items-center justify-between text-ink-muted dark:text-stone-400 font-medium">
+                    <span>Currently Active</span>
+                    <UserCheck className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {analyticsData.visitors.currently_active}
+                  </p>
+                  <p className="text-[11px] text-ink-muted dark:text-stone-400">On campus right now</p>
+                </div>
+
+                {/* 3. Total Inquiries */}
+                <div className="p-4 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-1">
+                  <div className="flex items-center justify-between text-ink-muted dark:text-stone-400 font-medium">
+                    <span>Total Inquiries</span>
+                    <FileText className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-ink dark:text-stone-100">{analyticsData.inquiries.total}</p>
+                  <p className="text-[11px] text-ink-muted dark:text-stone-400">
+                    {analyticsData.inquiries.pending} pending ({analyticsData.inquiries.resolved} resolved)
+                  </p>
+                </div>
+
+                {/* 4. Appointments */}
+                <div className="p-4 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-1">
+                  <div className="flex items-center justify-between text-ink-muted dark:text-stone-400 font-medium">
+                    <span>Upcoming Appts</span>
+                    <Calendar className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {analyticsData.appointments.upcoming}
+                  </p>
+                  <p className="text-[11px] text-ink-muted dark:text-stone-400">
+                    {analyticsData.appointments.total} total scheduled in period
+                  </p>
+                </div>
+
+                {/* 5. Avg Visitor Duration */}
+                <div className="p-4 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-1">
+                  <div className="flex items-center justify-between text-ink-muted dark:text-stone-400 font-medium">
+                    <span>Avg Visit Duration</span>
+                    <Clock className="w-4 h-4 text-purple-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-ink dark:text-stone-100">
+                    {analyticsData.operational_metrics.avg_visitor_duration_minutes != null
+                      ? `${analyticsData.operational_metrics.avg_visitor_duration_minutes}m`
+                      : 'N/A'}
+                  </p>
+                  <p className="text-[11px] text-ink-muted dark:text-stone-400">
+                    Peak check-in: {analyticsData.operational_metrics.peak_checkin_hour != null
+                      ? `${analyticsData.operational_metrics.peak_checkin_hour}:00`
+                      : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Empty state check */}
+              {analyticsData.visitors.total === 0 && analyticsData.inquiries.total === 0 ? (
+                <div className="p-12 text-center border border-dashed border-divider dark:border-stone-800 rounded-xl bg-paper dark:bg-stone-900">
+                  <BarChart3 className="w-10 h-10 text-ink-muted dark:text-stone-500 mx-auto mb-3" />
+                  <h4 className="text-sm font-semibold text-ink dark:text-stone-200">No Reception Activity Recorded</h4>
+                  <p className="text-xs text-ink-muted dark:text-stone-400 mt-1">
+                    There are no visitor check-ins or reception inquiries recorded for the selected date period.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Daily Trend Visual Charts */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Visitor Check-In Trend Chart */}
+                    <div className="p-5 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-ink dark:text-stone-100 flex items-center gap-1.5">
+                          <TrendingUp className="w-4 h-4 text-brand-500" /> Visitor Check-In Activity Trend
+                        </h4>
+                        <span className="text-[11px] text-ink-muted dark:text-stone-400">
+                          {analyticsData.visitor_trend.length} days
+                        </span>
+                      </div>
+
+                      {analyticsData.visitor_trend.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-2 border-b border-divider dark:border-stone-800">
+                            {(() => {
+                              const maxVal = Math.max(...analyticsData.visitor_trend.map((t) => t.count), 1);
+                              return analyticsData.visitor_trend.map((t, idx) => {
+                                const heightPercent = (t.count / maxVal) * 100;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex-1 flex flex-col items-center h-full justify-end group relative"
+                                  >
+                                    <div className="opacity-0 group-hover:opacity-100 transition absolute -top-7 bg-stone-900 text-white text-[10px] px-1.5 py-0.5 rounded shadow pointer-events-none z-10 whitespace-nowrap">
+                                      {t.date}: {t.count} visitors
+                                    </div>
+                                    <div
+                                      style={{ height: `${Math.max(heightPercent, 4)}%` }}
+                                      className={`w-full max-w-[20px] rounded-t transition-all ${
+                                        t.count > 0 ? 'bg-indigo-500 dark:bg-indigo-400 hover:bg-indigo-600' : 'bg-stone-200 dark:bg-stone-800'
+                                      }`}
+                                    />
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                          <div className="flex justify-between text-[10px] text-ink-muted dark:text-stone-400 px-1">
+                            <span>{analyticsData.visitor_trend[0]?.date}</span>
+                            <span>{analyticsData.visitor_trend[analyticsData.visitor_trend.length - 1]?.date}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center text-ink-muted dark:text-stone-500">No trend data</div>
+                      )}
+                    </div>
+
+                    {/* Inquiry Activity Trend Chart */}
+                    <div className="p-5 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-ink dark:text-stone-100 flex items-center gap-1.5">
+                          <Activity className="w-4 h-4 text-amber-500" /> Inquiry Volume Activity Trend
+                        </h4>
+                        <span className="text-[11px] text-ink-muted dark:text-stone-400">
+                          {analyticsData.inquiry_trend.length} days
+                        </span>
+                      </div>
+
+                      {analyticsData.inquiry_trend.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-2 border-b border-divider dark:border-stone-800">
+                            {(() => {
+                              const maxVal = Math.max(...analyticsData.inquiry_trend.map((t) => t.count), 1);
+                              return analyticsData.inquiry_trend.map((t, idx) => {
+                                const heightPercent = (t.count / maxVal) * 100;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex-1 flex flex-col items-center h-full justify-end group relative"
+                                  >
+                                    <div className="opacity-0 group-hover:opacity-100 transition absolute -top-7 bg-stone-900 text-white text-[10px] px-1.5 py-0.5 rounded shadow pointer-events-none z-10 whitespace-nowrap">
+                                      {t.date}: {t.count} inquiries
+                                    </div>
+                                    <div
+                                      style={{ height: `${Math.max(heightPercent, 4)}%` }}
+                                      className={`w-full max-w-[20px] rounded-t transition-all ${
+                                        t.count > 0 ? 'bg-amber-500 dark:bg-amber-400 hover:bg-amber-600' : 'bg-stone-200 dark:bg-stone-800'
+                                      }`}
+                                    />
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                          <div className="flex justify-between text-[10px] text-ink-muted dark:text-stone-400 px-1">
+                            <span>{analyticsData.inquiry_trend[0]?.date}</span>
+                            <span>{analyticsData.inquiry_trend[analyticsData.inquiry_trend.length - 1]?.date}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center text-ink-muted dark:text-stone-500">No trend data</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Inquiry Status & Purpose Breakdown Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Inquiry Status Distribution */}
+                    <div className="p-5 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-4">
+                      <h4 className="text-xs font-bold text-ink dark:text-stone-100 flex items-center gap-1.5">
+                        <PieChart className="w-4 h-4 text-blue-500" /> Inquiry Status Distribution
+                      </h4>
+
+                      <div className="space-y-3 pt-1">
+                        <div>
+                          <div className="flex justify-between text-xs font-medium mb-1">
+                            <span className="text-amber-700 dark:text-amber-300">Pending</span>
+                            <span className="text-ink-muted dark:text-stone-400">{analyticsData.inquiries.pending}</span>
+                          </div>
+                          <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-2">
+                            <div
+                              style={{
+                                width: `${
+                                  analyticsData.inquiries.total > 0
+                                    ? (analyticsData.inquiries.pending / analyticsData.inquiries.total) * 100
+                                    : 0
+                                }%`,
+                              }}
+                              className="bg-amber-500 h-2 rounded-full transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-xs font-medium mb-1">
+                            <span className="text-blue-700 dark:text-blue-300">In Progress</span>
+                            <span className="text-ink-muted dark:text-stone-400">{analyticsData.inquiries.in_progress}</span>
+                          </div>
+                          <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-2">
+                            <div
+                              style={{
+                                width: `${
+                                  analyticsData.inquiries.total > 0
+                                    ? (analyticsData.inquiries.in_progress / analyticsData.inquiries.total) * 100
+                                    : 0
+                                }%`,
+                              }}
+                              className="bg-blue-500 h-2 rounded-full transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-xs font-medium mb-1">
+                            <span className="text-emerald-700 dark:text-emerald-300">Resolved</span>
+                            <span className="text-ink-muted dark:text-stone-400">{analyticsData.inquiries.resolved}</span>
+                          </div>
+                          <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-2">
+                            <div
+                              style={{
+                                width: `${
+                                  analyticsData.inquiries.total > 0
+                                    ? (analyticsData.inquiries.resolved / analyticsData.inquiries.total) * 100
+                                    : 0
+                                }%`,
+                              }}
+                              className="bg-emerald-500 h-2 rounded-full transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-xs font-medium mb-1">
+                            <span className="text-rose-700 dark:text-rose-300">Cancelled</span>
+                            <span className="text-ink-muted dark:text-stone-400">{analyticsData.inquiries.cancelled}</span>
+                          </div>
+                          <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-2">
+                            <div
+                              style={{
+                                width: `${
+                                  analyticsData.inquiries.total > 0
+                                    ? (analyticsData.inquiries.cancelled / analyticsData.inquiries.total) * 100
+                                    : 0
+                                }%`,
+                              }}
+                              className="bg-rose-500 h-2 rounded-full transition-all"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Top Visit Purposes */}
+                    <div className="p-5 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-4">
+                      <h4 className="text-xs font-bold text-ink dark:text-stone-100 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-purple-500" /> Top Visitor Purposes
+                      </h4>
+
+                      {analyticsData.operational_metrics.visitors_by_purpose.length > 0 ? (
+                        <div className="space-y-2.5">
+                          {analyticsData.operational_metrics.visitors_by_purpose.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 rounded-lg bg-paper-dim dark:bg-stone-800/60"
+                            >
+                              <span className="font-medium text-ink dark:text-stone-200 truncate max-w-[200px]">
+                                {item.purpose}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">
+                                {item.count} visitors
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-6 text-center text-ink-muted dark:text-stone-500">No purpose data</div>
+                      )}
+                    </div>
+
+                    {/* Visitors by Host Type */}
+                    <div className="p-5 rounded-xl bg-paper dark:bg-stone-900 border border-divider dark:border-stone-800 shadow-xs space-y-4">
+                      <h4 className="text-xs font-bold text-ink dark:text-stone-100 flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-teal-500" /> Visitors by Host Category
+                      </h4>
+
+                      {analyticsData.operational_metrics.visitors_by_host_type.length > 0 ? (
+                        <div className="space-y-2.5">
+                          {analyticsData.operational_metrics.visitors_by_host_type.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 rounded-lg bg-paper-dim dark:bg-stone-800/60"
+                            >
+                              <span className="font-medium text-ink dark:text-stone-200">{item.host_type}</span>
+                              <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300">
+                                {item.count} visits
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-6 text-center text-ink-muted dark:text-stone-500">No host category data</div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 

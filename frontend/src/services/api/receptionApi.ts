@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import {
   PaginatedResponse,
+  ReceptionAnalyticsResponse,
   ReceptionInquiry,
   ReceptionInquiryCreate,
   ReceptionInquiryUpdate,
@@ -65,5 +66,10 @@ export const receptionApi = {
 
   updateInquiry: async (id: string, data: ReceptionInquiryUpdate): Promise<ReceptionInquiry> => {
     return await apiClient.patch(`/reception/inquiries/${id}`, data);
+  },
+
+  // Reception Analytics
+  getAnalytics: async (params?: { start_date?: string; end_date?: string }): Promise<ReceptionAnalyticsResponse> => {
+    return await apiClient.get('/reception/analytics', { params });
   },
 };
