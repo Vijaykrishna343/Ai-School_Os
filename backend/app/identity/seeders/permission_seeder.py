@@ -197,10 +197,51 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "documents.verify", "module": "documents", "action": "verify", "description": "Verify or reject document"},
     {"name": "documents.manage", "module": "documents", "action": "manage", "description": "Manage document storage"},
 
-    # Notifications & Announcements
-    {"name": "notification.view", "module": "notification", "action": "view", "description": "View notifications"},
+    # Notifications & Communication Center (Phase 8)
+    {"name": "notification.view", "module": "notification", "action": "view", "description": "View user notification inbox"},
     {"name": "notification.send", "module": "notification", "action": "send", "description": "Send notifications and announcements"},
+    {"name": "notification.manage", "module": "notification", "action": "manage", "description": "Manage provider configurations and channel retry queues"},
+    {"name": "notification.template.manage", "module": "notification", "action": "template.manage", "description": "Manage school notification templates"},
+    {"name": "notification.preferences.manage", "module": "notification", "action": "preferences.manage", "description": "Manage communication preferences"},
+    {"name": "notification.delivery.view", "module": "notification", "action": "delivery.view", "description": "View notification delivery analytics and audit logs"},
+
+    # Hostel Module
+    {"name": "hostel.view", "module": "hostel", "action": "view", "description": "View hostel buildings, rooms, and beds"},
+    {"name": "hostel.create", "module": "hostel", "action": "create", "description": "Create hostel buildings, rooms, and beds"},
+    {"name": "hostel.update", "module": "hostel", "action": "update", "description": "Update hostel details"},
+    {"name": "hostel.delete", "module": "hostel", "action": "delete", "description": "Delete hostel entities"},
+    {"name": "hostel.allocate", "module": "hostel", "action": "allocate", "description": "Allocate or release student beds"},
+    {"name": "hostel.attendance", "module": "hostel", "action": "attendance", "description": "Record and view hostel night roll call attendance"},
+    {"name": "hostel.outpass.view", "module": "hostel", "action": "outpass.view", "description": "View hostel outpass requests"},
+    {"name": "hostel.outpass.create", "module": "hostel", "action": "outpass.create", "description": "Create outpass request"},
+    {"name": "hostel.outpass.approve", "module": "hostel", "action": "outpass.approve", "description": "Approve or reject outpass requests"},
+    {"name": "hostel.fees.manage", "module": "hostel", "action": "fees.manage", "description": "Manage and collect hostel fees"},
+
+    # School Events & Calendar
+    {"name": "events.view", "module": "events", "action": "view", "description": "View school events and calendar"},
+    {"name": "events.create", "module": "events", "action": "create", "description": "Create draft school events"},
+    {"name": "events.update", "module": "events", "action": "update", "description": "Update school event details"},
+    {"name": "events.delete", "module": "events", "action": "delete", "description": "Delete or cancel school events"},
+    {"name": "events.publish", "module": "events", "action": "publish", "description": "Publish school events to audience"},
+
+    # Staff Leave Management
+    {"name": "staff_leave.view", "module": "staff_leave", "action": "view", "description": "View staff leave requests"},
+    {"name": "staff_leave.create", "module": "staff_leave", "action": "create", "description": "Submit staff leave request"},
+    {"name": "staff_leave.update", "module": "staff_leave", "action": "update", "description": "Update staff leave request"},
+    {"name": "staff_leave.cancel", "module": "staff_leave", "action": "cancel", "description": "Cancel own pending staff leave request"},
+    {"name": "staff_leave.approve", "module": "staff_leave", "action": "approve", "description": "Approve staff leave request"},
+    {"name": "staff_leave.reject", "module": "staff_leave", "action": "reject", "description": "Reject staff leave request"},
+    {"name": "staff_leave.manage", "module": "staff_leave", "action": "manage", "description": "Manage staff leave types, policies, and balances"},
+    {"name": "staff_leave.balance.view", "module": "staff_leave", "action": "balance.view", "description": "View staff leave balances"},
+    {"name": "staff_leave.report.view", "module": "staff_leave", "action": "report.view", "description": "View staff leave reports and calendar"},
+
+    # AI Subsystem
+    {"name": "ai.assistant", "module": "ai", "action": "assistant", "description": "Access AI Natural Language Assistant"},
+    {"name": "ai.timetable.generate", "module": "ai", "action": "timetable.generate", "description": "Generate AI Timetable Drafts"},
+    {"name": "ai.risk.view", "module": "ai", "action": "risk.view", "description": "View Student Academic Risk Evaluations"},
+    {"name": "ai.communication.draft", "module": "ai", "action": "communication.draft", "description": "Draft AI Announcements and Notices"},
 ]
+
 
 
 class PermissionSeeder:

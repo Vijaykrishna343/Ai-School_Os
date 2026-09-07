@@ -14,6 +14,8 @@ const queryClient = new QueryClient({
   },
 });
 
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+
 export function App() {
   const { initializeAuth } = useAuthStore();
   const { theme } = useThemeStore();
@@ -28,11 +30,13 @@ export function App() {
   }, [initializeAuth, theme]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AppRouter />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

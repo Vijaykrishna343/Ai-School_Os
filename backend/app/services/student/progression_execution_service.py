@@ -14,7 +14,7 @@ Failure recovery audits are persisted via an isolated database session (S_recove
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -152,7 +152,9 @@ class ProgressionExecutionService:
 
         # 6. Begin Atomic Execution Run (T_main)
         now_utc = datetime.now(timezone.utc)
+        execution_id = uuid4()
         execution_record = ProgressionExecution(
+            id=execution_id,
             school_id=school_id,
             source_academic_year_id=source_academic_year_id,
             target_academic_year_id=request.target_academic_year_id,
@@ -355,7 +357,7 @@ class ProgressionExecutionService:
         except Exception as exc:
             db.rollback()
             logger.error("Rollover execution failed for school %s: %s", school_id, str(exc), exc_info=True)
-            self._record_failed_execution(school_id, execution_record.id, str(exc))
+            self._record_failed_execution(school_id, execution_id, str(exc))
             raise InternalServerException(f"Academic progression rollover failed: {str(exc)}") from exc
 
     def _record_failed_execution(

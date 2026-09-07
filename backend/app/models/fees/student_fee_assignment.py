@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from app.models.academic_year.academic_year import AcademicYear
     from app.models.fees.fee_payment import FeePayment
     from app.models.fees.fee_structure import FeeStructure
+    from app.models.payment.payment_order import PaymentOrder
     from app.models.school.school import School
     from app.models.student.student import Student
 
@@ -125,6 +126,11 @@ class StudentFeeAssignment(CommonModel):
     )
 
     payments: Mapped[list["FeePayment"]] = orm_relationship(
+        back_populates="assignment",
+        cascade="all, delete-orphan",
+    )
+
+    payment_orders: Mapped[list["PaymentOrder"]] = orm_relationship(
         back_populates="assignment",
         cascade="all, delete-orphan",
     )

@@ -466,14 +466,12 @@ class StudentPromotionService(BaseService[StudentEnrollmentHistoryRepository]):
                 self.promote_student(db, item.student_id, req, school_id)
                 promoted_count += 1
             except (ValidationException, NotFoundException, AlreadyExistsException, IntegrityError) as exc:
-                db.rollback()
                 logger.warning(
                     "Bulk promotion skipped student %s: %s", item.student_id, str(exc)
                 )
                 skipped_count += 1
                 errors.append({"student_id": str(item.student_id), "reason": str(exc)})
             except Exception as exc:
-                db.rollback()
                 logger.error(
                     "Unexpected error in bulk promotion for student %s: %s", item.student_id, str(exc)
                 )

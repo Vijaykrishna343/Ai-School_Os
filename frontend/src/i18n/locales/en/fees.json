@@ -1,0 +1,14 @@
+{
+  "title": "Financial Operations & Fees",
+  "status": {
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "partial": "Partial",
+    "overdue": "Overdue"
+  },
+  "actions": {
+    "collect_fee": "Collect Fee",
+    "issue_receipt": "Issue Receipt",
+    "add_structure": "Create Fee Structure"
+  }
+}

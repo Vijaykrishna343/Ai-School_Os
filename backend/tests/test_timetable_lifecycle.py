@@ -70,7 +70,7 @@ def lifecycle_setup(db_session):
         date_of_birth=date(1990, 1, 1),
         joining_date=date(2020, 1, 1),
         email=f"alice_{uuid.uuid4().hex[:6]}@example.com",
-        phone="9876543210",
+        phone=f"9{uuid.uuid4().int % 1000000009:09d}",
         address_line1="100 St",
         city="Delhi",
         district="Central",
@@ -102,6 +102,7 @@ def lifecycle_setup(db_session):
         ),
         current_school_id=s1.id,
     )
+    db_session.commit()
 
     return {
         "s1": s1, "ay1": ay1, "sc1": sc1, "sec1": sec1,

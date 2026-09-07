@@ -433,4 +433,5 @@ def test_30_notification_templates_endpoint_accessible(client: TestClient, setup
     d = setup_notif_security_data
     res = client.get("/api/v1/notifications/templates", headers={"Authorization": f"Bearer {d['tok_admin']}"})
     assert res.status_code == 200
-    assert "student_absent_alert" in res.json()["data"]
+    template_keys = [t["template_key"] for t in res.json()["data"]]
+    assert "student_absent_alert" in template_keys

@@ -1319,3 +1319,99 @@ export interface TransferCertificateCreate {
   remarks?: string | null;
 }
 
+// =====================================================================
+// Visitor Management & Reception CRM (Phase 26)
+// =====================================================================
+
+export type VisitorStatus = 'EXPECTED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCELLED';
+export type HostType = 'TEACHER' | 'STUDENT' | 'STAFF';
+export type IdProofType = 'AADHAAR' | 'DRIVING_LICENSE' | 'PASSPORT' | 'VOTER_ID' | 'OTHER';
+export type ReceptionInquiryStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
+
+export interface VisitorSummary {
+  id: string;
+  school_id: string;
+  visitor_name: string;
+  phone: string;
+  email?: string | null;
+  id_proof_type?: IdProofType | null;
+  purpose: string;
+  host_type?: HostType | null;
+  host_id?: string | null;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  status: VisitorStatus;
+  pass_number?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VisitorDetail extends VisitorSummary {
+  id_proof_number?: string | null;
+  remarks?: string | null;
+}
+
+export interface VisitorCreate {
+  visitor_name: string;
+  phone: string;
+  email?: string | null;
+  id_proof_type?: IdProofType | null;
+  id_proof_number?: string | null;
+  purpose: string;
+  host_type?: HostType | null;
+  host_id?: string | null;
+  status?: VisitorStatus;
+  remarks?: string | null;
+}
+
+export interface VisitorCheckOut {
+  check_out_time?: string | null;
+  remarks?: string | null;
+}
+
+export interface ReceptionInquiry {
+  id: string;
+  school_id: string;
+  visitor_id?: string | null;
+  contact_name: string;
+  contact_phone: string;
+  contact_email?: string | null;
+  subject: string;
+  details?: string | null;
+  host_type?: HostType | null;
+  host_id?: string | null;
+  appointment_time?: string | null;
+  status: ReceptionInquiryStatus;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReceptionInquiryCreate {
+  visitor_id?: string | null;
+  contact_name: string;
+  contact_phone: string;
+  contact_email?: string | null;
+  subject: string;
+  details?: string | null;
+  host_type?: HostType | null;
+  host_id?: string | null;
+  appointment_time?: string | null;
+  notes?: string | null;
+}
+
+export interface ReceptionInquiryUpdate {
+  visitor_id?: string | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  subject?: string | null;
+  details?: string | null;
+  host_type?: HostType | null;
+  host_id?: string | null;
+  appointment_time?: string | null;
+  status?: ReceptionInquiryStatus | null;
+  notes?: string | null;
+}
+
+

@@ -99,7 +99,7 @@ def test_data(db_session):
         school_id=school.id,
         father_name="John Doe",
         mother_name="Jane Doe",
-        primary_phone="+1987654321",
+        primary_phone=f"+19{uuid4().int % 1000000008:08d}",
         email=f"parent-{uuid4().hex[:6]}@gmail.com",
         address_line1="456 Home Street",
         city="Testville",
@@ -472,10 +472,11 @@ def test_historical_enrollment_fk_restrict(db_session, test_data):
     from sqlalchemy import text
     from sqlalchemy.exc import IntegrityError
 
-    try:
-        db_session.execute(text("PRAGMA foreign_keys = ON;"))
-    except Exception:
-        pass
+    if db_session.bind.dialect.name == "sqlite":
+        try:
+            db_session.execute(text("PRAGMA foreign_keys = ON;"))
+        except Exception:
+            pass
 
     school = test_data["school"]
     student = test_data["student"]
@@ -500,9 +501,9 @@ def test_historical_enrollment_fk_restrict(db_session, test_data):
 
     # Attempting DB delete on class_1 must fail due to FK RESTRICT constraint on student_enrollment_histories
     with pytest.raises(IntegrityError):
-        db_session.delete(class_1)
-        db_session.commit()
-    db_session.rollback()
+        with db_session.begin_nested():
+            db_session.delete(class_1)
+            db_session.flush()
 
 
 def test_bulk_promotion_partial_success_semantics(db_session, test_data):
@@ -638,7 +639,7 @@ def test_cross_tenant_class_assignment_rejected(db_session, test_data):
         district="OtherDistrict",
         state="OtherState",
         postal_code="654321",
-        phone="+9876543210",
+        phone=f"+9{uuid4().int % 1000000009:09d}",
         email=f"admin-{uuid4().hex[:6]}@other.com",
     )
     db_session.add(other_school)
@@ -694,7 +695,7 @@ def test_cross_tenant_section_assignment_rejected(db_session, test_data):
         district="SecDistrict",
         state="SecState",
         postal_code="654322",
-        phone="+9876543211",
+        phone=f"+9{uuid4().int % 1000000009:09d}",
         email=f"admin-{uuid4().hex[:6]}@othersec.com",
     )
     db_session.add(other_school)

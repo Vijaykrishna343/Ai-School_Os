@@ -11,6 +11,8 @@ import { examsApi } from '@/services/api/examsApi';
 import { examSchedulesApi } from '@/services/api/examSchedulesApi';
 import { studentExamResultsApi } from '@/services/api/studentExamResultsApi';
 import { reportCardsApi } from '@/services/api/reportCardsApi';
+import { aiReportCardApi, ReportCardRemarksResponse } from '@/api/aiReportCardApi';
+import { Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { gradingScalesApi } from '@/services/api/gradingScalesApi';
 import { evaluationConfigsApi } from '@/services/api/evaluationConfigsApi';
 import {
@@ -99,6 +101,13 @@ export const ExamsPage: React.FC = () => {
     text: string;
   } | null>(null);
   const [isGeneratingCards, setIsGeneratingCards] = useState(false);
+
+  // AI Remarks Assistant State
+  const [aiTone, setAiTone] = useState<'ENCOURAGING' | 'CONSTRUCTIVE' | 'FORMAL' | 'CELEBRATORY'>('ENCOURAGING');
+  const [aiDetailLevel, setAiDetailLevel] = useState<'BRIEF' | 'STANDARD' | 'DETAILED'>('STANDARD');
+  const [aiRemarksDraft, setAiRemarksDraft] = useState<ReportCardRemarksResponse | null>(null);
+  const [isGeneratingAiRemarks, setIsGeneratingAiRemarks] = useState(false);
+  const [aiRemarksError, setAiRemarksError] = useState<string | null>(null);
 
   // ------------------------------------------------------------------
   // Queries
@@ -512,7 +521,35 @@ export const ExamsPage: React.FC = () => {
       teacher_remarks: card.teacher_remarks || '',
       principal_remarks: card.principal_remarks || '',
     });
+    setAiRemarksDraft(null);
+    setAiRemarksError(null);
     setIsRemarksDrawerOpen(true);
+  };
+
+  const handleGenerateAiRemarks = async () => {
+    if (!selectedCardForRemarks) return;
+    setIsGeneratingAiRemarks(true);
+    setAiRemarksError(null);
+    try {
+      const draft = await aiReportCardApi.generateRemarks({
+        report_card_id: selectedCardForRemarks.id,
+        tone: aiTone,
+        detail_level: aiDetailLevel,
+      });
+      setAiRemarksDraft(draft);
+    } catch (err: any) {
+      setAiRemarksError(err?.response?.data?.detail || err?.message || 'Failed to generate AI remarks');
+    } finally {
+      setIsGeneratingAiRemarks(false);
+    }
+  };
+
+  const handleApplyAiDraft = () => {
+    if (!aiRemarksDraft) return;
+    setRemarksForm({
+      teacher_remarks: aiRemarksDraft.teacher_remarks_draft,
+      principal_remarks: aiRemarksDraft.principal_remarks_draft,
+    });
   };
 
   const handleSaveRemarks = async (e: React.FormEvent) => {
@@ -1380,36 +1417,184 @@ export const ExamsPage: React.FC = () => {
         title="REPORT CARD REMARKS"
         subtitle={selectedCardForRemarks?.student ? `${selectedCardForRemarks.student.first_name} ${selectedCardForRemarks.student.last_name || ''}`.trim() : ''}
       >
-        <form onSubmit={handleSaveRemarks} className="space-y-4 text-xs">
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Teacher Remarks</label>
-            <textarea
-              value={remarksForm.teacher_remarks}
-              onChange={(e) => setRemarksForm({ ...remarksForm, teacher_remarks: e.target.value })}
-              className="w-full px-2 py-1.5 rounded-sm border border-slate-300 bg-white"
-              rows={4}
-              placeholder="Input student performance evaluation remarks..."
-            />
-          </div>
+        <div className="space-y-4 text-xs">
+          {/* AI Draft Generator Controls */}
+          {permissions.includes('report_card.edit_remarks') && (
+            <Card className="p-3 bg-indigo-50/50 border border-indigo-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-semibold text-indigo-900">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  AI Draft Assistant
+                </div>
+                <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200">
+                  Phase 12.6
+                </Badge>
+              </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Principal Remarks</label>
-            <textarea
-              value={remarksForm.principal_remarks}
-              onChange={(e) => setRemarksForm({ ...remarksForm, principal_remarks: e.target.value })}
-              className="w-full px-2 py-1.5 rounded-sm border border-slate-300 bg-white"
-              rows={4}
-              placeholder="Input administrative remarks..."
-            />
-          </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Tone</label>
+                  <select
+                    value={aiTone}
+                    onChange={(e: any) => setAiTone(e.target.value)}
+                    className="w-full px-2 py-1 text-xs rounded border border-slate-300 bg-white"
+                  >
+                    <option value="ENCOURAGING">Encouraging</option>
+                    <option value="CONSTRUCTIVE">Constructive</option>
+                    <option value="FORMAL">Formal</option>
+                    <option value="CELEBRATORY">Celebratory</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Detail Level</label>
+                  <select
+                    value={aiDetailLevel}
+                    onChange={(e: any) => setAiDetailLevel(e.target.value)}
+                    className="w-full px-2 py-1 text-xs rounded border border-slate-300 bg-white"
+                  >
+                    <option value="BRIEF">Brief</option>
+                    <option value="STANDARD">Standard</option>
+                    <option value="DETAILED">Detailed</option>
+                  </select>
+                </div>
+              </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="secondary" onClick={() => setIsRemarksDrawerOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Save Remarks</Button>
-          </div>
-        </form>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleGenerateAiRemarks}
+                disabled={isGeneratingAiRemarks}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium flex items-center justify-center gap-1.5"
+              >
+                {isGeneratingAiRemarks ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Synthesizing Performance & Generating Draft...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Generate AI Draft Remarks
+                  </>
+                )}
+              </Button>
+
+              {aiRemarksError && (
+                <Alert type="error" title="AI Generation Error">
+                  {aiRemarksError}
+                </Alert>
+              )}
+
+              {/* Generated AI Draft Preview */}
+              {aiRemarksDraft && (
+                <div className="p-3 bg-white rounded border border-indigo-200 space-y-2 text-slate-800">
+                  <div className="flex items-center justify-between pb-1 border-b border-indigo-100">
+                    <span className="font-semibold text-indigo-950 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      Generated Draft Proposal
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Tokens: {aiRemarksDraft.token_count}
+                    </span>
+                  </div>
+
+                  {/* Strengths & Focus Areas */}
+                  <div className="space-y-1">
+                    {aiRemarksDraft.strength_subjects?.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[10px] font-medium text-emerald-700">Strengths:</span>
+                        {aiRemarksDraft.strength_subjects.map((sub, i) => (
+                          <Badge key={i} className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] py-0">
+                            {sub}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {aiRemarksDraft.focus_subjects?.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[10px] font-medium text-amber-700">Focus Areas:</span>
+                        {aiRemarksDraft.focus_subjects.map((sub, i) => (
+                          <Badge key={i} className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] py-0">
+                            {sub}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1 text-[11px]">
+                    <div>
+                      <span className="font-medium text-slate-700">Teacher Draft:</span>
+                      <p className="p-1.5 bg-slate-50 rounded text-slate-700 italic border border-slate-200">
+                        "{aiRemarksDraft.teacher_remarks_draft}"
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-slate-700">Principal Draft:</span>
+                      <p className="p-1.5 bg-slate-50 rounded text-slate-700 italic border border-slate-200">
+                        "{aiRemarksDraft.principal_remarks_draft}"
+                      </p>
+                    </div>
+                  </div>
+
+                  {aiRemarksDraft.action_items?.length > 0 && (
+                    <div>
+                      <span className="text-[10px] font-medium text-slate-600 block mb-0.5">Action Items:</span>
+                      <ul className="list-disc list-inside text-[11px] text-slate-600 space-y-0.5">
+                        {aiRemarksDraft.action_items.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleApplyAiDraft}
+                    className="w-full text-indigo-700 border-indigo-300 hover:bg-indigo-50 font-medium"
+                  >
+                    Apply Draft to Editor Fields Below
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
+
+          <form onSubmit={handleSaveRemarks} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Teacher Remarks</label>
+              <textarea
+                value={remarksForm.teacher_remarks}
+                onChange={(e) => setRemarksForm({ ...remarksForm, teacher_remarks: e.target.value })}
+                className="w-full px-2 py-1.5 rounded-sm border border-slate-300 bg-white"
+                rows={4}
+                placeholder="Input student performance evaluation remarks..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Principal Remarks</label>
+              <textarea
+                value={remarksForm.principal_remarks}
+                onChange={(e) => setRemarksForm({ ...remarksForm, principal_remarks: e.target.value })}
+                className="w-full px-2 py-1.5 rounded-sm border border-slate-300 bg-white"
+                rows={4}
+                placeholder="Input administrative remarks..."
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setIsRemarksDrawerOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Remarks</Button>
+            </div>
+          </form>
+        </div>
       </Drawer>
     </div>
   );

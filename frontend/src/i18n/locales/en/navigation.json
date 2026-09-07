@@ -1,0 +1,22 @@
+{
+  "menu": {
+    "dashboard": "Dashboard",
+    "students": "Students",
+    "teachers": "Faculty & Staff",
+    "academics": "Academics",
+    "attendance": "Attendance",
+    "timetable": "Timetable",
+    "fees": "Fees & Payments",
+    "exams": "Examinations",
+    "hostel": "Hostel",
+    "events": "Events & Calendar",
+    "staff_leave": "Staff Leave",
+    "communication": "Communication Center",
+    "documents": "Documents",
+    "homework": "Homework",
+    "progression": "Academic Rollover",
+    "audit_log": "Audit Logs",
+    "settings": "Settings",
+    "roles": "Roles & Access"
+  }
+}

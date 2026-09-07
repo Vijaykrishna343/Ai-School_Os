@@ -87,7 +87,7 @@ class StudentCertificate(CommonModel):
     # ------------------------------------------------------------------
 
     certificate_type: Mapped[CertificateType] = mapped_column(
-        Enum(CertificateType),
+        Enum(CertificateType, native_enum=False, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
 

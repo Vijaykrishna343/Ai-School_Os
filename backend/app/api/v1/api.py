@@ -369,10 +369,81 @@ api_router.include_router(
     tags=["Documents"],
 )
 
+from app.api.v1.endpoints.hostel import router as hostel_router
+
+api_router.include_router(
+    hostel_router,
+    prefix="/hostel",
+    tags=["Hostel Management"],
+)
+
+from app.api.v1.endpoints.events import router as events_router
+
+api_router.include_router(
+    events_router,
+    prefix="/events",
+    tags=["School Events & Calendar"],
+)
+
+from app.api.v1.endpoints.staff_leave import router as staff_leave_router
+
+api_router.include_router(
+    staff_leave_router,
+    prefix="/staff-leave",
+    tags=["Staff Leave & Approval Management"],
+)
+
 from app.api.v1.endpoints.health import router as health_router
 
 api_router.include_router(
     health_router,
     tags=["Health Probes"],
 )
+
+from app.api.v1.endpoints.ai import router as ai_router
+from app.api.v1.endpoints.ai_timetable import router as ai_timetable_router
+from app.api.v1.endpoints.ai_risk import router as ai_risk_router
+from app.api.v1.endpoints.ai_communication import router as ai_communication_router
+from app.api.v1.endpoints.ai_report_card import router as ai_report_card_router
+from app.api.v1.endpoints.payments import router as payments_router
+
+api_router.include_router(
+    ai_router,
+)
+api_router.include_router(
+    ai_timetable_router,
+)
+api_router.include_router(
+    ai_risk_router,
+)
+api_router.include_router(
+    ai_communication_router,
+)
+api_router.include_router(
+    ai_report_card_router,
+)
+api_router.include_router(
+    payments_router,
+    prefix="/payments",
+    tags=["Payment Gateway"],
+)
+
+from app.api.v1.endpoints.visitors import router as visitors_router
+from app.api.v1.endpoints.reception_inquiries import router as reception_inquiries_router
+
+api_router.include_router(
+    visitors_router,
+    prefix="/visitors",
+    tags=["Visitors & Reception Management"],
+)
+
+api_router.include_router(
+    reception_inquiries_router,
+    prefix="/reception/inquiries",
+    tags=["Visitors & Reception Management"],
+)
+
+
+
+
 

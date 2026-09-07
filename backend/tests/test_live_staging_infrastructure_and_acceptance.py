@@ -103,13 +103,19 @@ def seed_two_tenant_live_environment(db: Session):
     db.add(sec_a)
     db.commit()
 
-    # Parent Alpha
+    # Parent Alpha (linked to student_linked_a)
     parent_alpha = Parent(
         id=uuid.uuid4(), school_id=school_alpha.id, father_name=f"AlphaParent_{s_alpha}",
         primary_phone=f"91{uuid.uuid4().int % 100000000:08d}", email=f"parent_alpha_{s_alpha}@staging.com",
         address_line1="1 Alpha Way", city="Hyderabad", district="Hyderabad", state="Telangana", postal_code="500081",
     )
-    db.add(parent_alpha)
+    # Separate parent for "unlinked" student — valid persisted parent, but different from parent_alpha
+    parent_unlinked_a = Parent(
+        id=uuid.uuid4(), school_id=school_alpha.id, father_name=f"AlphaUnlinkedParent_{s_alpha}",
+        primary_phone=f"91{uuid.uuid4().int % 100000000:08d}", email=f"parent_unlinked_alpha_{s_alpha}@staging.com",
+        address_line1="1 Alpha Way", city="Hyderabad", district="Hyderabad", state="Telangana", postal_code="500081",
+    )
+    db.add_all([parent_alpha, parent_unlinked_a])
     db.commit()
 
     student_linked_a = Student(
@@ -120,7 +126,7 @@ def seed_two_tenant_live_environment(db: Session):
         address_line1="1 Alpha Way", city="Hyderabad", district="Hyderabad", state="Telangana", postal_code="500081",
     )
     student_unlinked_a = Student(
-        id=uuid.uuid4(), school_id=school_alpha.id, parent_id=uuid.uuid4(),
+        id=uuid.uuid4(), school_id=school_alpha.id, parent_id=parent_unlinked_a.id,
         academic_year_id=ay_a.id, school_class_id=sc_a.id, section_id=sec_a.id,
         first_name="AlphaChildUnlinked", last_name="Student", admission_number=f"ADM_ALPHA_UNLINKED_{s_alpha}",
         roll_number="102", gender="FEMALE", date_of_birth=date(2011, 2, 2), admission_date=date(2026, 4, 1),
@@ -139,8 +145,17 @@ def seed_two_tenant_live_environment(db: Session):
     db.add(sec_b)
     db.commit()
 
+    # Parent for Beta school student
+    parent_beta = Parent(
+        id=uuid.uuid4(), school_id=school_beta.id, father_name=f"BetaParent_{s_beta}",
+        primary_phone=f"91{uuid.uuid4().int % 100000000:08d}", email=f"parent_beta_{s_beta}@staging.com",
+        address_line1="2 Beta Road", city="Bangalore", district="Bangalore", state="Karnataka", postal_code="560001",
+    )
+    db.add(parent_beta)
+    db.commit()
+
     student_beta = Student(
-        id=uuid.uuid4(), school_id=school_beta.id, parent_id=uuid.uuid4(),
+        id=uuid.uuid4(), school_id=school_beta.id, parent_id=parent_beta.id,
         academic_year_id=ay_b.id, school_class_id=sc_b.id, section_id=sec_b.id,
         first_name="BetaStudent", last_name="Student", admission_number=f"ADM_BETA_{s_beta}",
         roll_number="201", gender="FEMALE", date_of_birth=date(2011, 3, 3), admission_date=date(2026, 4, 1),

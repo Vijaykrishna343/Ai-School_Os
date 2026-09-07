@@ -1,0 +1,16 @@
+{
+  "title": "Multi-Channel Communication Center",
+  "tabs": {
+    "inbox": "My Notification Inbox",
+    "preferences": "Communication Preferences",
+    "logs": "Delivery History & Retry Audit",
+    "templates": "Notification Templates",
+    "providers": "Provider Adapters"
+  },
+  "actions": {
+    "mark_read": "Mark Read",
+    "mark_all_read": "Mark All Read",
+    "send_announcement": "Send Announcement",
+    "retry_failed": "Retry Delivery"
+  }
+}

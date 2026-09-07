@@ -1,0 +1,14 @@
+{
+  "title": "Examinations & Gradebook Operations",
+  "tabs": {
+    "schedules": "Exam Schedules",
+    "gradebook": "Bulk Marks Entry Ledger",
+    "report_cards": "Report Cards Generator"
+  },
+  "actions": {
+    "create_exam": "Schedule Exam",
+    "save_marks": "Save Gradebook Ledger",
+    "generate_reports": "Generate Report Cards",
+    "publish_results": "Publish Results"
+  }
+}

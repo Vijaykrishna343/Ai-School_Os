@@ -1,0 +1,17 @@
+{
+  "title": "Faculty & Staff Directory",
+  "subtitle": "Manage teacher profiles, department allocations, and check-in logs.",
+  "actions": {
+    "add_teacher": "Add Faculty Member",
+    "assign_subject": "Assign Subject"
+  },
+  "fields": {
+    "employee_id": "Employee ID",
+    "name": "Teacher Name",
+    "department": "Department",
+    "designation": "Designation",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "status": "Status"
+  }
+}

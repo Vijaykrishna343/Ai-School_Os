@@ -1,0 +1,16 @@
+{
+  "title": "హాస్టల్ నిర్వహణ కేంద్రం",
+  "status": {
+    "allocated": "కేటాయించబడింది",
+    "vacant": "ఖాళీగా ఉంది",
+    "outpass_pending": "అనుమతి (అవుట్‌పాస్) పెండింగ్",
+    "outpass_approved": "అవుట్‌పాస్ ఆమోదించబడింది",
+    "outpass_rejected": "అవుట్‌పాస్ తిరస్కరించబడింది",
+    "checked_out": "బయటకు వెళ్లారు"
+  },
+  "actions": {
+    "allocate_bed": "బెడ్ కేటాయించు",
+    "request_outpass": "అవుట్‌పాస్ కోరు",
+    "night_roll_call": "రాత్రి హాజరు సేకరణ"
+  }
+}

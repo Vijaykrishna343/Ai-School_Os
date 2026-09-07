@@ -1,0 +1,15 @@
+{
+  "title": "Daily Attendance Registry",
+  "status": {
+    "present": "Present",
+    "absent": "Absent",
+    "late": "Late",
+    "excused": "Excused",
+    "half_day": "Half Day"
+  },
+  "actions": {
+    "mark_all_present": "Mark All Present",
+    "save_attendance": "Save Attendance",
+    "export_report": "Export Report"
+  }
+}

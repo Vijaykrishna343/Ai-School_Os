@@ -444,3 +444,25 @@ def get_teacher_substitution_service() -> TeacherSubstitutionService:
 def get_dashboard_service() -> DashboardService:
     """Return the DashboardService singleton."""
     return dashboard_service
+
+
+from app.services.visitor_service import (
+    VisitorService,
+    visitor_service,
+)
+from app.services.reception_inquiry_service import (
+    ReceptionInquiryService,
+    reception_inquiry_service,
+)
+
+
+def get_visitor_service() -> VisitorService:
+    """Return the VisitorService singleton."""
+    return visitor_service
+
+
+def get_reception_inquiry_service() -> ReceptionInquiryService:
+    """Return the ReceptionInquiryService singleton."""
+    return reception_inquiry_service
+
+

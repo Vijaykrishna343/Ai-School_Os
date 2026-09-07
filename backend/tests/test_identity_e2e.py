@@ -145,7 +145,7 @@ def test_01_seed_identity_state(db, client):
     summary = seed_identity(db)
 
     assert summary["permissions_created"] == len(DEFAULT_PERMISSIONS)
-    assert summary["roles_created"] == 10
+    assert summary["roles_created"] == 13
     assert summary["assignments_created"] > 0
 
     all_roles = role_repository.get_system_roles(db)

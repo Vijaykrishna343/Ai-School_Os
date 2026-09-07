@@ -1,0 +1,11 @@
+{
+  "title": "Administrative Command Center",
+  "kpis": {
+    "total_students": "Total Students Enrolled",
+    "total_teachers": "Active Faculty & Staff",
+    "today_attendance": "Today's Attendance Rate",
+    "fee_collection": "Fee Collection Progress"
+  },
+  "recent_activity": "Recent Institutional Activity",
+  "quick_actions": "Quick Administrative Actions"
+}

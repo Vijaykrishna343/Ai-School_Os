@@ -1,0 +1,15 @@
+{
+  "title": "School Events & Calendar",
+  "categories": {
+    "holiday": "Holiday",
+    "exam": "Examination",
+    "sports": "Sports Meet",
+    "cultural": "Cultural Event",
+    "meeting": "PTA Meeting",
+    "other": "General Event"
+  },
+  "actions": {
+    "create_event": "Create Event",
+    "publish_event": "Publish Event"
+  }
+}

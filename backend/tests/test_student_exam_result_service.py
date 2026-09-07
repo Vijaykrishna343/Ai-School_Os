@@ -142,8 +142,25 @@ def create_test_student(
 
 
 def create_test_exam_and_schedule(
-    db, school_id, academic_year_id, school_class_id, section_id, max_marks="100.00"
+    db, school_id, academic_year_id, school_class_id, section_id, max_marks="100.00", subject_id=None
 ):
+    from app.models.subject.subject import Subject
+    from sqlalchemy import select
+
+    if not subject_id:
+        # Check if subject already exists for school to avoid unnecessary duplicates
+        subject = db.scalar(select(Subject).where(Subject.school_id == school_id))
+        if not subject:
+            subject = Subject(
+                id=uuid.uuid4(),
+                school_id=school_id,
+                subject_code=f"SUBJ_{uuid.uuid4().hex[:4].upper()}",
+                subject_name="Test Subject",
+            )
+            db.add(subject)
+            db.commit()
+        subject_id = subject.id
+
     exam = Exam(
         id=uuid.uuid4(),
         school_id=school_id,
@@ -165,7 +182,7 @@ def create_test_exam_and_schedule(
         academic_year_id=academic_year_id,
         school_class_id=school_class_id,
         section_id=section_id,
-        subject_id=uuid.uuid4(),
+        subject_id=subject_id,
         exam_date=date(2026, 10, 5),
         start_time=time(9, 0),
         end_time=time(11, 0),

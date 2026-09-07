@@ -55,10 +55,10 @@ def test_academic_year_soft_delete_recreation(db_session, db_school):
         start_date=date(2027, 6, 1),
         end_date=date(2028, 4, 30),
     )
-    db_session.add(ay_dup)
     with pytest.raises(IntegrityError):
-        db_session.commit()
-    db_session.rollback()
+        with db_session.begin_nested():
+            db_session.add(ay_dup)
+            db_session.commit()
 
     # Soft-delete ay1
     ay1.is_deleted = True
@@ -95,10 +95,10 @@ def test_school_class_soft_delete_recreation(db_session, db_school):
         name="Class 10 Special",
         display_order=10,
     )
-    db_session.add(cls_dup)
     with pytest.raises(IntegrityError):
-        db_session.commit()
-    db_session.rollback()
+        with db_session.begin_nested():
+            db_session.add(cls_dup)
+            db_session.commit()
 
     # Soft-delete cls1
     cls1.is_deleted = True

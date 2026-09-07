@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useLanguageStore } from '@/store/useLanguageStore';
 
 interface NavItem {
   name: string;
@@ -70,6 +71,10 @@ const navGroups: NavGroup[] = [
     title: 'Operations',
     items: [
       { name: 'Attendance', path: '/app/attendance', icon: <CalendarCheck className="w-4 h-4" />, permission: 'attendance.view' },
+      { name: 'Reception Desk', path: '/app/reception', icon: <UserCheck className="w-4 h-4" />, permission: 'visitors.view' },
+      { name: 'Staff Leave', path: '/app/staff-leave', icon: <UserCheck className="w-4 h-4" />, permission: 'staff_leave.view' },
+      { name: 'Events & Calendar', path: '/app/events', icon: <CalendarCheck className="w-4 h-4" />, permission: 'events.view' },
+      { name: 'Hostel Management', path: '/app/hostel', icon: <Building2 className="w-4 h-4" />, permission: 'hostel.view' },
       { name: 'Homework', path: '/app/homework', icon: <BookOpen className="w-4 h-4" />, permission: 'homework.view' },
       { name: 'Document Vault', path: '/app/documents', icon: <FileText className="w-4 h-4" />, permission: 'documents.view' },
       { name: 'Fees & Payments', path: '/app/fees', icon: <CreditCard className="w-4 h-4" />, permission: 'fees.view' },
@@ -99,6 +104,7 @@ export const Sidebar = ({
   onToggle: () => void;
 }) => {
   const { user, permissions, roles } = useAuthStore();
+  const { t } = useLanguageStore();
   const isSuperAdmin = user?.is_super_admin || roles?.some((r: any) => r.name === 'Super Admin' || r.name === 'SUPER_ADMIN');
 
 
@@ -120,26 +126,50 @@ export const Sidebar = ({
           </h3>
         )}
         <div className="space-y-px">
-          {filteredItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              title={collapsed ? item.name : undefined}
-              className={({ isActive }) =>
-                clsx(
-                  'flex items-center gap-3 px-3 py-2 text-xs font-medium transition-colors border-l-2',
-                  isActive
-                    ? 'bg-paper text-brand-500 dark:bg-stone-800 dark:text-brand-300 border-brand-500 font-semibold'
-                    : 'border-transparent text-ink-muted hover:bg-paper hover:text-ink dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-200'
-                )
-              }
-            >
-              <span className="shrink-0 text-ink-muted/70">
-                {item.icon}
-              </span>
-              {!collapsed && <span className="truncate tracking-tight">{item.name}</span>}
-            </NavLink>
-          ))}
+          {filteredItems.map((item) => {
+            const keyMap: Record<string, string> = {
+              '/app/dashboard': 'navigation.menu.dashboard',
+              '/app/students': 'navigation.menu.students',
+              '/app/teachers': 'navigation.menu.teachers',
+              '/app/academics': 'navigation.menu.academics',
+              '/app/progression': 'navigation.menu.progression',
+              '/app/attendance': 'navigation.menu.attendance',
+              '/app/staff-leave': 'navigation.menu.staff_leave',
+              '/app/events': 'navigation.menu.events',
+              '/app/hostel': 'navigation.menu.hostel',
+              '/app/homework': 'navigation.menu.homework',
+              '/app/documents': 'navigation.menu.documents',
+              '/app/fees': 'navigation.menu.fees',
+              '/app/exams': 'navigation.menu.exams',
+              '/app/timetable': 'navigation.menu.timetable',
+              '/app/notifications': 'navigation.menu.communication',
+              '/app/people': 'navigation.menu.roles',
+              '/app/audit-logs': 'navigation.menu.audit_log',
+              '/app/settings': 'navigation.menu.settings',
+            };
+            const localizedName = keyMap[item.path] ? t(keyMap[item.path]) : item.name;
+
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                title={collapsed ? localizedName : undefined}
+                className={({ isActive }) =>
+                  clsx(
+                    'flex items-center gap-3 px-3 py-2 text-xs font-medium transition-colors border-l-2',
+                    isActive
+                      ? 'bg-paper text-brand-500 dark:bg-stone-800 dark:text-brand-300 border-brand-500 font-semibold'
+                      : 'border-transparent text-ink-muted hover:bg-paper hover:text-ink dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-200'
+                  )
+                }
+              >
+                <span className="shrink-0 text-ink-muted/70">
+                  {item.icon}
+                </span>
+                {!collapsed && <span className="truncate tracking-tight">{localizedName}</span>}
+              </NavLink>
+            );
+          })}
         </div>
       </div>
     );

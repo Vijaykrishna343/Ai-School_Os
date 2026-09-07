@@ -109,12 +109,21 @@ def student_api_fixture(db_session):
     superadmin_role = create_role_with_permissions(db, school_a.id, "Super Admin", ["student.view"])
 
     # 3. Parents
+    email_pa = f"parenta_{uuid.uuid4().hex[:6]}@schoola.com"
+    phone_pa = f"+919{uuid.uuid4().int % 1000000009:09d}"
+    email_pb = f"parentb_{uuid.uuid4().hex[:6]}@schoola.com"
+    phone_pb = f"+919{uuid.uuid4().int % 1000000009:09d}"
+    email_pno = f"parent_no_child_{uuid.uuid4().hex[:6]}@schoola.com"
+    phone_pno = f"+919{uuid.uuid4().int % 1000000009:09d}"
+    email_pbs = f"parent_b_school_{uuid.uuid4().hex[:6]}@schoolb.com"
+    phone_pbs = f"+919{uuid.uuid4().int % 1000000009:09d}"
+
     parent_a = Parent(
         id=uuid.uuid4(),
         school_id=school_a.id,
         father_name="Father Alpha",
-        primary_phone="+919876543210",
-        email="parenta@schoola.com",
+        primary_phone=phone_pa,
+        email=email_pa,
         address_line1="123 Main St",
         city="Delhi",
         district="Central",
@@ -125,8 +134,8 @@ def student_api_fixture(db_session):
         id=uuid.uuid4(),
         school_id=school_a.id,
         father_name="Father Beta",
-        primary_phone="+919876543211",
-        email="parentb@schoola.com",
+        primary_phone=phone_pb,
+        email=email_pb,
         address_line1="456 Park Ave",
         city="Delhi",
         district="Central",
@@ -137,8 +146,8 @@ def student_api_fixture(db_session):
         id=uuid.uuid4(),
         school_id=school_a.id,
         father_name="Father Childless",
-        primary_phone="+919876543212",
-        email="parent_no_child@schoola.com",
+        primary_phone=phone_pno,
+        email=email_pno,
         address_line1="789 Lonely Rd",
         city="Delhi",
         district="Central",
@@ -149,8 +158,8 @@ def student_api_fixture(db_session):
         id=uuid.uuid4(),
         school_id=school_b.id,
         father_name="Father School B",
-        primary_phone="+919876543219",
-        email="parent_b_school@schoolb.com",
+        primary_phone=phone_pbs,
+        email=email_pbs,
         address_line1="100 Beta Rd",
         city="Delhi",
         district="Central",
@@ -274,13 +283,13 @@ def student_api_fixture(db_session):
 
     # 5. Identity Users & Headers
     user_parent_a, headers_parent_a = create_user_and_auth_headers(
-        db, school_a.id, "parenta@schoola.com", parent_role, phone="+919876543210"
+        db, school_a.id, email_pa, parent_role, phone=phone_pa
     )
     user_parent_b, headers_parent_b = create_user_and_auth_headers(
-        db, school_a.id, "parentb@schoola.com", parent_role, phone="+919876543211"
+        db, school_a.id, email_pb, parent_role, phone=phone_pb
     )
     user_parent_no_child, headers_parent_no_child = create_user_and_auth_headers(
-        db, school_a.id, "parent_no_child@schoola.com", parent_role, phone="+919876543212"
+        db, school_a.id, email_pno, parent_role, phone=phone_pno
     )
     user_student_a1, headers_student_a1 = create_user_and_auth_headers(
         db, school_a.id, "child_a1@schoola.com", student_role, username="ADM-PA-001"

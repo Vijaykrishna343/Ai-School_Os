@@ -263,8 +263,8 @@ def academic_results_fixture(db_session):
     db.commit()
     sec_b = Section(id=uuid.uuid4(), school_class_id=sc_b.id, name="Section B")
     subj_b = Subject(id=uuid.uuid4(), school_id=school_b.id, subject_code="MATH10B", subject_name="Mathematics B")
-    eval_a = EvaluationConfig(id=uuid.uuid4(), school_id=school_a.id, academic_year_id=ay_a.id, name="Default Config A", is_default=True)
-    eval_b = EvaluationConfig(id=uuid.uuid4(), school_id=school_b.id, academic_year_id=ay_b.id, name="Default Config B", is_default=True)
+    eval_a = EvaluationConfig(id=uuid.uuid4(), school_id=school_a.id, academic_year_id=ay_a.id, name=f"Config_A_{uuid.uuid4().hex[:6]}", is_default=False)
+    eval_b = EvaluationConfig(id=uuid.uuid4(), school_id=school_b.id, academic_year_id=ay_b.id, name=f"Config_B_{uuid.uuid4().hex[:6]}", is_default=False)
     db.add_all([sec_b, subj_b, eval_a, eval_b])
     db.commit()
 

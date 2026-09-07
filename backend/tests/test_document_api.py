@@ -123,17 +123,17 @@ def setup_document_data(db_session: Session):
     # Teacher & Parent Profiles
     t_a = Teacher(
         school_id=school_a.id, employee_id=f"EMP_{suffix}",
-        first_name="Alice", last_name="Teacher", email=u_teacher_a.email, phone="9998887771",
+        first_name="Alice", last_name="Teacher", email=u_teacher_a.email, phone=f"9{uuid.uuid4().int % 1000000009:09d}",
         gender=Gender.FEMALE, date_of_birth=date(1990, 1, 1), joining_date=date(2020, 6, 1), status=TeacherStatus.ACTIVE,
         qualification="M.Sc Math", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001",
     )
     p_a = Parent(
         school_id=school_a.id, father_name="Papa", mother_name="Mama",
-        email=u_parent_a.email, primary_phone="9876543210", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001",
+        email=u_parent_a.email, primary_phone=f"9{uuid.uuid4().int % 1000000009:09d}", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001",
     )
     p_b = Parent(
         school_id=school_b.id, father_name="Papa B", mother_name="Mama B",
-        email=f"parent_doc_b_{suffix}@school.com", primary_phone="9876543211", address_line1="456 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001",
+        email=f"parent_doc_b_{suffix}@school.com", primary_phone=f"9{uuid.uuid4().int % 1000000009:09d}", address_line1="456 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001",
     )
     db_session.add_all([t_a, p_a, p_b])
     db_session.commit()

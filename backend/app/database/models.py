@@ -38,20 +38,12 @@ from app.models.grading import (
 from app.models.timetable import PeriodSlot, Classroom, Timetable, TimetableEntry, TeacherSubstitution
 from app.models.homework import Homework, HomeworkStatus, HomeworkSubmission, SubmissionStatus
 from app.models.fees import FeePayment, CashSession
-from app.models.document import Document, OwnerType, DocumentStatus, DocumentCategory
-from app.models.background_job import BackgroundJob, JobStatus, JobType
-
-# ==========================
-# Identity Models
-# ==========================
-
-from app.identity.models import (
-    IdentityUser,
-    IdentityRole,
-    IdentityPermission,
-    IdentityUserRole,
-    IdentityRolePermission,
-)
+from app.models.payment import PaymentOrder, PaymentTransaction
+from app.models.visitor import Visitor, ReceptionInquiry
+from app.models.document import Document
+from app.identity.models.user import IdentityUser
+from app.identity.models.role import IdentityRole
+from app.identity.models.permission import IdentityPermission
 
 __all__ = [
     "School",
@@ -90,5 +82,7 @@ __all__ = [
     "Document",
     "FeePayment",
     "CashSession",
+    "PaymentOrder",
+    "PaymentTransaction",
 ]
 

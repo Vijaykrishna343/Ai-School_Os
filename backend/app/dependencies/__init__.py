@@ -57,6 +57,8 @@ from .services import (
     get_timetable_conflict_service,
     get_teacher_substitution_service,
     get_dashboard_service,
+    get_visitor_service,
+    get_reception_inquiry_service,
 )
 
 __all__ = [
@@ -120,4 +122,6 @@ __all__ = [
     "get_timetable_conflict_service",
     "get_teacher_substitution_service",
     "get_dashboard_service",
+    "get_visitor_service",
+    "get_reception_inquiry_service",
 ]

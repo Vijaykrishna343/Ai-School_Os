@@ -1,0 +1,18 @@
+{
+  "title": "Student Directory",
+  "subtitle": "Manage student records, enrollments, and transfer certificates.",
+  "actions": {
+    "add_student": "Add Student",
+    "issue_tc": "Issue TC",
+    "view_dossier": "View Dossier"
+  },
+  "fields": {
+    "admission_number": "Admission No.",
+    "name": "Student Name",
+    "class_section": "Class & Section",
+    "gender": "Gender",
+    "roll_number": "Roll No.",
+    "guardian": "Guardian Name",
+    "status": "Status"
+  }
+}

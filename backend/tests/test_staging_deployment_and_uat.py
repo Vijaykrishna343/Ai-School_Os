@@ -115,7 +115,19 @@ def setup_staging_school_environment(db: Session, school_prefix: str = "Staging"
         state="Telangana",
         postal_code="500081",
     )
-    db.add(parent)
+    parent_unlinked = Parent(
+        id=uuid.uuid4(),
+        school_id=school.id,
+        father_name=f"ParentUnlinkedFather_{s}",
+        primary_phone=f"98{uuid.uuid4().int % 100000000:08d}",
+        email=f"parent_unlinked_{s}@staging.com",
+        address_line1="100 Staging Blvd",
+        city="Hyderabad",
+        district="Hyderabad",
+        state="Telangana",
+        postal_code="500081",
+    )
+    db.add_all([parent, parent_unlinked])
     db.commit()
 
     student_linked = Student(
@@ -141,7 +153,7 @@ def setup_staging_school_environment(db: Session, school_prefix: str = "Staging"
     student_unlinked = Student(
         id=uuid.uuid4(),
         school_id=school.id,
-        parent_id=uuid.uuid4(),
+        parent_id=parent_unlinked.id,
         academic_year_id=ay.id,
         school_class_id=sc.id,
         section_id=sec.id,

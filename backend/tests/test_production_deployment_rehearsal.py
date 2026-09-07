@@ -259,13 +259,13 @@ def test_06_tenant_and_relationship_isolation_drill(db_session: Session):
     db_session.commit()
 
     parent_a = create_test_parent(db_session, school_a.id)
+    parent_a_unlinked = create_test_parent(db_session, school_a.id)
+    parent_b = create_test_parent(db_session, school_b.id)
 
     student_a1 = create_test_student(db_session, school_a.id, parent_a.id, ay_a.id, sc_a.id, sec_a.id, "ChildA1")
-    student_a2_unlinked = create_test_student(db_session, school_a.id, parent_a.id, ay_a.id, sc_a.id, sec_a.id, "UnlinkedA2")
-    student_a2_unlinked.parent_id = uuid.uuid4()
-    db_session.commit()
+    student_a2_unlinked = create_test_student(db_session, school_a.id, parent_a_unlinked.id, ay_a.id, sc_a.id, sec_a.id, "UnlinkedA2")
 
-    student_b1 = create_test_student(db_session, school_b.id, uuid.uuid4(), ay_b.id, sc_b.id, sec_b.id, "ChildB1")
+    student_b1 = create_test_student(db_session, school_b.id, parent_b.id, ay_b.id, sc_b.id, sec_b.id, "ChildB1")
 
     parent_user = IdentityUser(
         id=uuid.uuid4(),

@@ -137,11 +137,11 @@ def hw_rel_fixture(db_session: Session):
 
     # Parents
     # Parent 1: Has Student 1 (Class 10A) and Student 2 (Class 9A) [Multi-child parent]
-    p1 = Parent(school_id=sch_a.id, father_name="P1", mother_name="M1", email=u_p1_a.email, primary_phone="9876543211", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001")
+    p1 = Parent(school_id=sch_a.id, father_name="P1", mother_name="M1", email=u_p1_a.email, primary_phone=f"9{uuid.uuid4().int % 1000000009:09d}", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001")
     # Parent 2: Has Student 3 (Class 10A) only
-    p2 = Parent(school_id=sch_a.id, father_name="P2", mother_name="M2", email=u_p2_a.email, primary_phone="9876543212", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001")
+    p2 = Parent(school_id=sch_a.id, father_name="P2", mother_name="M2", email=u_p2_a.email, primary_phone=f"9{uuid.uuid4().int % 1000000009:09d}", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001")
     # Parent Zero: Has NO linked students
-    pzero = Parent(school_id=sch_a.id, father_name="PZero", mother_name="MZero", email=u_pzero_a.email, primary_phone="9876543213", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001")
+    pzero = Parent(school_id=sch_a.id, father_name="PZero", mother_name="MZero", email=u_pzero_a.email, primary_phone=f"9{uuid.uuid4().int % 1000000009:09d}", address_line1="123 St", city="Hyd", district="Hyd", state="Telangana", postal_code="500001")
 
     db_session.add_all([p1, p2, pzero])
     db_session.commit()

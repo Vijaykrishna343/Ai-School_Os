@@ -1,0 +1,17 @@
+{
+  "title": "Academic Architecture Management",
+  "tabs": {
+    "years": "Academic Years",
+    "terms": "Academic Terms",
+    "classes": "Classes & Grades",
+    "sections": "Class Sections",
+    "subjects": "Subject Catalog"
+  },
+  "actions": {
+    "add_year": "Add Academic Year",
+    "add_term": "Add Academic Term",
+    "add_class": "Create Class",
+    "add_section": "Create Section",
+    "add_subject": "Create Subject"
+  }
+}

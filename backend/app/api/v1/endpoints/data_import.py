@@ -81,7 +81,7 @@ def commit_student_onboarding(
         school_id=current_user.school_id,
         atomic_mode=atomic_mode,
     )
-    status_code = status.HTTP_200_OK if commit_res["success"] else status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_200_OK if commit_res["success"] else status.HTTP_422_UNPROCESSABLE_CONTENT
     return JSONResponse(
         status_code=status_code,
         content=commit_res,

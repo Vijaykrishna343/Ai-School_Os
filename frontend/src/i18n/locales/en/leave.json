@@ -1,0 +1,14 @@
+{
+  "title": "Staff Leave & Approval Management",
+  "status": {
+    "pending": "Pending Approval",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled"
+  },
+  "actions": {
+    "apply_leave": "Apply for Leave",
+    "approve_leave": "Approve Request",
+    "reject_leave": "Reject Request"
+  }
+}

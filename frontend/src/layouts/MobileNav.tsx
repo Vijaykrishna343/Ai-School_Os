@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useLanguageStore } from '@/store/useLanguageStore';
+import { LanguageSelector } from '@/components/ui/LanguageSelector';
 
 interface NavItem {
   name: string;
@@ -34,6 +36,9 @@ const navigationItems: NavItem[] = [
   { name: 'Academics', path: '/app/academics', icon: <BookOpen className="w-5 h-5" />, permission: 'academic_year.view' },
   { name: 'Progression', path: '/app/progression', icon: <TrendingUp className="w-5 h-5" />, permission: 'progression_matrix.view' },
   { name: 'Attendance', path: '/app/attendance', icon: <CalendarCheck className="w-5 h-5" />, permission: 'attendance.view' },
+  { name: 'Reception Desk', path: '/app/reception', icon: <UserCheck className="w-5 h-5" />, permission: 'visitors.view' },
+  { name: 'Staff Leave', path: '/app/staff-leave', icon: <UserCheck className="w-5 h-5" />, permission: 'staff_leave.view' },
+
   { name: 'Fees & Payments', path: '/app/fees', icon: <CreditCard className="w-5 h-5" />, permission: 'fees.view' },
   { name: 'Exams & Reports', path: '/app/exams', icon: <FileSpreadsheet className="w-5 h-5" />, permission: 'exam.view' },
   { name: 'Timetable', path: '/app/timetable', icon: <Clock className="w-5 h-5" />, permission: 'timetable.view' },
@@ -87,6 +92,11 @@ export const MobileNav = ({
           >
             <X className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Mobile Language Selector */}
+        <div className="px-3 py-2 border-b border-divider dark:border-stone-800 bg-paper dark:bg-stone-950">
+          <LanguageSelector />
         </div>
 
         <nav className="flex-1 px-1 py-3 overflow-y-auto space-y-px">

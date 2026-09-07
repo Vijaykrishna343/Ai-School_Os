@@ -136,7 +136,7 @@ def test_student_survives_academic_year_soft_deletion(db_session):
         id=uuid.uuid4(),
         school_id=school.id,
         father_name="Ramesh Kumar",
-        primary_phone="9876543210",
+        primary_phone=f"9{uuid.uuid4().int % 1000000009:09d}",
         relationship=ParentRelationship.FATHER,
         address_line1="12 Park St",
         city="Delhi",

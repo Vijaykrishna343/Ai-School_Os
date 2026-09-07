@@ -7,13 +7,24 @@ from app.identity.repositories import (
 )
 
 
+def clear_identity_tables(db):
+    from app.identity.models.role_permission import IdentityRolePermission
+    from app.identity.models.role import IdentityRole
+    from app.identity.models.permission import IdentityPermission
+    db.query(IdentityRolePermission).delete()
+    db.query(IdentityRole).delete()
+    db.query(IdentityPermission).delete()
+    db.commit()
+
+
 def test_seed_identity_first_run(db_session):
+    clear_identity_tables(db_session)
     summary = seed_identity(db_session)
 
     assert summary["permissions_created"] == len(DEFAULT_PERMISSIONS)
     assert summary["permissions_skipped"] == 0
 
-    assert summary["roles_created"] == 10
+    assert summary["roles_created"] == 13
     assert summary["roles_skipped"] == 0
 
     assert summary["assignments_created"] > 0
@@ -24,7 +35,7 @@ def test_seed_identity_first_run(db_session):
     assert len(all_perms) == len(DEFAULT_PERMISSIONS)
 
     all_roles = role_repository.get_system_roles(db_session)
-    assert len(all_roles) == 10
+    assert len(all_roles) == 13
 
     # Verify Super Admin has all permissions
     super_admin = role_repository.get_by_name(db_session, None, "Super Admin")
@@ -34,10 +45,11 @@ def test_seed_identity_first_run(db_session):
 
 
 def test_seed_identity_idempotency(db_session):
+    clear_identity_tables(db_session)
     # First execution
     summary_1 = seed_identity(db_session)
     assert summary_1["permissions_created"] == len(DEFAULT_PERMISSIONS)
-    assert summary_1["roles_created"] == 10
+    assert summary_1["roles_created"] == 13
     assert summary_1["assignments_created"] > 0
 
     # Second execution (must skip all existing)
@@ -46,7 +58,7 @@ def test_seed_identity_idempotency(db_session):
     assert summary_2["permissions_skipped"] == len(DEFAULT_PERMISSIONS)
 
     assert summary_2["roles_created"] == 0
-    assert summary_2["roles_skipped"] == 10
+    assert summary_2["roles_skipped"] == 13
 
     assert summary_2["assignments_created"] == 0
     assert summary_2["assignments_skipped"] == summary_1["assignments_created"]

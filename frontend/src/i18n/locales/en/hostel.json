@@ -1,0 +1,16 @@
+{
+  "title": "Hostel Management Workspace",
+  "status": {
+    "allocated": "Allocated",
+    "vacant": "Vacant",
+    "outpass_pending": "Outpass Pending",
+    "outpass_approved": "Outpass Approved",
+    "outpass_rejected": "Outpass Rejected",
+    "checked_out": "Checked Out"
+  },
+  "actions": {
+    "allocate_bed": "Allocate Bed",
+    "request_outpass": "Request Outpass",
+    "night_roll_call": "Night Roll Call"
+  }
+}

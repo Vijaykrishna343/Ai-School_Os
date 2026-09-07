@@ -412,7 +412,7 @@ class TestNotifications:
 
     def test_list_notifications_empty(self, client, db_session):
         """Empty notifications list should return success."""
-        _, headers = create_school_user_with_perms(db_session, ["school.view"])
+        _, headers = create_school_user_with_perms(db_session, ["notification.view"])
 
         response = client.get("/api/v1/notifications", headers=headers)
         assert response.status_code == 200
@@ -422,7 +422,7 @@ class TestNotifications:
 
     def test_send_announcement_creates_notification(self, client, db_session):
         """Sending announcement should create a notification record."""
-        _, headers = create_school_user_with_perms(db_session, ["school.view", "school.update"])
+        _, headers = create_school_user_with_perms(db_session, ["notification.send"])
 
         payload = {
             "title": "School Closed Tomorrow",
@@ -439,13 +439,14 @@ class TestNotifications:
 
     def test_notification_templates_endpoint(self, client, db_session):
         """Templates endpoint should list all notification templates."""
-        _, headers = create_school_user_with_perms(db_session, ["school.view"])
+        _, headers = create_school_user_with_perms(db_session, ["notification.view"])
 
         response = client.get("/api/v1/notifications/templates", headers=headers)
         assert response.status_code == 200
         data = response.json()
-        assert "student_absent_alert" in data["data"]
-        assert "fee_payment_received" in data["data"]
+        keys = [item["template_key"] for item in data["data"]]
+        assert "student_absent_alert" in keys
+        assert "fee_payment_received" in keys
 
     def test_notification_without_auth_rejected(self, client):
         response = client.get("/api/v1/notifications")
@@ -453,8 +454,8 @@ class TestNotifications:
 
     def test_notification_tenant_isolation(self, client, db_session):
         """School A notifications should not appear for School B."""
-        _, headers_a = create_school_user_with_perms(db_session, ["school.view", "school.update"])
-        _, headers_b = create_school_user_with_perms(db_session, ["school.view"])
+        _, headers_a = create_school_user_with_perms(db_session, ["notification.send"])
+        _, headers_b = create_school_user_with_perms(db_session, ["notification.view"])
 
         # Create notification for school A
         payload = {
@@ -472,6 +473,31 @@ class TestNotifications:
         items_b = response_b.json()["data"]["items"]
         for item in items_b:
             assert item["title"] != "School A Announcement"
+
+    def test_list_notifications_unauthorized(self, client, db_session):
+        """Users without notification.view permission receive 403."""
+        _, headers = create_school_user_with_perms(db_session, ["school.view"])
+        response = client.get("/api/v1/notifications", headers=headers)
+        assert response.status_code == 403
+
+    def test_send_notification_unauthorized(self, client, db_session):
+        """Users without notification.send permission receive 403."""
+        _, headers = create_school_user_with_perms(db_session, ["school.view"])
+        payload = {
+            "title": "Title",
+            "message": "Message",
+            "recipient_name": "Name",
+            "recipient_contact": "Contact",
+            "channel": "IN_APP",
+        }
+        response = client.post("/api/v1/notifications/send", json=payload, headers=headers)
+        assert response.status_code == 403
+
+    def test_list_templates_unauthorized(self, client, db_session):
+        """Users without notification.view permission receive 403."""
+        _, headers = create_school_user_with_perms(db_session, ["school.view"])
+        response = client.get("/api/v1/notifications/templates", headers=headers)
+        assert response.status_code == 403
 
 
 # ══════════════════════════════════════════════════════════════════

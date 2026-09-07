@@ -27,9 +27,55 @@ from .subject import Subject
 from .teacher import Teacher
 from .notification import Notification, NotificationChannel, NotificationStatus, NotificationRecipientType
 from .audit_log import AuditLog
+from .hostel import (
+    HostelBuilding,
+    HostelRoom,
+    HostelBed,
+    HostelAllocation,
+    HostelAttendance,
+    HostelOutpass,
+    HostelFeeStructure,
+    HostelFeeAllocation,
+)
+from .event import SchoolEvent
+from .staff_leave import (
+    StaffLeaveType,
+    StaffLeaveBalance,
+    StaffLeaveRequest,
+    StaffLeaveApprovalHistory,
+)
+from .communication import (
+    UserCommunicationPreference,
+    NotificationTemplate,
+    InAppNotificationRead,
+)
+from .ai import (
+    AIProviderConfig,
+    AIAuditLog,
+    AIUsageLimit,
+    AITimetableDraft,
+    AITimetableDraftEntry,
+    AIStudentRiskAssessment,
+    AICommunicationDraft,
+    AIReportCardRemark,
+)
+from .payment import (
+    PaymentOrder,
+    PaymentTransaction,
+)
+from .visitor import (
+    ReceptionInquiry,
+    Visitor,
+)
 
 __all__ = [
     "AcademicYear",
+    "AIProviderConfig",
+    "AIAuditLog",
+    "AIUsageLimit",
+    "AIStudentRiskAssessment",
+    "AICommunicationDraft",
+    "AIReportCardRemark",
     "Attendance",
     "AuditLog",
     "ClassProgressionRule",
@@ -40,6 +86,25 @@ __all__ = [
     "FeeItem",
     "FeePayment",
     "FeeStructure",
+    "HostelBuilding",
+    "HostelRoom",
+    "HostelBed",
+    "HostelAllocation",
+    "HostelAttendance",
+    "HostelOutpass",
+    "HostelFeeStructure",
+    "HostelFeeAllocation",
+    "PaymentOrder",
+    "PaymentTransaction",
+    "ReceptionInquiry",
+    "SchoolEvent",
+    "StaffLeaveType",
+    "StaffLeaveBalance",
+    "StaffLeaveRequest",
+    "StaffLeaveApprovalHistory",
+    "UserCommunicationPreference",
+    "NotificationTemplate",
+    "InAppNotificationRead",
     "Notification",
     "NotificationChannel",
     "NotificationStatus",
@@ -55,4 +120,5 @@ __all__ = [
     "Subject",
     "Teacher",
     "TransferCertificate",
+    "Visitor",
 ]

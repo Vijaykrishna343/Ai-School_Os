@@ -61,6 +61,21 @@ DEFAULT_ROLES: list[dict[str, Any]] = [
         "description": "Student with access to personal attendance, fees, and marks.",
         "is_system": True,
     },
+    {
+        "name": "Warden",
+        "description": "Hostel Warden with access to hostel management, night roll call, and outpass workflows.",
+        "is_system": True,
+    },
+    {
+        "name": "Chairman",
+        "description": "School Chairman with high-level institutional oversight permissions.",
+        "is_system": True,
+    },
+    {
+        "name": "ATP",
+        "description": "Academic Training Program Administrator with academic monitoring access.",
+        "is_system": True,
+    },
 ]
 
 

@@ -7,14 +7,18 @@ import {
   User as UserIcon,
   Building,
   Menu,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useThemeStore } from '@/store/useThemeStore';
+import { LanguageSelector } from '@/components/ui/LanguageSelector';
+import { AIAssistantDrawer } from '@/components/ai/AIAssistantDrawer';
 
 export const TopHeader = ({ onOpenMobileNav }: { onOpenMobileNav: () => void }) => {
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -72,6 +76,20 @@ export const TopHeader = ({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
           </div>
         )}
 
+        {/* Language Selector */}
+        <LanguageSelector />
+
+        {/* AI Operational Assistant Button */}
+        <button
+          onClick={() => setAssistantOpen(true)}
+          className="flex items-center gap-1.5 px-2 py-1 bg-brand-500/10 hover:bg-brand-500/20 text-brand-600 dark:text-stone-200 border border-brand-500/30 rounded text-xs transition-colors"
+          title="Open AI Operational Assistant"
+          aria-label="Open AI Operational Assistant"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-brand-500" />
+          <span className="hidden sm:inline font-medium text-[11px]">AI Assistant</span>
+        </button>
+
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
@@ -125,6 +143,9 @@ export const TopHeader = ({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
             </div>
           )}
         </div>
+
+        {/* AI Assistant Drawer */}
+        <AIAssistantDrawer isOpen={assistantOpen} onClose={() => setAssistantOpen(false)} />
       </div>
     </header>
   );

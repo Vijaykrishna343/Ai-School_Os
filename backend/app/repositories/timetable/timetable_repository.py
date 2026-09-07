@@ -44,6 +44,7 @@ class TimetableRepository(BaseRepository[Timetable]):
         """
         Retrieve an active Timetable with all entries and nested relations pre-fetched.
         """
+        db.expire_all()
         return db.scalar(
             select(Timetable)
             .options(

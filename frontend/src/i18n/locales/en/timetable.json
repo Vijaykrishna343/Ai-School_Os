@@ -1,0 +1,12 @@
+{
+  "title": "Timetable Operations & Schedules",
+  "tabs": {
+    "grid": "Class Schedule Matrix",
+    "period_slots": "Period Slots Configuration",
+    "substitutions": "Teacher Substitutions"
+  },
+  "actions": {
+    "add_period_slot": "Add Period Slot",
+    "assign_substitution": "Assign Substitute Teacher"
+  }
+}

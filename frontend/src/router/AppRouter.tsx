@@ -25,6 +25,9 @@ const ImportPage = lazy(() => import('@/pages/ImportPage').then((m) => ({ defaul
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
 const AuditLogPage = lazy(() => import('@/pages/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 const HomeworkPage = lazy(() => import('@/pages/HomeworkPage').then((m) => ({ default: m.HomeworkPage })));
+const HostelPage = lazy(() => import('@/pages/HostelPage').then((m) => ({ default: m.HostelPage })));
+const EventsPage = lazy(() => import('@/pages/EventsPage').then((m) => ({ default: m.EventsPage })));
+const StaffLeavePage = lazy(() => import('@/pages/StaffLeavePage').then((m) => ({ default: m.StaffLeavePage })));
 
 const PlatformDashboard = lazy(() => import('@/pages/PlatformDashboard').then((m) => ({ default: m.PlatformDashboard })));
 const SchoolsPage = lazy(() => import('@/pages/SchoolsPage').then((m) => ({ default: m.SchoolsPage })));
@@ -32,6 +35,9 @@ const SchoolSuspendedPage = lazy(() => import('@/pages/SchoolSuspendedPage').the
 const PeopleAccessPage = lazy(() => import('@/pages/PeopleAccessPage').then((m) => ({ default: m.PeopleAccessPage })));
 const RoleManagementPage = lazy(() => import('@/pages/RoleManagementPage').then((m) => ({ default: m.RoleManagementPage })));
 const DocumentsPage = lazy(() => import('@/pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })));
+const ReceptionPage = lazy(() => import('@/pages/ReceptionPage').then((m) => ({ default: m.ReceptionPage })));
+const AISettingsPage = lazy(() => import('@/pages/AISettingsPage').then((m) => ({ default: m.AISettingsPage })));
+
 
 
 
@@ -224,6 +230,43 @@ export const AppRouter = () => {
             </PermissionRoute>
           }
         />
+
+        <Route
+          path="events"
+          element={
+            <PermissionRoute permission="events.view">
+              <EventsPage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="staff-leave"
+          element={
+            <PermissionRoute permission="staff_leave.view">
+              <StaffLeavePage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="reception"
+          element={
+            <PermissionRoute permission="visitors.view">
+              <ReceptionPage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="ai-settings"
+          element={
+            <PermissionRoute permission="system.settings">
+              <AISettingsPage />
+            </PermissionRoute>
+          }
+        />
+
       </Route>
 
       <Route

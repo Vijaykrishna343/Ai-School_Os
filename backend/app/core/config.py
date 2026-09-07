@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     STORAGE_PROVIDER: str = "local"
     TRUST_PROXY: bool = False
 
+    # Payment Gateway Settings (Phase 25.2)
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    RAZORPAY_WEBHOOK_SECRET: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
         env_file_encoding="utf-8",

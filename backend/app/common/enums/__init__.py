@@ -35,6 +35,17 @@ from .teacher import (
     Gender,
     TeacherStatus,
 )
+from .payment import (
+    PaymentProvider,
+    PaymentOrderStatus,
+    PaymentTransactionStatus,
+)
+from .visitor import (
+    HostType,
+    IdProofType,
+    ReceptionInquiryStatus,
+    VisitorStatus,
+)
 
 __all__ = [
     "AcademicYearStatus",
@@ -51,9 +62,15 @@ __all__ = [
     "FeeCategory",
     "FeeStructureStatus",
     "Gender",
+    "HostType",
+    "IdProofType",
     "PaymentMode",
+    "PaymentOrderStatus",
+    "PaymentProvider",
+    "PaymentTransactionStatus",
     "PromotionDecision",
     "PeriodType",
+    "ReceptionInquiryStatus",
     "ReportCardStatus",
     "RetestPolicy",
     "RoomType",
@@ -66,5 +83,6 @@ __all__ = [
     "TeacherStatus",
     "TimetableStatus",
     "TransferCertificateStatus",
+    "VisitorStatus",
     "parse_legacy_exam_type",
 ]
