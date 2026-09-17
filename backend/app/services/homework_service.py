@@ -34,9 +34,145 @@ from app.schemas.homework.homework_submission import (
     HomeworkSubmissionListResponse,
     HomeworkSubmissionResponse,
 )
+from app.common.enums import StudentStatus
+from app.models.notification import NotificationChannel, NotificationRecipientType
+from app.schemas.notification_trigger import NotificationTriggerEvent
 from app.services.notification_service import notification_service
+from app.services.notification_trigger_service import notification_trigger_service
 
 logger = get_logger(__name__)
+
+
+def _trigger_homework_published_notification(
+    db: Session,
+    school_id: UUID,
+    hw: Homework,
+) -> None:
+    """
+    Stages homework published notifications prior to DB commit.
+    Notifies eligible students and parents in targeted class/section.
+    Deduplicates recipients and uses unique idempotency keys per channel.
+    Wrapped in isolated try-except so notification errors never roll back homework operations.
+    """
+    try:
+        subject = db.get(Subject, hw.subject_id)
+        subject_name = (
+            getattr(subject, "subject_name", None)
+            or getattr(subject, "name", "Subject")
+        ) if subject else "Subject"
+        due_date_str = hw.due_date.strftime("%Y-%m-%d") if hw.due_date else "N/A"
+
+        stmt = select(Student).where(
+            Student.school_id == school_id,
+            Student.school_class_id == hw.school_class_id,
+            Student.is_deleted == False,
+            Student.status == StudentStatus.ACTIVE,
+        )
+        if hw.section_id:
+            stmt = stmt.where(Student.section_id == hw.section_id)
+        students = db.scalars(stmt).all()
+        logger.info(
+            "Found %d active students: %s",
+            len(students),
+            [(st.first_name, st.phone, st.email, st.parent_id) for st in students],
+        )
+
+        template_variables = {
+            "title": hw.title,
+            "subject_name": subject_name,
+            "due_date": due_date_str,
+        }
+
+        metadata = {
+            "homework_id": str(hw.id),
+            "school_id": str(school_id),
+            "event_type": "homework_published",
+        }
+
+        staged_recipients = set()
+
+        for st in students:
+            # 1. Student recipient
+            s_name = f"{st.first_name} {st.last_name or ''}".strip()
+            s_contact = st.phone or st.email
+            if s_contact and (NotificationRecipientType.STUDENT, st.id) not in staged_recipients:
+                staged_recipients.add((NotificationRecipientType.STUDENT, st.id))
+                s_channels = [NotificationChannel.IN_APP]
+                if st.phone:
+                    s_channels.append(NotificationChannel.SMS)
+                    s_channels.append(NotificationChannel.WHATSAPP)
+                if st.email:
+                    s_channels.append(NotificationChannel.EMAIL)
+
+                for ch in s_channels:
+                    idempotency_key = f"homework_published:{hw.id}:student:{st.id}:{ch.value.lower()}"
+                    event = NotificationTriggerEvent(
+                        event_type="homework_published",
+                        school_id=school_id,
+                        recipient_type=NotificationRecipientType.STUDENT,
+                        recipient_name=s_name,
+                        recipient_contact=s_contact,
+                        channel=ch,
+                        template_key="homework_published",
+                        template_variables=template_variables,
+                        recipient_id=st.id,
+                        idempotency_key=idempotency_key,
+                        event_metadata=metadata,
+                    )
+                    notification_trigger_service.stage_notification_event(
+                        db=db, event=event, auto_dispatch_on_commit=True
+                    )
+
+            # 2. Parent recipient
+            if st.parent_id:
+                parent = db.scalar(
+                    select(Parent).where(
+                        Parent.id == st.parent_id,
+                        Parent.school_id == school_id,
+                        Parent.is_deleted == False,
+                    )
+                )
+                if parent and (NotificationRecipientType.PARENT, parent.id) not in staged_recipients:
+                    p_contact = parent.primary_phone or parent.email
+                    if p_contact:
+                        staged_recipients.add((NotificationRecipientType.PARENT, parent.id))
+                        p_name = (
+                            parent.father_name
+                            or parent.guardian_name
+                            or parent.mother_name
+                            or f"Parent of {st.first_name}"
+                        )
+                        p_channels = [NotificationChannel.IN_APP]
+                        if parent.primary_phone:
+                            p_channels.append(NotificationChannel.SMS)
+                            p_channels.append(NotificationChannel.WHATSAPP)
+                        if parent.email:
+                            p_channels.append(NotificationChannel.EMAIL)
+
+                        for ch in p_channels:
+                            idempotency_key = f"homework_published:{hw.id}:parent:{parent.id}:{ch.value.lower()}"
+                            event = NotificationTriggerEvent(
+                                event_type="homework_published",
+                                school_id=school_id,
+                                recipient_type=NotificationRecipientType.PARENT,
+                                recipient_name=p_name,
+                                recipient_contact=p_contact,
+                                channel=ch,
+                                template_key="homework_published",
+                                template_variables=template_variables,
+                                recipient_id=parent.id,
+                                idempotency_key=idempotency_key,
+                                event_metadata=metadata,
+                            )
+                            notification_trigger_service.stage_notification_event(
+                                db=db, event=event, auto_dispatch_on_commit=True
+                            )
+    except Exception as exc:
+        logger.warning(
+            "Failed to stage homework publication notification for homework %s: %s",
+            hw.id,
+            exc,
+        )
 
 
 class HomeworkService:
@@ -189,6 +325,8 @@ class HomeworkService:
         if not hw:
             raise NotFoundException("Homework assignment not found.")
 
+        prev_status = hw.status
+
         if payload.title is not None:
             hw.title = payload.title
         if payload.description is not None:
@@ -197,6 +335,14 @@ class HomeworkService:
             hw.due_date = payload.due_date
         if payload.status is not None:
             hw.status = payload.status
+
+        status_changed_to_published = (
+            payload.status == HomeworkStatus.PUBLISHED
+            and prev_status != HomeworkStatus.PUBLISHED
+        )
+        if status_changed_to_published:
+            hw.published_at = datetime.now(timezone.utc)
+            _trigger_homework_published_notification(db, school_id, hw)
 
         audit = AuditLog(
             school_id=school_id,
@@ -229,8 +375,12 @@ class HomeworkService:
         if not hw:
             raise NotFoundException("Homework assignment not found.")
 
+        prev_status = hw.status
         hw.status = HomeworkStatus.PUBLISHED
         hw.published_at = datetime.now(timezone.utc)
+
+        if prev_status != HomeworkStatus.PUBLISHED:
+            _trigger_homework_published_notification(db, school_id, hw)
 
         audit = AuditLog(
             school_id=school_id,
@@ -244,34 +394,6 @@ class HomeworkService:
         db.add(audit)
         db.commit()
         db.refresh(hw)
-
-        # Notify Students in class/section
-        try:
-            stmt = select(Student).where(
-                Student.school_id == school_id,
-                Student.school_class_id == hw.school_class_id,
-            )
-            if hw.section_id:
-                stmt = stmt.where(Student.section_id == hw.section_id)
-            students = db.scalars(stmt).all()
-
-            subject = db.get(Subject, hw.subject_id)
-            subject_name = (getattr(subject, "subject_name", None) or getattr(subject, "name", "Subject")) if subject else "Subject"
-
-            for st in students:
-                notification_service.create_in_app_notification(
-                    db=db,
-                    school_id=school_id,
-                    recipient_id=st.id,
-                    recipient_type="STUDENT",
-                    template_key="general_announcement",
-                    variables={
-                        "title": f"New Homework: {hw.title}",
-                        "message": f"Homework assigned for {subject_name}. Due on {hw.due_date}.",
-                    },
-                )
-        except Exception as e:
-            logger.warning(f"Failed to dispatch homework notifications: {e}")
 
         return self._hydrate_homework_response(db, hw)
 

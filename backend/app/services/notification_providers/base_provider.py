@@ -25,7 +25,7 @@ class BaseNotificationProvider(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def send(self, notification: Notification) -> tuple[NotificationStatus, str | None]:
+    def send(self, notification: Notification, db: Session | None = None) -> tuple[NotificationStatus, str | None]:
         """
         Dispatches notification payload to target external provider or internal persistence.
         Returns tuple of (NotificationStatus, optional error_message).

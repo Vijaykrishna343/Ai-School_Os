@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.common.authorization import enforce_relationship_access
 from app.common.enums.report_card import ReportCardStatus
+from app.common.exceptions import ForbiddenException
 from app.dependencies import get_db, get_report_card_service
 from app.identity.dependencies import require_permission
 from app.identity.models import IdentityUser
@@ -72,6 +73,7 @@ def list_report_cards(
 
     effective_student_ids: list[UUID] | None = None
     effective_student_id: UUID | None = None
+    effective_status = card_status
 
     if isinstance(allowed_scope, list):
         if not allowed_scope:
@@ -82,6 +84,8 @@ def list_report_cards(
                 page_size=page_size,
                 total_pages=0,
             )
+        # Parent persona: strictly restricted to PUBLISHED cards
+        effective_status = ReportCardStatus.PUBLISHED
         if student_id is not None:
             if student_id in allowed_scope:
                 effective_student_ids = [student_id]
@@ -96,6 +100,8 @@ def list_report_cards(
         else:
             effective_student_ids = allowed_scope
     elif isinstance(allowed_scope, UUID):
+        # Student persona: strictly restricted to PUBLISHED cards
+        effective_status = ReportCardStatus.PUBLISHED
         if student_id is not None and student_id != allowed_scope:
             return ReportCardListResponse(
                 items=[],
@@ -116,7 +122,7 @@ def list_report_cards(
         section_id=section_id,
         student_id=effective_student_id,
         student_ids=effective_student_ids,
-        status=card_status,
+        status=effective_status,
         page=page,
         page_size=page_size,
     )
@@ -143,12 +149,16 @@ def get_report_card(
         current_school_id=current_user.school_id,
     )
 
-    enforce_relationship_access(
+    allowed_scope = enforce_relationship_access(
         db,
         school_id=current_user.school_id,
         current_user=current_user,
         target_student_id=card.student_id,
     )
+
+    # If Parent or Student, ensure report card is PUBLISHED
+    if isinstance(allowed_scope, (list, UUID)) and card.status != ReportCardStatus.PUBLISHED:
+        raise ForbiddenException("Report card is not yet published.")
 
     return ReportCardResponse.model_validate(card)
 

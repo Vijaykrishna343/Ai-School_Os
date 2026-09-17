@@ -1472,5 +1472,1300 @@ export interface ReceptionAnalyticsResponse {
   inquiry_trend: DailyTrendItem[];
 }
 
+export interface VisitorPreRegister {
+  visitor_name: string;
+  phone: string;
+  email?: string | null;
+  id_proof_type?: IdProofType | null;
+  id_proof_number?: string | null;
+  purpose: string;
+  host_type?: HostType | null;
+  host_id?: string | null;
+  expected_arrival_time?: string | null;
+  remarks?: string | null;
+}
+
+export interface VisitorBadgeResponse {
+  id: string;
+  pass_number: string;
+  visitor_name: string;
+  phone: string;
+  purpose: string;
+  host_type?: HostType | null;
+  status: VisitorStatus;
+  host_name?: string | null;
+  check_in_time: string;
+  badge_qr_code?: string | null;
+}
+
+// =============================================================================
+// TRANSPORT MANAGEMENT TYPES & ENUMS (Phase 28.1)
+// =============================================================================
+
+export type VehicleType = 'BUS' | 'MINIBUS' | 'VAN' | 'CAB' | 'OTHER';
+export type FuelType = 'PETROL' | 'DIESEL' | 'CNG' | 'ELECTRIC' | 'HYBRID' | 'OTHER';
+export type VehicleStatus = 'ACTIVE' | 'MAINTENANCE' | 'OUT_OF_SERVICE' | 'DECOMMISSIONED';
+export type TransportAllocationType = 'TWO_WAY' | 'PICKUP_ONLY' | 'DROP_ONLY';
+export type TransportAllocationStatus = 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
+
+export interface TransportVehicle {
+  id: string;
+  school_id: string;
+  registration_number: string;
+  vehicle_type: VehicleType;
+  fuel_type: FuelType;
+  capacity?: number;
+  vehicle_code: string;
+  seating_capacity: number;
+  description?: string | null;
+  make?: string | null;
+  model?: string | null;
+  year_of_manufacture?: number | null;
+  chassis_number?: string | null;
+  engine_number?: string | null;
+  insurance_number?: string | null;
+  insurance_expiry?: string | null;
+  insurance_expiry_date?: string | null;
+  fitness_certificate_expiry?: string | null;
+  fitness_expiry_date?: string | null;
+  puc_expiry?: string | null;
+  gps_device_id?: string | null;
+  status: VehicleStatus;
+  notes?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface TransportVehicleCreate {
+  registration_number: string;
+  vehicle_type: VehicleType;
+  fuel_type: FuelType;
+  capacity?: number;
+  vehicle_code: string;
+  seating_capacity: number;
+  description?: string | null;
+  make?: string | null;
+  model?: string | null;
+  year_of_manufacture?: number | null;
+  chassis_number?: string | null;
+  engine_number?: string | null;
+  insurance_number?: string | null;
+  insurance_expiry?: string | null;
+  insurance_expiry_date?: string | null;
+  fitness_certificate_expiry?: string | null;
+  fitness_expiry_date?: string | null;
+  puc_expiry?: string | null;
+  gps_device_id?: string | null;
+  status?: VehicleStatus;
+  notes?: string | null;
+}
+
+export interface TransportVehicleUpdate {
+  vehicle_type?: VehicleType;
+  fuel_type?: FuelType;
+  capacity?: number;
+  vehicle_code?: string;
+  seating_capacity?: number;
+  description?: string | null;
+  make?: string | null;
+  model?: string | null;
+  year_of_manufacture?: number | null;
+  chassis_number?: string | null;
+  engine_number?: string | null;
+  insurance_number?: string | null;
+  insurance_expiry?: string | null;
+  insurance_expiry_date?: string | null;
+  fitness_certificate_expiry?: string | null;
+  fitness_expiry_date?: string | null;
+  puc_expiry?: string | null;
+  gps_device_id?: string | null;
+  status?: VehicleStatus;
+  notes?: string | null;
+}
+
+export interface TransportDriver {
+  id: string;
+  school_id: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  license_number: string;
+  license_expiry?: string;
+  driver_name: string;
+  contact_phone: string;
+  license_expiry_date?: string | null;
+  staff_id?: string | null;
+  license_type?: string | null;
+  experience_years?: number | null;
+  address?: string | null;
+  emergency_contact?: string | null;
+  is_active: boolean;
+  notes?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface TransportDriverCreate {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  license_number: string;
+  license_expiry?: string;
+  driver_name: string;
+  contact_phone: string;
+  license_expiry_date?: string | null;
+  staff_id?: string | null;
+  license_type?: string | null;
+  experience_years?: number | null;
+  address?: string | null;
+  emergency_contact?: string | null;
+  is_active?: boolean;
+  notes?: string | null;
+}
+
+export interface TransportDriverUpdate {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  license_expiry?: string;
+  driver_name?: string;
+  contact_phone?: string;
+  license_expiry_date?: string | null;
+  staff_id?: string | null;
+  license_type?: string | null;
+  experience_years?: number | null;
+  address?: string | null;
+  emergency_contact?: string | null;
+  is_active?: boolean;
+  notes?: string | null;
+}
+
+export interface RouteStop {
+  id: string;
+  school_id: string;
+  route_id: string;
+  stop_name: string;
+  stop_order?: number;
+  stop_code: string;
+  sequence_order: number;
+  is_active?: boolean;
+  pickup_time?: string | null;
+  morning_pickup_time?: string | null;
+  drop_time?: string | null;
+  afternoon_drop_time?: string | null;
+  landmark?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  monthly_charge?: string | null;
+  pickup_fee_amount?: number | string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface RouteStopCreate {
+  stop_name: string;
+  stop_order?: number;
+  stop_code: string;
+  sequence_order: number;
+  is_active?: boolean;
+  pickup_time?: string | null;
+  morning_pickup_time?: string | null;
+  drop_time?: string | null;
+  afternoon_drop_time?: string | null;
+  landmark?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  monthly_charge?: string | null;
+  pickup_fee_amount?: number | string;
+}
+
+export interface RouteStopUpdate {
+  stop_name?: string;
+  stop_order?: number;
+  stop_code?: string;
+  sequence_order?: number;
+  is_active?: boolean;
+  pickup_time?: string | null;
+  morning_pickup_time?: string | null;
+  drop_time?: string | null;
+  afternoon_drop_time?: string | null;
+  landmark?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  monthly_charge?: string | null;
+  pickup_fee_amount?: number | string | null;
+}
+
+export interface TransportRoute {
+  id: string;
+  school_id: string;
+  name?: string;
+  code?: string;
+  route_code: string;
+  route_name: string;
+  description?: string | null;
+  vehicle_id?: string | null;
+  driver_id?: string | null;
+  start_point?: string | null;
+  end_point?: string | null;
+  morning_start_time?: string | null;
+  evening_start_time?: string | null;
+  attendant_name?: string | null;
+  attendant_phone?: string | null;
+  is_active: boolean;
+  stops_count?: number;
+  allocated_students_count?: number;
+  vehicle_registration_number?: string | null;
+  vehicle_capacity?: number | null;
+  driver_name?: string | null;
+  driver_phone?: string | null;
+  stops?: RouteStop[];
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface TransportRouteCreate {
+  name?: string;
+  code?: string;
+  route_code: string;
+  route_name: string;
+  description?: string | null;
+  vehicle_id?: string | null;
+  driver_id?: string | null;
+  start_point?: string | null;
+  end_point?: string | null;
+  morning_start_time?: string | null;
+  evening_start_time?: string | null;
+  attendant_name?: string | null;
+  attendant_phone?: string | null;
+  is_active?: boolean;
+}
+
+export interface TransportRouteUpdate {
+  name?: string;
+  code?: string;
+  route_code?: string;
+  route_name?: string;
+  description?: string | null;
+  vehicle_id?: string | null;
+  driver_id?: string | null;
+  start_point?: string | null;
+  end_point?: string | null;
+  morning_start_time?: string | null;
+  evening_start_time?: string | null;
+  attendant_name?: string | null;
+  attendant_phone?: string | null;
+  is_active?: boolean;
+}
+
+export interface StudentTransportAllocation {
+  id: string;
+  school_id: string;
+  student_id: string;
+  route_id: string;
+  stop_id?: string;
+  academic_year_id: string;
+  allocation_type: TransportAllocationType;
+  status: TransportAllocationStatus;
+  start_date: string;
+  end_date?: string | null;
+  remarks?: string | null;
+  student_name?: string | null;
+  student_admission_number?: string | null;
+  admission_number?: string | null;
+  student_class_name?: string | null;
+  route_name?: string | null;
+  route_code?: string | null;
+  stop_name?: string | null;
+  pickup_stop_name?: string | null;
+  drop_stop_name?: string | null;
+  pickup_stop_id?: string;
+  drop_stop_id?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface StudentTransportAllocationCreate {
+  student_id: string;
+  route_id: string;
+  stop_id?: string;
+  pickup_stop_id?: string | null;
+  drop_stop_id?: string | null;
+  academic_year_id: string;
+  allocation_type?: TransportAllocationType;
+  status?: TransportAllocationStatus;
+  start_date: string;
+  end_date?: string | null;
+  remarks?: string | null;
+}
+
+export interface StudentTransportAllocationUpdate {
+  route_id?: string;
+  stop_id?: string;
+  pickup_stop_id?: string | null;
+  drop_stop_id?: string | null;
+  allocation_type?: TransportAllocationType;
+  start_date?: string;
+  end_date?: string | null;
+  remarks?: string | null;
+}
+
+export interface StudentTransportAllocationStatusUpdate {
+  status: TransportAllocationStatus;
+  end_date?: string | null;
+  remarks?: string | null;
+}
+
+export interface TransportDashboardStats {
+  total_vehicles: number;
+  active_vehicles: number;
+  maintenance_vehicles: number;
+  out_of_service_vehicles?: number;
+  decommissioned_vehicles?: number;
+  total_drivers: number;
+  active_drivers: number;
+  total_routes: number;
+  active_routes: number;
+  total_allocated_students?: number;
+  total_fleet_capacity?: number;
+  capacity_utilization_percentage?: number;
+  total_stops?: number;
+  active_allocations?: number;
+  overall_occupancy_rate_percent: number;
+  total_occupied_seats?: number;
+  total_seating_capacity?: number;
+  total_available_seats?: number;
+  vehicles_occupancy: any[];
+}
+
+// =============================================================================
+// LIBRARY & CIRCULATION TYPES & ENUMS (Phase 28.2)
+// =============================================================================
+
+export type BookCondition = 'NEW' | 'GOOD' | 'FAIR' | 'POOR' | 'DAMAGED';
+export type BookCopyStatus = 'AVAILABLE' | 'ISSUED' | 'RESERVED' | 'MAINTENANCE' | 'LOST' | 'DISCARDED';
+export type BookLoanStatus = 'ISSUED' | 'RETURNED' | 'OVERDUE' | 'LOST';
+export type BookReservationStatus = 'PENDING' | 'FULFILLED' | 'CANCELLED' | 'EXPIRED';
+export type LibraryFineReason = 'OVERDUE' | 'DAMAGE' | 'LOSS' | 'OTHER';
+export type LibraryFineStatus = 'PENDING' | 'PAID' | 'WAIVED';
+export type LibraryMemberType = 'STUDENT' | 'TEACHER' | 'STAFF' | 'OTHER';
+export type LibraryMemberStatus = 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'CANCELLED';
+
+export interface Library {
+  id: string;
+  school_id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  location?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LibraryCreate {
+  name: string;
+  code: string;
+  description?: string | null;
+  location?: string | null;
+  is_active?: boolean;
+}
+
+export interface LibraryUpdate {
+  name?: string;
+  code?: string;
+  description?: string | null;
+  location?: string | null;
+  is_active?: boolean;
+}
+
+export interface BookCategory {
+  id: string;
+  school_id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookCategoryCreate {
+  name: string;
+  code: string;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export interface BookCategoryUpdate {
+  name?: string;
+  code?: string;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export interface Book {
+  id: string;
+  school_id: string;
+  title: string;
+  subtitle?: string | null;
+  author: string;
+  co_authors?: string | null;
+  publisher?: string | null;
+  publication_year?: number | null;
+  isbn?: string | null;
+  isbn13?: string | null;
+  edition?: string | null;
+  language?: string;
+  total_pages?: number | null;
+  category_id?: string | null;
+  library_id?: string | null;
+  description?: string | null;
+  cover_image_url?: string | null;
+  is_active: boolean;
+  category_name?: string | null;
+  library_name?: string | null;
+  total_copies_count?: number;
+  copies_count?: number;
+  available_copies_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookCreate {
+  title: string;
+  subtitle?: string | null;
+  author: string;
+  co_authors?: string | null;
+  publisher?: string | null;
+  publication_year?: number | null;
+  isbn?: string | null;
+  isbn13?: string | null;
+  edition?: string | null;
+  language?: string;
+  total_pages?: number | null;
+  category_id?: string | null;
+  library_id?: string | null;
+  description?: string | null;
+  cover_image_url?: string | null;
+  is_active?: boolean;
+}
+
+export interface BookUpdate {
+  title?: string;
+  subtitle?: string | null;
+  author?: string;
+  co_authors?: string | null;
+  publisher?: string | null;
+  publication_year?: number | null;
+  isbn?: string | null;
+  isbn13?: string | null;
+  edition?: string | null;
+  language?: string;
+  total_pages?: number | null;
+  category_id?: string | null;
+  library_id?: string | null;
+  description?: string | null;
+  cover_image_url?: string | null;
+  is_active?: boolean;
+}
+
+export interface BookCopy {
+  id: string;
+  school_id: string;
+  book_id: string;
+  library_id?: string | null;
+  accession_number: string;
+  barcode?: string | null;
+  rfid_tag?: string | null;
+  status: BookCopyStatus;
+  condition: BookCondition;
+  shelf_location?: string | null;
+  acquisition_price?: string | null;
+  acquisition_date?: string | null;
+  remarks?: string | null;
+  book_title?: string | null;
+  book_author?: string | null;
+  library_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookCopyCreate {
+  book_id: string;
+  library_id?: string | null;
+  accession_number: string;
+  barcode?: string | null;
+  rfid_tag?: string | null;
+  status?: BookCopyStatus;
+  condition?: BookCondition;
+  shelf_location?: string | null;
+  acquisition_price?: string | null;
+  acquisition_date?: string | null;
+  remarks?: string | null;
+}
+
+export interface BookCopyUpdate {
+  library_id?: string | null;
+  accession_number?: string;
+  barcode?: string | null;
+  rfid_tag?: string | null;
+  status?: BookCopyStatus;
+  condition?: BookCondition;
+  shelf_location?: string | null;
+  acquisition_price?: string | null;
+  acquisition_date?: string | null;
+  remarks?: string | null;
+}
+
+export interface LibraryMember {
+  id: string;
+  school_id: string;
+  member_type: LibraryMemberType;
+  student_id?: string | null;
+  teacher_id?: string | null;
+  user_id?: string | null;
+  card_number: string;
+  issue_date: string;
+  expiry_date?: string | null;
+  max_books_allowed: number;
+  status: LibraryMemberStatus;
+  remarks?: string | null;
+  display_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  active_loans_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LibraryMemberCreate {
+  member_type: LibraryMemberType;
+  student_id?: string | null;
+  teacher_id?: string | null;
+  user_id?: string | null;
+  card_number: string;
+  issue_date?: string;
+  expiry_date?: string | null;
+  max_books_allowed?: number;
+  status?: LibraryMemberStatus;
+  remarks?: string | null;
+}
+
+export interface LibraryMemberUpdate {
+  card_number?: string;
+  expiry_date?: string | null;
+  max_books_allowed?: number;
+  status?: LibraryMemberStatus;
+  remarks?: string | null;
+}
+
+export interface BookLoan {
+  id: string;
+  school_id: string;
+  book_copy_id: string;
+  member_id: string;
+  issued_by_user_id?: string | null;
+  received_by_user_id?: string | null;
+  issue_date: string;
+  due_date: string;
+  return_date?: string | null;
+  renewal_count: number;
+  status: BookLoanStatus;
+  remarks?: string | null;
+  book_title?: string | null;
+  accession_number?: string | null;
+  barcode?: string | null;
+  member_display_name?: string | null;
+  member_card_number?: string | null;
+  is_overdue?: boolean;
+  days_overdue?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookLoanCheckout {
+  member_id: string;
+  book_copy_id: string;
+  issue_date?: string;
+  due_date?: string;
+  remarks?: string | null;
+}
+
+export interface BookLoanReturn {
+  return_date?: string;
+  remarks?: string | null;
+}
+
+export interface BookLoanRenew {
+  new_due_date?: string;
+  remarks?: string | null;
+}
+
+export interface BookReservation {
+  id: string;
+  school_id: string;
+  book_id: string;
+  member_id: string;
+  reservation_date: string;
+  expiry_date?: string | null;
+  status: BookReservationStatus;
+  remarks?: string | null;
+  book_title?: string | null;
+  member_display_name?: string | null;
+  member_card_number?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookReservationCreate {
+  book_id: string;
+  member_id: string;
+  reservation_date?: string;
+  expiry_date?: string | null;
+  remarks?: string | null;
+}
+
+export interface LibraryFine {
+  id: string;
+  school_id: string;
+  loan_id: string;
+  member_id: string;
+  assessed_by_user_id?: string | null;
+  amount: string;
+  fine_reason: LibraryFineReason;
+  status: LibraryFineStatus;
+  paid_date?: string | null;
+  waived_date?: string | null;
+  waived_by?: string | null;
+  waived_reason?: string | null;
+  remarks?: string | null;
+  member_display_name?: string | null;
+  member_card_number?: string | null;
+  book_title?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LibraryFineCreate {
+  loan_id: string;
+  member_id: string;
+  amount: string;
+  fine_reason?: LibraryFineReason;
+  status?: LibraryFineStatus;
+  remarks?: string | null;
+}
+
+export interface LibraryFineWaive {
+  waived_reason: string;
+}
+
+export interface LibrarySummaryResponse {
+  total_libraries_count: number;
+  total_categories_count: number;
+  total_books_count: number;
+  total_copies_count: number;
+  available_copies_count: number;
+  issued_copies_count: number;
+  reserved_copies_count: number;
+  maintenance_copies_count: number;
+  active_members_count: number;
+  active_loans_count: number;
+  overdue_loans_count: number;
+  pending_reservations_count: number;
+  pending_fines_count: number;
+  pending_fines_amount: string;
+}
+
+// =============================================================================
+// ADMISSIONS PIPELINE TYPES & ENUMS (Phase 28.3)
+// =============================================================================
+
+export type AdmissionCycleStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
+
+export type ApplicantStatus =
+  | 'PROSPECT'
+  | 'APPLIED'
+  | 'ENROLLED'
+  | 'REJECTED'
+  | 'WITHDRAWN';
+
+export type AdmissionApplicationStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'UNDER_REVIEW'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'WAITLISTED'
+  | 'WITHDRAWN';
+
+export type AdmissionDecisionType = 'ACCEPTED' | 'REJECTED' | 'WAITLISTED';
+
+export interface AdmissionCycle {
+  id: string;
+  school_id: string;
+  academic_year_id: string;
+  name: string;
+  code: string;
+  start_date: string;
+  end_date: string;
+  status: AdmissionCycleStatus;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdmissionCycleCreate {
+  academic_year_id: string;
+  name: string;
+  code: string;
+  start_date: string;
+  end_date: string;
+  description?: string | null;
+  status?: AdmissionCycleStatus;
+  is_active?: boolean;
+}
+
+export interface AdmissionCycleUpdate {
+  name?: string;
+  code?: string;
+  start_date?: string;
+  end_date?: string;
+  description?: string | null;
+  status?: AdmissionCycleStatus;
+  is_active?: boolean;
+}
+
+export interface Applicant {
+  id: string;
+  school_id: string;
+  admission_cycle_id?: string | null;
+  applicant_number: string;
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  date_of_birth: string;
+  gender: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  parent_name?: string | null;
+  parent_phone?: string | null;
+  parent_email?: string | null;
+  source?: string | null;
+  status: ApplicantStatus;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApplicantCreate {
+  admission_cycle_id?: string | null;
+  applicant_number?: string | null;
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  date_of_birth: string;
+  gender: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  parent_name?: string | null;
+  parent_phone?: string | null;
+  parent_email?: string | null;
+  source?: string | null;
+  status?: ApplicantStatus;
+  notes?: string | null;
+}
+
+export interface ApplicantUpdate {
+  admission_cycle_id?: string | null;
+  applicant_number?: string | null;
+  first_name?: string;
+  middle_name?: string | null;
+  last_name?: string;
+  date_of_birth?: string;
+  gender?: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  parent_name?: string | null;
+  parent_phone?: string | null;
+  parent_email?: string | null;
+  source?: string | null;
+  status?: ApplicantStatus;
+  notes?: string | null;
+}
+
+export interface AdmissionApplication {
+  id: string;
+  school_id: string;
+  applicant_id: string;
+  admission_cycle_id: string;
+  academic_year_id: string;
+  target_class_id: string;
+  target_section_id?: string | null;
+  application_number: string;
+  application_date: string;
+  status: AdmissionApplicationStatus;
+  submitted_at?: string | null;
+  reviewed_at?: string | null;
+  decision_at?: string | null;
+  remarks?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdmissionApplicationCreate {
+  applicant_id: string;
+  admission_cycle_id: string;
+  academic_year_id: string;
+  target_class_id: string;
+  target_section_id?: string | null;
+  application_number?: string | null;
+  application_date?: string;
+  status?: AdmissionApplicationStatus;
+  remarks?: string | null;
+}
+
+export interface AdmissionApplicationUpdate {
+  target_class_id?: string;
+  target_section_id?: string | null;
+  application_date?: string;
+  remarks?: string | null;
+}
+
+export interface ApplicationSubmitRequest {
+  remarks?: string | null;
+}
+
+export interface ApplicationReviewRequest {
+  remarks?: string | null;
+}
+
+export interface ApplicationWithdrawRequest {
+  reason: string;
+  remarks?: string | null;
+}
+
+export interface ApplicationStatusHistory {
+  id: string;
+  school_id: string;
+  application_id: string;
+  old_status?: string | null;
+  new_status: string;
+  changed_by_user_id?: string | null;
+  changed_at: string;
+  reason?: string | null;
+  remarks?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdmissionDecision {
+  id: string;
+  school_id: string;
+  application_id: string;
+  decision_type: AdmissionDecisionType;
+  decided_by_user_id?: string | null;
+  decided_at: string;
+  comments?: string | null;
+  conditions?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdmissionDecisionCreate {
+  decision_type: AdmissionDecisionType;
+  comments?: string | null;
+  conditions?: string | null;
+}
+
+// ============================================================================
+// INVENTORY & ASSET MANAGEMENT DOMAIN TYPES
+// ============================================================================
+
+export type InventoryItemType = 'CONSUMABLE' | 'ASSET';
+
+export type InventoryLocationType =
+  | 'WAREHOUSE'
+  | 'STORE_ROOM'
+  | 'LAB'
+  | 'LIBRARY_STORE'
+  | 'OFFICE'
+  | 'CLASSROOM'
+  | 'SPORTS_ROOM'
+  | 'OTHER';
+
+export type InventoryStockMovementType =
+  | 'PURCHASE_RECEIPT'
+  | 'ISSUE'
+  | 'TRANSFER'
+  | 'RETURN'
+  | 'ADJUSTMENT'
+  | 'DISCARD';
+
+export type AssetStatus =
+  | 'AVAILABLE'
+  | 'ASSIGNED'
+  | 'IN_REPAIR'
+  | 'DAMAGED'
+  | 'LOST'
+  | 'RETIRED'
+  | 'DISPOSED';
+
+export type AssetCondition = 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR' | 'DAMAGED';
+
+export type AssetAssignmentType =
+  | 'STAFF'
+  | 'STUDENT'
+  | 'CLASSROOM'
+  | 'DEPARTMENT'
+  | 'LOCATION'
+  | 'OTHER';
+
+export type AssetAssignmentStatus = 'ACTIVE' | 'RETURNED' | 'TRANSFERRED';
+
+export interface InventoryCategory {
+  id: string;
+  school_id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryCategoryCreate {
+  name: string;
+  code: string;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export interface InventoryCategoryUpdate {
+  name?: string;
+  code?: string;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export interface InventoryLocation {
+  id: string;
+  school_id: string;
+  name: string;
+  code: string;
+  location_type: InventoryLocationType;
+  parent_location_id?: string | null;
+  building_name?: string | null;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryLocationCreate {
+  name: string;
+  code: string;
+  location_type?: InventoryLocationType;
+  parent_location_id?: string | null;
+  building_name?: string | null;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export interface InventoryLocationUpdate {
+  name?: string;
+  code?: string;
+  location_type?: InventoryLocationType;
+  parent_location_id?: string | null;
+  building_name?: string | null;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export interface InventoryVendor {
+  id: string;
+  school_id: string;
+  name: string;
+  code: string;
+  contact_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  tax_id?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryVendorCreate {
+  name: string;
+  code: string;
+  contact_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  tax_id?: string | null;
+  is_active?: boolean;
+}
+
+export interface InventoryVendorUpdate {
+  name?: string;
+  code?: string;
+  contact_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  tax_id?: string | null;
+  is_active?: boolean;
+}
+
+export interface InventoryItem {
+  id: string;
+  school_id: string;
+  category_id: string;
+  item_code: string;
+  name: string;
+  description?: string | null;
+  item_type: InventoryItemType;
+  unit_of_measure: string;
+  track_individually: boolean;
+  reorder_level: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  category?: InventoryCategory | null;
+}
+
+export interface InventoryItemCreate {
+  category_id: string;
+  item_code: string;
+  name: string;
+  description?: string | null;
+  item_type?: InventoryItemType;
+  unit_of_measure?: string;
+  track_individually?: boolean;
+  reorder_level?: number;
+  is_active?: boolean;
+}
+
+export interface InventoryItemUpdate {
+  category_id?: string;
+  item_code?: string;
+  name?: string;
+  description?: string | null;
+  item_type?: InventoryItemType;
+  unit_of_measure?: string;
+  track_individually?: boolean;
+  reorder_level?: number;
+  is_active?: boolean;
+}
+
+export interface InventoryStock {
+  id: string;
+  school_id: string;
+  item_id: string;
+  location_id: string;
+  quantity: number;
+  reserved_quantity: number;
+  unit_price?: number | string | null;
+  last_counted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  item?: InventoryItem | null;
+  location?: InventoryLocation | null;
+}
+
+export interface InventoryStockSummary {
+  total_items: number;
+  total_stock_units: number;
+  total_locations: number;
+  low_stock_items_count: number;
+  out_of_stock_items_count: number;
+}
+
+export interface StockReceiveRequest {
+  item_id: string;
+  location_id: string;
+  quantity: number;
+  unit_price?: number | null;
+  vendor_id?: string | null;
+  reference_number?: string | null;
+  remarks?: string | null;
+}
+
+export interface StockIssueRequest {
+  item_id: string;
+  location_id: string;
+  quantity: number;
+  reference_number?: string | null;
+  remarks?: string | null;
+}
+
+export interface StockReturnRequest {
+  item_id: string;
+  location_id: string;
+  quantity: number;
+  reference_number?: string | null;
+  remarks?: string | null;
+}
+
+export interface StockAdjustmentRequest {
+  item_id: string;
+  location_id: string;
+  adjustment_type: 'ADD' | 'SUBTRACT';
+  quantity: number;
+  reason: string;
+  reference_number?: string | null;
+}
+
+export interface StockTransferRequest {
+  item_id: string;
+  source_location_id: string;
+  destination_location_id: string;
+  quantity: number;
+  reference_number?: string | null;
+  remarks?: string | null;
+}
+
+export interface InventoryStockMovement {
+  id: string;
+  school_id: string;
+  item_id: string;
+  source_location_id?: string | null;
+  destination_location_id?: string | null;
+  movement_type: InventoryStockMovementType;
+  quantity: number;
+  unit_price?: number | string | null;
+  reference_number?: string | null;
+  vendor_id?: string | null;
+  performed_by_user_id?: string | null;
+  movement_date: string;
+  remarks?: string | null;
+  created_at: string;
+  updated_at: string;
+  item?: InventoryItem | null;
+  source_location?: InventoryLocation | null;
+  destination_location?: InventoryLocation | null;
+  vendor?: InventoryVendor | null;
+}
+
+export interface PhysicalAsset {
+  id: string;
+  school_id: string;
+  item_id: string;
+  location_id?: string | null;
+  vendor_id?: string | null;
+  asset_tag: string;
+  serial_number?: string | null;
+  model_number?: string | null;
+  status: AssetStatus;
+  condition: AssetCondition;
+  purchase_date?: string | null;
+  purchase_cost?: number | string | null;
+  warranty_expiry_date?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  item?: InventoryItem | null;
+  location?: InventoryLocation | null;
+  vendor?: InventoryVendor | null;
+}
+
+export interface PhysicalAssetCreate {
+  item_id: string;
+  location_id?: string | null;
+  vendor_id?: string | null;
+  asset_tag: string;
+  serial_number?: string | null;
+  model_number?: string | null;
+  status?: AssetStatus;
+  condition?: AssetCondition;
+  purchase_date?: string | null;
+  purchase_cost?: number | null;
+  warranty_expiry_date?: string | null;
+  notes?: string | null;
+}
+
+export interface PhysicalAssetUpdate {
+  location_id?: string | null;
+  vendor_id?: string | null;
+  asset_tag?: string;
+  serial_number?: string | null;
+  model_number?: string | null;
+  status?: AssetStatus;
+  condition?: AssetCondition;
+  purchase_date?: string | null;
+  purchase_cost?: number | null;
+  warranty_expiry_date?: string | null;
+  notes?: string | null;
+}
+
+export interface PhysicalAssetRetireRequest {
+  status?: AssetStatus;
+  notes?: string | null;
+}
+
+export interface AssetAssignment {
+  id: string;
+  school_id: string;
+  asset_id: string;
+  assignment_type: AssetAssignmentType;
+  teacher_id?: string | null;
+  student_id?: string | null;
+  classroom_id?: string | null;
+  user_id?: string | null;
+  department_name?: string | null;
+  assigned_date: string;
+  expected_return_date?: string | null;
+  actual_return_date?: string | null;
+  assigned_by_user_id?: string | null;
+  status: AssetAssignmentStatus;
+  condition_on_assignment: AssetCondition;
+  condition_on_return?: AssetCondition | null;
+  remarks?: string | null;
+  created_at: string;
+  updated_at: string;
+  asset?: PhysicalAsset | null;
+}
+
+export interface AssetAssignmentCreate {
+  asset_id: string;
+  assignment_type?: AssetAssignmentType;
+  teacher_id?: string | null;
+  student_id?: string | null;
+  classroom_id?: string | null;
+  user_id?: string | null;
+  department_name?: string | null;
+  assigned_date: string;
+  expected_return_date?: string | null;
+  condition_on_assignment?: AssetCondition;
+  remarks?: string | null;
+}
+
+export interface AssetAssignmentReturnRequest {
+  actual_return_date: string;
+  condition_on_return?: AssetCondition;
+  return_location_id?: string | null;
+  remarks?: string | null;
+}
+
+export interface AssetAssignmentTransferRequest {
+  new_assignment_type?: AssetAssignmentType;
+  new_teacher_id?: string | null;
+  new_student_id?: string | null;
+  new_classroom_id?: string | null;
+  new_user_id?: string | null;
+  new_department_name?: string | null;
+  transfer_date: string;
+  condition?: AssetCondition;
+  remarks?: string | null;
+}
+
+
+
 
 

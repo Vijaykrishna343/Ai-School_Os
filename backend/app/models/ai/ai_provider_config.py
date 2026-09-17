@@ -57,6 +57,16 @@ class AIProviderConfig(CommonModel):
         default=False,
     )
 
+    encrypted_api_key: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    api_base_url: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
     notes: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,

@@ -450,8 +450,53 @@ api_router.include_router(
     tags=["Visitors & Reception Management"],
 )
 
+from app.api.v1.endpoints.transport import router as transport_router
 
+api_router.include_router(
+    transport_router,
+    prefix="/transport",
+    tags=["Transport Management"],
+)
 
+from app.api.v1.endpoints.library import router as library_router
+
+api_router.include_router(
+    library_router,
+    prefix="/library",
+    tags=["Library Management"],
+)
+
+from app.api.v1.endpoints.admissions import router as admissions_router
+
+api_router.include_router(
+    admissions_router,
+    prefix="/admissions",
+    tags=["Admissions Pipeline Management"],
+)
+
+from app.api.v1.endpoints.inventory import router as inventory_router
+
+api_router.include_router(
+    inventory_router,
+    prefix="/inventory",
+    tags=["Inventory & Asset Management"],
+)
+
+from app.api.v1.endpoints.reports import router as reports_router
+
+api_router.include_router(
+    reports_router,
+    prefix="/reports",
+    tags=["Executive Reports & BI Analytics"],
+)
+
+from app.api.v1.endpoints.teacher_cockpit import router as teacher_cockpit_router
+
+api_router.include_router(
+    teacher_cockpit_router,
+    prefix="/teacher-cockpit",
+    tags=["Teacher Classroom Command Cockpit"],
+)
 
 
 

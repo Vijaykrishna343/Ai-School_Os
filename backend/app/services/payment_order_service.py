@@ -34,8 +34,10 @@ from app.schemas.payment import (
     CreatePaymentOrderRequest,
     GatewayOrderRequest,
     PaymentOrderResponse,
+    PaymentOrderStatusResponse,
 )
 from app.services.fee_service import FeeService
+from app.services.payment_config_service import payment_config_service
 from app.services.payment_gateway_service import PaymentGatewayFactory
 
 logger = get_logger(__name__)
@@ -240,10 +242,14 @@ class PaymentOrderService:
         return PaymentOrderResponse.model_validate(payment_order)
 
     @staticmethod
-    def _resolve_credentials(provider: PaymentProvider) -> tuple[str, str, str]:
+    def _resolve_credentials(provider: PaymentProvider, school_id: UUID | str | None = None) -> tuple[str, str, str]:
         """
-        Resolves gateway credentials securely from application settings.
+        Resolves gateway credentials securely from PaymentConfigService or application settings.
         """
+        key_id, key_secret, webhook_secret = payment_config_service.resolve_credentials(provider, school_id)
+        if key_id and key_secret:
+            return (key_id, key_secret, webhook_secret)
+
         if provider == PaymentProvider.RAZORPAY:
             return (
                 getattr(settings, "RAZORPAY_KEY_ID", "") or "",
@@ -258,7 +264,74 @@ class PaymentOrderService:
             )
         return ("", "", "")
 
+    def get_order_status(
+        self,
+        db: Session,
+        current_user: IdentityUser,
+        order_id: UUID,
+    ) -> PaymentOrderStatusResponse:
+        """
+        Retrieves authoritative payment order status for UI polling.
+        Enforces tenant isolation and relationship authorization.
+        """
+        school_id = getattr(current_user, "school_id", None)
+        if not school_id:
+            raise ForbiddenException("Active tenant context is required.")
 
+        order = db.scalar(
+            select(PaymentOrder).where(
+                PaymentOrder.id == order_id,
+                PaymentOrder.school_id == school_id,
+                PaymentOrder.is_deleted == False,
+            )
+        )
+        if not order:
+            raise NotFoundException("Payment order not found.")
+
+        # Relationship authorization check
+        assignment = db.scalar(
+            select(StudentFeeAssignment).where(
+                StudentFeeAssignment.id == order.student_fee_assignment_id,
+                StudentFeeAssignment.school_id == school_id,
+                StudentFeeAssignment.is_deleted == False,
+            )
+        )
+        if assignment:
+            enforce_relationship_access(
+                db,
+                school_id=school_id,
+                current_user=current_user,
+                target_student_id=assignment.student_id,
+            )
+
+        # Check for settled FeePayment receipt
+        from app.models.fees.fee_payment import FeePayment
+        fee_payment = db.scalar(
+            select(FeePayment).where(
+                FeePayment.student_fee_assignment_id == order.student_fee_assignment_id,
+                FeePayment.school_id == school_id,
+                FeePayment.is_deleted == False,
+            ).order_by(FeePayment.created_at.desc())
+        )
+
+        receipt_num = fee_payment.receipt_number if fee_payment else None
+        is_settled = order.status == PaymentOrderStatus.PAID
+
+        return PaymentOrderStatusResponse(
+            order_id=order.id,
+            school_id=order.school_id,
+            student_fee_assignment_id=order.student_fee_assignment_id,
+            provider=order.provider,
+            gateway_order_id=order.gateway_order_id,
+            amount=order.amount,
+            currency=order.currency,
+            status=order.status,
+            receipt_number=receipt_num,
+            is_settled=is_settled,
+            created_at=order.created_at,
+            updated_at=order.updated_at,
+        )
 
 
 payment_order_service = PaymentOrderService()
+

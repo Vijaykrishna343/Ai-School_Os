@@ -4,12 +4,13 @@ Handles provider selection, template resolution, preference checking, idempotenc
 """
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime, timezone
 from uuid import UUID
 from typing import Any
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func, and_, or_, case
 
 from app.common.exceptions import BadRequestException, NotFoundException, ValidationException
 from app.common.logger.logger import get_logger
@@ -24,6 +25,7 @@ from app.models.communication import (
     NotificationTemplate,
     InAppNotificationRead,
 )
+from app.models.audit_log import AuditLog
 from app.services.notification_providers import (
     BaseNotificationProvider,
     MockNotificationProvider,
@@ -42,6 +44,26 @@ DEFAULT_NOTIFICATION_TEMPLATES: dict[str, dict[str, str]] = {
         "body": "Dear Parent, your child {student_name} was marked ABSENT on {date}. Please contact school if you have any questions.",
         "category": "ATTENDANCE",
     },
+    "student_absence": {
+        "title": "Absence Alert: {student_name}",
+        "body": "Dear Parent, your child {student_name} was marked ABSENT on {date}. Please contact school if you have any questions.",
+        "category": "ATTENDANCE",
+    },
+    "student.absent": {
+        "title": "Absence Alert: {student_name}",
+        "body": "Dear Parent, your child {student_name} was marked ABSENT on {date}. Please contact school if you have any questions.",
+        "category": "ATTENDANCE",
+    },
+    "homework_published": {
+        "title": "New Homework: {title}",
+        "body": "New homework published for {subject_name}: {title}. Due date: {due_date}.",
+        "category": "ACADEMIC",
+    },
+    "homework.published": {
+        "title": "New Homework: {title}",
+        "body": "New homework published for {subject_name}: {title}. Due date: {due_date}.",
+        "category": "ACADEMIC",
+    },
     "student_late_arrival": {
         "title": "Late Arrival Alert",
         "body": "Dear Parent, your child {student_name} arrived LATE to school on {date}.",
@@ -53,6 +75,11 @@ DEFAULT_NOTIFICATION_TEMPLATES: dict[str, dict[str, str]] = {
         "category": "FEES",
     },
     "fee_payment_received": {
+        "title": "Fee Payment Confirmed",
+        "body": "Fee payment of ₹{amount} received for {student_name} on {date}. Receipt No: {receipt_number}. Thank you.",
+        "category": "FEES",
+    },
+    "fee.payment_received": {
         "title": "Fee Payment Confirmed",
         "body": "Fee payment of ₹{amount} received for {student_name} on {date}. Receipt No: {receipt_number}. Thank you.",
         "category": "FEES",
@@ -96,6 +123,26 @@ DEFAULT_NOTIFICATION_TEMPLATES: dict[str, dict[str, str]] = {
         "title": "EMERGENCY: {title}",
         "body": "{message}",
         "category": "EMERGENCY",
+    },
+    "visitor_checkin": {
+        "title": "Visitor Alert: {visitor_name}",
+        "body": "Visitor Alert: {visitor_name} has arrived at the reception desk to meet you. Purpose: {purpose}. Gate Pass: {pass_number}.",
+        "category": "VISITORS",
+    },
+    "visitor.checkin": {
+        "title": "Visitor Alert: {visitor_name}",
+        "body": "Visitor Alert: {visitor_name} has arrived at the reception desk to meet you. Purpose: {purpose}. Gate Pass: {pass_number}.",
+        "category": "VISITORS",
+    },
+    "visitor_checkout": {
+        "title": "Visitor Departure: {visitor_name}",
+        "body": "Visitor Departure: {visitor_name} has checked out from the reception desk. Gate Pass: {pass_number}.",
+        "category": "VISITORS",
+    },
+    "visitor.checkout": {
+        "title": "Visitor Departure: {visitor_name}",
+        "body": "Visitor Departure: {visitor_name} has checked out from the reception desk. Gate Pass: {pass_number}.",
+        "category": "VISITORS",
     },
 }
 
@@ -312,7 +359,7 @@ class NotificationService:
         # 4. Dispatch through channel provider
         provider = self._get_provider(channel)
         try:
-            status, error = provider.send(notification)
+            status, error = provider.send(notification, db=db)
             notification.status = status
             notification.error_message = error
             if status == NotificationStatus.SENT:
@@ -326,7 +373,12 @@ class NotificationService:
         return notification
 
     def retry_failed_notification(
-        self, db: Session, school_id: UUID, notification_id: UUID
+        self,
+        db: Session,
+        school_id: UUID,
+        notification_id: UUID,
+        user_id: UUID | None = None,
+        user_email: str | None = None,
     ) -> Notification:
         """
         Retries dispatching a failed or pending notification.
@@ -341,6 +393,9 @@ class NotificationService:
         if not notification:
             raise NotFoundException("Notification", str(notification_id))
 
+        if notification.status not in (NotificationStatus.FAILED, NotificationStatus.PENDING):
+            raise ValidationException(f"Only FAILED or PENDING notifications can be retried. Current status is {notification.status.value}.")
+
         if notification.retry_count >= notification.max_retries:
             raise ValidationException(f"Maximum retries ({notification.max_retries}) exceeded for notification.")
 
@@ -348,18 +403,61 @@ class NotificationService:
         provider = self._get_provider(notification.channel)
 
         try:
-            status, error = provider.send(notification)
+            status, error = provider.send(notification, db=db)
             notification.status = status
             notification.error_message = error
             if status == NotificationStatus.SENT:
                 notification.sent_at = datetime.now(timezone.utc)
+            elif error and ("DLT Error" in error or "missing" in error.lower() or "disabled" in error.lower() or "NONE" in error):
+                # Permanent configuration error: do not continue retrying
+                notification.max_retries = notification.retry_count
         except Exception as exc:
             logger.exception("Retry provider exception for notification %s: %s", notification.id, exc)
             notification.status = NotificationStatus.FAILED
             notification.error_message = str(exc)
 
+        # Audit Log Entry with sanitized metadata
+        try:
+            audit = AuditLog(
+                school_id=school_id,
+                user_id=user_id,
+                user_email=user_email or "system@school.internal",
+                action="NOTIFICATION_RETRY",
+                module="NOTIFICATION",
+                entity_type="NOTIFICATION",
+                entity_id=str(notification.id),
+                details=json.dumps({
+                    "notification_id": str(notification.id),
+                    "channel": notification.channel.value if hasattr(notification.channel, "value") else str(notification.channel),
+                    "template_key": notification.template_key,
+                    "retry_count": notification.retry_count,
+                    "max_retries": notification.max_retries,
+                    "status": notification.status.value if hasattr(notification.status, "value") else str(notification.status),
+                }),
+            )
+            db.add(audit)
+        except Exception as audit_exc:
+            logger.warning("Failed to record retry audit log: %s", audit_exc)
+
         db.commit()
         db.refresh(notification)
+        return notification
+
+    def get_notification_detail(
+        self, db: Session, school_id: UUID, notification_id: UUID
+    ) -> Notification:
+        """
+        Retrieves single notification by ID strictly scoped to school_id.
+        """
+        notification = db.scalar(
+            select(Notification).where(
+                Notification.id == notification_id,
+                Notification.school_id == school_id,
+                Notification.is_deleted.is_(False),
+            )
+        )
+        if not notification:
+            raise NotFoundException("Notification", str(notification_id))
         return notification
 
     # ── USER INBOX & READ STATE ───────────────────────────────────────────────
@@ -548,6 +646,10 @@ class NotificationService:
                 "body_template": t.body_template,
                 "is_active": t.is_active,
                 "is_custom": True,
+                "dlt_entity_id": t.dlt_entity_id,
+                "dlt_template_id": t.dlt_template_id,
+                "whatsapp_template_name": t.whatsapp_template_name,
+                "whatsapp_language_code": t.whatsapp_language_code,
             })
 
         for key, fallback in DEFAULT_NOTIFICATION_TEMPLATES.items():
@@ -561,14 +663,29 @@ class NotificationService:
                     "body_template": fallback["body"],
                     "is_active": True,
                     "is_custom": False,
+                    "dlt_entity_id": None,
+                    "dlt_template_id": None,
+                    "whatsapp_template_name": None,
+                    "whatsapp_language_code": None,
                 })
 
         return res
 
     def create_template(
-        self, db: Session, school_id: UUID, template_key: str, name: str, title_template: str, body_template: str, category: str = "ANNOUNCEMENT"
+        self,
+        db: Session,
+        school_id: UUID,
+        template_key: str,
+        name: str,
+        title_template: str,
+        body_template: str,
+        category: str = "ANNOUNCEMENT",
+        dlt_entity_id: str | None = None,
+        dlt_template_id: str | None = None,
+        whatsapp_template_name: str | None = None,
+        whatsapp_language_code: str | None = None,
     ) -> NotificationTemplate:
-        """Creates a custom template for a school."""
+        """Creates a custom template for a school with DLT/WhatsApp metadata."""
         key_upper = template_key.strip().lower()
         tpl = NotificationTemplate(
             school_id=school_id,
@@ -578,6 +695,10 @@ class NotificationService:
             title_template=title_template.strip(),
             body_template=body_template.strip(),
             is_active=True,
+            dlt_entity_id=dlt_entity_id,
+            dlt_template_id=dlt_template_id,
+            whatsapp_template_name=whatsapp_template_name,
+            whatsapp_language_code=whatsapp_language_code,
         )
         db.add(tpl)
         db.commit()
@@ -660,28 +781,131 @@ class NotificationService:
 
     def get_delivery_metrics(self, db: Session, school_id: UUID) -> dict[str, Any]:
         """Returns structured delivery metrics and channel counts."""
-        total = db.scalar(select(func.count()).where(Notification.school_id == school_id, Notification.is_deleted.is_(False))) or 0
-        sent_count = db.scalar(select(func.count()).where(Notification.school_id == school_id, Notification.status == NotificationStatus.SENT, Notification.is_deleted.is_(False))) or 0
-        failed_count = db.scalar(select(func.count()).where(Notification.school_id == school_id, Notification.status == NotificationStatus.FAILED, Notification.is_deleted.is_(False))) or 0
-        pending_count = db.scalar(select(func.count()).where(Notification.school_id == school_id, Notification.status == NotificationStatus.PENDING, Notification.is_deleted.is_(False))) or 0
-        cancelled_count = db.scalar(select(func.count()).where(Notification.school_id == school_id, Notification.status == NotificationStatus.CANCELLED, Notification.is_deleted.is_(False))) or 0
+        analytics = self.get_notification_analytics(db=db, school_id=school_id)
+        return {
+            "total_notifications": analytics["total_notifications"],
+            "sent_count": analytics["sent_count"] + analytics["delivered_count"],
+            "failed_count": analytics["failed_count"],
+            "pending_count": analytics["pending_count"],
+            "cancelled_count": analytics["cancelled_count"],
+            "failure_rate_percent": analytics["failure_rate_percent"],
+            "by_channel": analytics["by_channel"],
+            "providers": analytics["providers"],
+        }
 
-        # Channel breakdown
-        by_channel = {}
-        for ch in NotificationChannel:
-            ch_count = db.scalar(select(func.count()).where(Notification.school_id == school_id, Notification.channel == ch, Notification.is_deleted.is_(False))) or 0
-            by_channel[ch.value] = ch_count
+    def get_notification_analytics(
+        self,
+        db: Session,
+        school_id: UUID,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[str, Any]:
+        """
+        Database-side aggregated delivery metrics, channel/event breakdown, and daily volume.
+        All aggregations are computed database-side and strictly tenant-scoped.
+        """
+        filters = [
+            Notification.school_id == school_id,
+            Notification.is_deleted.is_(False),
+        ]
+        if start_date is not None:
+            filters.append(Notification.created_at >= start_date)
+        if end_date is not None:
+            filters.append(Notification.created_at <= end_date)
 
+        base_cond = and_(*filters)
+
+        # 1. Status Aggregation
+        status_rows = db.execute(
+            select(Notification.status, func.count(Notification.id))
+            .where(base_cond)
+            .group_by(Notification.status)
+        ).all()
+
+        status_counts = {st: 0 for st in NotificationStatus}
+        for st, count in status_rows:
+            if isinstance(st, NotificationStatus):
+                status_counts[st] = count
+            elif isinstance(st, str) and st in NotificationStatus.__members__:
+                status_counts[NotificationStatus[st]] = count
+
+        sent_count = status_counts.get(NotificationStatus.SENT, 0)
+        delivered_count = status_counts.get(NotificationStatus.DELIVERED, 0)
+        failed_count = status_counts.get(NotificationStatus.FAILED, 0)
+        pending_count = status_counts.get(NotificationStatus.PENDING, 0) + status_counts.get(NotificationStatus.QUEUED, 0)
+        cancelled_count = status_counts.get(NotificationStatus.CANCELLED, 0)
+        total = sum(status_counts.values())
+
+        # 2. Channel Distribution
+        channel_rows = db.execute(
+            select(Notification.channel, func.count(Notification.id))
+            .where(base_cond)
+            .group_by(Notification.channel)
+        ).all()
+        by_channel = {ch.value: 0 for ch in NotificationChannel}
+        for ch, count in channel_rows:
+            ch_key = ch.value if hasattr(ch, "value") else str(ch)
+            by_channel[ch_key] = count
+
+        # 3. Event Distribution
+        event_rows = db.execute(
+            select(Notification.template_key, func.count(Notification.id))
+            .where(base_cond)
+            .group_by(Notification.template_key)
+        ).all()
+        by_event = {str(evt): count for evt, count in event_rows}
+
+        # 4. Rates
+        success_rate = round(((sent_count + delivered_count) / total * 100), 2) if total > 0 else 0.0
         failure_rate = round((failed_count / total * 100), 2) if total > 0 else 0.0
+        pending_rate = round((pending_count / total * 100), 2) if total > 0 else 0.0
+
+        # 5. Daily Volume (Database-side date grouping)
+        daily_rows = db.execute(
+            select(
+                func.date(Notification.created_at).label("day"),
+                func.count(Notification.id).label("total"),
+                func.sum(
+                    case(
+                        (Notification.status.in_([NotificationStatus.SENT, NotificationStatus.DELIVERED]), 1),
+                        else_=0,
+                    )
+                ).label("sent_delivered"),
+                func.sum(
+                    case(
+                        (Notification.status == NotificationStatus.FAILED, 1),
+                        else_=0,
+                    )
+                ).label("failed_count"),
+            )
+            .where(base_cond)
+            .group_by(func.date(Notification.created_at))
+            .order_by(func.date(Notification.created_at).asc())
+        ).all()
+
+        daily_volume = [
+            {
+                "date": str(row.day),
+                "count": int(row.total),
+                "sent": int(row.sent_delivered or 0),
+                "failed": int(row.failed_count or 0),
+            }
+            for row in daily_rows
+        ]
 
         return {
             "total_notifications": total,
             "sent_count": sent_count,
+            "delivered_count": delivered_count,
             "failed_count": failed_count,
             "pending_count": pending_count,
             "cancelled_count": cancelled_count,
+            "success_rate_percent": success_rate,
             "failure_rate_percent": failure_rate,
+            "pending_rate_percent": pending_rate,
             "by_channel": by_channel,
+            "by_event": by_event,
+            "daily_volume": daily_volume,
             "providers": self.get_provider_statuses(),
         }
 

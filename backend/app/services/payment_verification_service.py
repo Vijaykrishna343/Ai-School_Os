@@ -165,7 +165,7 @@ class PaymentVerificationService:
             raise BadRequestException(f"Currency mismatch. Submitted {data.currency}, expected {order.currency}.")
 
         # 7. Resolve provider credentials and verify signature
-        key_id, key_secret, webhook_secret = PaymentOrderService._resolve_credentials(order.provider)
+        key_id, key_secret, webhook_secret = PaymentOrderService._resolve_credentials(order.provider, school_id=school_id)
         gateway = PaymentGatewayFactory.get_gateway(
             provider=order.provider,
             key_id=key_id,
@@ -307,7 +307,7 @@ class PaymentVerificationService:
         school_id = order.school_id
 
         # 4. Resolve tenant credentials & verify signature against raw HTTP request bytes
-        key_id, key_secret, webhook_secret = PaymentOrderService._resolve_credentials(provider)
+        key_id, key_secret, webhook_secret = PaymentOrderService._resolve_credentials(provider, school_id=school_id)
         gateway = PaymentGatewayFactory.get_gateway(
             provider=provider,
             key_id=key_id,

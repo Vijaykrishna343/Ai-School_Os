@@ -80,6 +80,7 @@ class AITimetableService:
         db.add(draft)
         db.commit()
         db.refresh(draft)
+        draft_id = draft.id
 
         try:
             # 4. Fetch School Resources
@@ -205,7 +206,7 @@ class AITimetableService:
 
         except Exception as exc:
             db.rollback()
-            draft_failed = db.scalar(select(AITimetableDraft).where(AITimetableDraft.id == draft.id))
+            draft_failed = db.scalar(select(AITimetableDraft).where(AITimetableDraft.id == draft_id))
             if draft_failed:
                 draft_failed.status = "FAILED"
                 draft_failed.error_message = str(exc)

@@ -8,10 +8,24 @@ import enum
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.common_model import CommonModel
+
+
+class SmsProviderType(str, enum.Enum):
+    NONE = "NONE"
+    FAST2SMS = "FAST2SMS"
+    TWILIO = "TWILIO"
+    MOCK = "MOCK"
+
+
+class WhatsAppProviderType(str, enum.Enum):
+    NONE = "NONE"
+    META_WHATSAPP_CLOUD = "META_WHATSAPP_CLOUD"
+    TWILIO_WHATSAPP = "TWILIO_WHATSAPP"
+    MOCK = "MOCK"
 
 
 class UserCommunicationPreference(CommonModel):
@@ -59,6 +73,7 @@ class NotificationTemplate(CommonModel):
     """
     School-specific or global notification template.
     Supports variables like {{student_name}}, {{amount}}, {{due_date}}, {{event_title}}.
+    Includes Indian SMS DLT metadata and Meta WhatsApp HSM metadata fields.
     """
     __tablename__ = "notification_templates"
 
@@ -111,6 +126,117 @@ class NotificationTemplate(CommonModel):
         nullable=False,
     )
 
+    # Indian DLT Metadata (Phase 27.1)
+    dlt_entity_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    dlt_template_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    # WhatsApp HSM Metadata (Phase 27.1)
+    whatsapp_template_name: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    whatsapp_language_code: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        default="en",
+    )
+
+
+class SchoolCommunicationConfig(CommonModel):
+    """
+    Per-school tenant communication provider configuration.
+    Stores provider selections and encrypted credentials at rest.
+    Enforces strict multi-tenant isolation via school_id.
+    """
+    __tablename__ = "school_communication_configs"
+
+    __table_args__ = (
+        UniqueConstraint("school_id", name="uq_school_comm_config_school"),
+        Index("ix_school_comm_config_school", "school_id"),
+    )
+
+    school_id: Mapped[UUID] = mapped_column(
+        ForeignKey("schools.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    sms_provider: Mapped[SmsProviderType] = mapped_column(
+        Enum(SmsProviderType, name="smsprovidertype"),
+        nullable=False,
+        default=SmsProviderType.NONE,
+    )
+
+    whatsapp_provider: Mapped[WhatsAppProviderType] = mapped_column(
+        Enum(WhatsAppProviderType, name="whatsappprovidertype"),
+        nullable=False,
+        default=WhatsAppProviderType.NONE,
+    )
+
+    sms_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    whatsapp_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    # Encrypted Credential Material (Fernet authenticated encryption)
+    sms_api_key_encrypted: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    sms_sender_id: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    sms_entity_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    whatsapp_access_token_encrypted: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    whatsapp_phone_number_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    whatsapp_business_account_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    sms_monthly_quota: Mapped[int] = mapped_column(
+        Integer,
+        default=5000,
+        nullable=False,
+    )
+
+    sms_sent_this_month: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
 
 class InAppNotificationRead(CommonModel):
     """
@@ -146,3 +272,4 @@ class InAppNotificationRead(CommonModel):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+

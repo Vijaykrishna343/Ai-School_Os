@@ -18,9 +18,44 @@ from app.schemas.school.school import (
     SchoolSubscriptionUpdate,
     SchoolUpdate,
 )
+from app.schemas.school_onboarding import (
+    SchoolOnboardingRequest,
+    SchoolOnboardingResponse,
+)
 from app.services.school_service import SchoolService
+from app.services.school_onboarding_service import school_onboarding_service
 
 router = APIRouter()
+
+
+@router.post(
+    "/onboarding",
+    response_model=dict,
+    status_code=HTTPStatus.CREATED,
+    summary="Onboard School Tenant (Provisioning Wizard)",
+)
+def onboard_school_tenant(
+    payload: SchoolOnboardingRequest,
+    current_user: IdentityUser = Depends(require_permission("school.create")),
+    db: Session = Depends(get_db),
+) -> dict[str, object]:
+    """
+    Onboard and bootstrap a new school tenant in an atomic, fail-closed transaction.
+    Restricted to Platform Super Administrators.
+    """
+    if not current_user.is_super_admin:
+        raise ForbiddenException("School tenant onboarding is restricted to Super Admin platform administrators.")
+
+    result = school_onboarding_service.bootstrap_school_tenant(
+        db=db,
+        request=payload,
+        current_user=current_user,
+    )
+
+    return ApiResponse.success(
+        message="School tenant provisioned successfully.",
+        data=result.model_dump(),
+    )
 
 
 @router.post(

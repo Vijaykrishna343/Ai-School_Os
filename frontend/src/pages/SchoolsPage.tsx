@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { schoolsApi } from '@/services/api/schoolsApi';
 import { School } from '@/types/models';
+import { SchoolOnboardingWizardModal } from '@/components/schools/SchoolOnboardingWizardModal';
 
 export const SchoolsPage = () => {
   const [schools, setSchools] = useState<School[]>([]);
@@ -22,6 +23,7 @@ export const SchoolsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modals
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isSubOpen, setIsSubOpen] = useState(false);
@@ -127,9 +129,14 @@ export const SchoolsPage = () => {
           </p>
         </div>
 
-        <Button variant="primary" onClick={() => setIsCreateOpen(true)} leftIcon={<Plus className="w-4 h-4" />}>
-          Register New School
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => setIsCreateOpen(true)} leftIcon={<Plus className="w-4 h-4" />}>
+            Quick Register
+          </Button>
+          <Button variant="primary" onClick={() => setIsWizardOpen(true)} leftIcon={<Plus className="w-4 h-4" />}>
+            Onboard School (Wizard)
+          </Button>
+        </div>
       </div>
 
       {/* Directory Table Card */}
@@ -396,6 +403,15 @@ export const SchoolsPage = () => {
           </div>
         </form>
       </Modal>
+
+      {/* School Onboarding & Provisioning Wizard Modal */}
+      <SchoolOnboardingWizardModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onSuccess={() => {
+          fetchSchools();
+        }}
+      />
     </div>
   );
 };

@@ -5,9 +5,11 @@ import {
   ReceptionInquiry,
   ReceptionInquiryCreate,
   ReceptionInquiryUpdate,
+  VisitorBadgeResponse,
   VisitorCheckOut,
   VisitorCreate,
   VisitorDetail,
+  VisitorPreRegister,
   VisitorSummary,
 } from '@/types/models';
 
@@ -35,8 +37,16 @@ export interface ReceptionInquiryFilterParams {
 
 export const receptionApi = {
   // Visitor Operations
+  preRegisterVisitor: async (data: VisitorPreRegister): Promise<VisitorDetail> => {
+    return await apiClient.post('/visitors/pre-register', data);
+  },
+
   checkInVisitor: async (data: VisitorCreate): Promise<VisitorDetail> => {
     return await apiClient.post('/visitors/check-in', data);
+  },
+
+  quickCheckInVisitor: async (id: string, payload?: VisitorCheckOut): Promise<VisitorDetail> => {
+    return await apiClient.post(`/visitors/${id}/quick-check-in`, payload || {});
   },
 
   checkOutVisitor: async (id: string, payload?: VisitorCheckOut): Promise<VisitorDetail> => {
@@ -49,6 +59,10 @@ export const receptionApi = {
 
   getVisitor: async (id: string): Promise<VisitorDetail> => {
     return await apiClient.get(`/visitors/${id}`);
+  },
+
+  getVisitorBadge: async (id: string): Promise<VisitorBadgeResponse> => {
+    return await apiClient.get(`/visitors/${id}/badge`);
   },
 
   // Reception Inquiry & Appointment Operations

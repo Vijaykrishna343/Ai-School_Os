@@ -9,9 +9,9 @@ describe('MobileNav Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders System Administration items when permissions exist', () => {
+  it('renders System Administration and Operations items when permissions exist', () => {
     useAuthStore.setState({
-      permissions: ['user.view', 'role.view', 'school.view', 'progression_matrix.view'],
+      permissions: ['user.view', 'role.view', 'school.view', 'progression_matrix.view', 'hostel.view'],
     });
 
     render(
@@ -24,9 +24,10 @@ describe('MobileNav Component', () => {
     expect(screen.getByText('Roles & Access')).toBeInTheDocument();
     expect(screen.getByText('School Profile')).toBeInTheDocument();
     expect(screen.getByText('Progression')).toBeInTheDocument();
+    expect(screen.getByText('Hostel Management')).toBeInTheDocument();
   });
 
-  it('hides System Administration items when permissions are absent', () => {
+  it('hides System Administration and Operations items when permissions are absent', () => {
     useAuthStore.setState({
       permissions: [],
     });
@@ -41,5 +42,6 @@ describe('MobileNav Component', () => {
     expect(screen.queryByText('Roles & Access')).not.toBeInTheDocument();
     expect(screen.queryByText('School Profile')).not.toBeInTheDocument();
     expect(screen.queryByText('Progression')).not.toBeInTheDocument();
+    expect(screen.queryByText('Hostel Management')).not.toBeInTheDocument();
   });
 });

@@ -538,3 +538,352 @@ def test_webhook_prevent_paid_order_state_regression(db_session, webhook_fixture
     # Order status MUST REMAIN PAID (no state regression)
     db_order = db_session.query(PaymentOrder).filter_by(id=order.id).first()
     assert db_order.status == PaymentOrderStatus.PAID
+
+
+def test_dedicated_razorpay_webhook_endpoint(db_session, webhook_fixture):
+    """Verifies the dedicated POST /api/v1/payments/webhooks/razorpay endpoint."""
+    fx = webhook_fixture
+    order = PaymentOrder(
+        school_id=fx["school"].id,
+        student_fee_assignment_id=fx["assignment"].id,
+        provider=PaymentProvider.RAZORPAY,
+        gateway_order_id="order_rzp_wh_dedicated_1",
+        amount=Decimal("10000.00"),
+        currency="INR",
+        status=PaymentOrderStatus.CREATED,
+    )
+    db_session.add(order)
+    db_session.commit()
+
+    payload_dict = {
+        "event_id": "evt_rzp_dedicated_1",
+        "event": "payment.captured",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "pay_rzp_ded_1",
+                    "order_id": "order_rzp_wh_dedicated_1",
+                    "amount": 1000000,
+                    "currency": "INR",
+                }
+            }
+        },
+    }
+    raw_body = json.dumps(payload_dict).encode("utf-8")
+    sig = compute_razorpay_webhook_sig(raw_body)
+
+    with TestClient(fastapi_app) as client:
+        resp = client.post(
+            "/api/v1/payments/webhooks/razorpay",
+            content=raw_body,
+            headers={
+                "Content-Type": "application/json",
+                "x-razorpay-signature": sig,
+            },
+        )
+    assert resp.status_code == 200
+    assert resp.json()["success"] is True
+    assert resp.json()["event_id"] == "evt_rzp_dedicated_1"
+
+    db_order = db_session.query(PaymentOrder).filter_by(id=order.id).first()
+    assert db_order.status == PaymentOrderStatus.PAID
+
+
+def test_dedicated_stripe_webhook_endpoint(db_session, webhook_fixture):
+    """Verifies the dedicated POST /api/v1/payments/webhooks/stripe endpoint."""
+    fx = webhook_fixture
+    order = PaymentOrder(
+        school_id=fx["school"].id,
+        student_fee_assignment_id=fx["assignment"].id,
+        provider=PaymentProvider.STRIPE,
+        gateway_order_id="cs_test_stripe_dedicated_1",
+        amount=Decimal("10000.00"),
+        currency="INR",
+        status=PaymentOrderStatus.CREATED,
+    )
+    db_session.add(order)
+    db_session.commit()
+
+    payload_dict = {
+        "id": "evt_stripe_dedicated_1",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "id": "cs_test_stripe_dedicated_1",
+                "payment_intent": "pi_stripe_ded_1",
+                "amount_total": 1000000,
+                "currency": "inr",
+                "payment_status": "paid",
+            }
+        },
+    }
+    raw_body = json.dumps(payload_dict).encode("utf-8")
+    sig_header, _ = compute_stripe_webhook_sig(raw_body)
+
+    with TestClient(fastapi_app) as client:
+        resp = client.post(
+            "/api/v1/payments/webhooks/stripe",
+            content=raw_body,
+            headers={
+                "Content-Type": "application/json",
+                "stripe-signature": sig_header,
+            },
+        )
+    assert resp.status_code == 200
+    assert resp.json()["success"] is True
+
+    db_order = db_session.query(PaymentOrder).filter_by(id=order.id).first()
+    assert db_order.status == PaymentOrderStatus.PAID
+
+
+def test_unknown_order_webhook_rejection(db_session, webhook_fixture):
+    """Verifies that unmapped provider order returns 404 without guessing tenant."""
+    payload_dict = {
+        "event_id": "evt_rzp_unknown_999",
+        "event": "payment.captured",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "pay_rzp_unk_999",
+                    "order_id": "order_rzp_nonexistent_999",
+                    "amount": 1000000,
+                    "currency": "INR",
+                }
+            }
+        },
+    }
+    raw_body = json.dumps(payload_dict).encode("utf-8")
+    sig = compute_razorpay_webhook_sig(raw_body)
+
+    with TestClient(fastapi_app) as client:
+        resp = client.post(
+            "/api/v1/payments/webhooks/razorpay",
+            content=raw_body,
+            headers={"x-razorpay-signature": sig},
+        )
+    assert resp.status_code == 404
+
+
+def test_currency_mismatch_webhook_rejection(db_session, webhook_fixture):
+    """Verifies that currency mismatch is strictly rejected."""
+    fx = webhook_fixture
+    order = PaymentOrder(
+        school_id=fx["school"].id,
+        student_fee_assignment_id=fx["assignment"].id,
+        provider=PaymentProvider.RAZORPAY,
+        gateway_order_id="order_rzp_wh_curr_1",
+        amount=Decimal("10000.00"),
+        currency="INR",
+        status=PaymentOrderStatus.CREATED,
+    )
+    db_session.add(order)
+    db_session.commit()
+
+    payload_dict = {
+        "event_id": "evt_rzp_curr_1",
+        "event": "payment.captured",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "pay_rzp_curr_1",
+                    "order_id": "order_rzp_wh_curr_1",
+                    "amount": 1000000,
+                    "currency": "USD",  # Mismatch!
+                }
+            }
+        },
+    }
+    raw_body = json.dumps(payload_dict).encode("utf-8")
+    sig = compute_razorpay_webhook_sig(raw_body)
+
+    with TestClient(fastapi_app) as client:
+        resp = client.post(
+            "/api/v1/payments/webhooks/razorpay",
+            content=raw_body,
+            headers={"x-razorpay-signature": sig},
+        )
+    assert resp.status_code == 400
+    res_json = resp.json()
+    msg = res_json.get("error", {}).get("message") or res_json.get("message") or res_json.get("detail", "")
+    assert "Currency mismatch" in msg
+
+
+def test_payment_settlement_receipt_and_idempotency(db_session, webhook_fixture):
+    """Verifies that repeated webhook deliveries produce exactly one FeePayment and Receipt."""
+    from app.models.fees.fee_payment import FeePayment
+
+    fx = webhook_fixture
+    order = PaymentOrder(
+        school_id=fx["school"].id,
+        student_fee_assignment_id=fx["assignment"].id,
+        provider=PaymentProvider.RAZORPAY,
+        gateway_order_id="order_rzp_wh_settle_1",
+        amount=Decimal("10000.00"),
+        currency="INR",
+        status=PaymentOrderStatus.CREATED,
+    )
+    db_session.add(order)
+    db_session.commit()
+
+    payload_dict = {
+        "event_id": "evt_rzp_settle_1",
+        "event": "payment.captured",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "pay_rzp_settle_1",
+                    "order_id": "order_rzp_wh_settle_1",
+                    "amount": 1000000,
+                    "currency": "INR",
+                }
+            }
+        },
+    }
+    raw_body = json.dumps(payload_dict).encode("utf-8")
+    sig = compute_razorpay_webhook_sig(raw_body)
+
+    with TestClient(fastapi_app) as client:
+        # First Delivery
+        resp1 = client.post(
+            "/api/v1/payments/webhooks/razorpay",
+            content=raw_body,
+            headers={"x-razorpay-signature": sig},
+        )
+        assert resp1.status_code == 200
+        assert resp1.json()["processed"] is True
+
+        # Second Delivery (Replay)
+        resp2 = client.post(
+            "/api/v1/payments/webhooks/razorpay",
+            content=raw_body,
+            headers={"x-razorpay-signature": sig},
+        )
+        assert resp2.status_code == 200
+        assert resp2.json()["processed"] is False
+
+    # Verify exactly one FeePayment exists
+    payments = db_session.query(FeePayment).filter_by(
+        student_fee_assignment_id=fx["assignment"].id
+    ).all()
+    assert len(payments) == 1
+    assert payments[0].amount == Decimal("10000.00")
+    assert payments[0].receipt_number is not None
+
+
+def test_payment_config_get_and_update(db_session, webhook_fixture):
+    """Verifies GET/PUT /api/v1/payments/config masks secrets and stores encrypted."""
+    from app.identity.models.role import IdentityRole
+    from app.identity.models.user import IdentityUser
+    from app.identity.security.current_user import get_current_user
+
+    fx = webhook_fixture
+    super_admin_role = IdentityRole(
+        id=uuid.uuid4(),
+        school_id=fx["school"].id,
+        name="Super Admin",
+        description="Super Administrator",
+    )
+    db_session.add(super_admin_role)
+    db_session.commit()
+
+    admin_user = IdentityUser(
+        id=uuid.uuid4(),
+        email="admin.fin@school.com",
+        username="admin_fin",
+        password_hash="mock",
+        first_name="Admin",
+        last_name="Finance",
+        school_id=fx["school"].id,
+        is_active=True,
+    )
+    admin_user.roles = [super_admin_role]
+    db_session.add(admin_user)
+    db_session.commit()
+
+    fastapi_app.dependency_overrides[get_current_user] = lambda: admin_user
+
+    with TestClient(fastapi_app) as client:
+        # 1. Update config with test credentials
+        put_resp = client.put(
+            "/api/v1/payments/config",
+            json={
+                "razorpay_key_id": "rzp_live_key_999",
+                "razorpay_key_secret": "rzp_secret_super_secret_val",
+                "razorpay_webhook_secret": "rzp_wh_secret_super_val",
+                "stripe_publishable_key": "pk_live_stripe_999",
+                "stripe_secret_key": "sk_live_stripe_super_secret_val",
+                "stripe_webhook_secret": "whsec_stripe_super_secret_val",
+            },
+        )
+        assert put_resp.status_code == 200
+        data = put_resp.json()
+        assert data["razorpay_key_id"] == "rzp_live_key_999"
+        assert "super_secret_val" not in (data.get("razorpay_key_secret_masked") or "")
+        assert (data.get("razorpay_key_secret_masked") or "").startswith("••••")
+        assert (data.get("stripe_secret_key_masked") or "").startswith("••••")
+
+        # 2. GET config and verify secrets are strictly masked
+        get_resp = client.get("/api/v1/payments/config")
+        assert get_resp.status_code == 200
+        get_data = get_resp.json()
+        assert get_data["razorpay_key_id"] == "rzp_live_key_999"
+        assert "super_secret" not in json.dumps(get_data)
+
+    fastapi_app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_authoritative_order_status_polling(db_session, webhook_fixture):
+    """Verifies GET /api/v1/payments/orders/{order_id} returns authoritative state."""
+    from app.identity.models.role import IdentityRole
+    from app.identity.models.user import IdentityUser
+    from app.identity.security.current_user import get_current_user
+
+    fx = webhook_fixture
+    order = PaymentOrder(
+        school_id=fx["school"].id,
+        student_fee_assignment_id=fx["assignment"].id,
+        provider=PaymentProvider.RAZORPAY,
+        gateway_order_id="order_rzp_status_poll_1",
+        amount=Decimal("10000.00"),
+        currency="INR",
+        status=PaymentOrderStatus.CREATED,
+    )
+    db_session.add(order)
+    db_session.commit()
+
+    admin_role = IdentityRole(
+        id=uuid.uuid4(),
+        school_id=fx["school"].id,
+        name="Super Admin",
+        description="Super Administrator",
+    )
+    db_session.add(admin_role)
+    db_session.commit()
+
+    user = IdentityUser(
+        id=uuid.uuid4(),
+        email="parent.wh@school.com",
+        username="parent_wh",
+        password_hash="mock",
+        first_name="Parent",
+        last_name="User",
+        school_id=fx["school"].id,
+        is_active=True,
+    )
+    user.roles = [admin_role]
+    db_session.add(user)
+    db_session.commit()
+
+    fastapi_app.dependency_overrides[get_current_user] = lambda: user
+
+    with TestClient(fastapi_app) as client:
+        resp = client.get(f"/api/v1/payments/orders/{order.id}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["order_id"] == str(order.id)
+        assert data["status"] == "CREATED"
+        assert Decimal(str(data["amount"])) == Decimal("10000.00")
+        assert data["is_settled"] is False
+
+    fastapi_app.dependency_overrides.pop(get_current_user, None)
+

@@ -37,9 +37,12 @@ const RoleManagementPage = lazy(() => import('@/pages/RoleManagementPage').then(
 const DocumentsPage = lazy(() => import('@/pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })));
 const ReceptionPage = lazy(() => import('@/pages/ReceptionPage').then((m) => ({ default: m.ReceptionPage })));
 const AISettingsPage = lazy(() => import('@/pages/AISettingsPage').then((m) => ({ default: m.AISettingsPage })));
-
-
-
+const TransportPage = lazy(() => import('@/pages/TransportPage').then((m) => ({ default: m.TransportPage })));
+const LibraryPage = lazy(() => import('@/pages/LibraryPage').then((m) => ({ default: m.LibraryPage })));
+const AdmissionsPage = lazy(() => import('@/pages/AdmissionsPage').then((m) => ({ default: m.AdmissionsPage })));
+const InventoryPage = lazy(() => import('@/pages/InventoryPage').then((m) => ({ default: m.InventoryPage })));
+const ReportsPage = lazy(() => import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })));
+const TeacherCockpitPage = lazy(() => import('@/pages/TeacherCockpitPage').then((m) => ({ default: m.TeacherCockpitPage })));
 
 export const AppRouter = () => {
   const { isAuthenticated } = useAuthStore();
@@ -72,6 +75,15 @@ export const AppRouter = () => {
           element={
             <PermissionRoute permission="student.view">
               <StudentsPage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="teacher-cockpit"
+          element={
+            <PermissionRoute permission="teacher_cockpit.view">
+              <TeacherCockpitPage />
             </PermissionRoute>
           }
         />
@@ -254,6 +266,61 @@ export const AppRouter = () => {
           element={
             <PermissionRoute permission="visitors.view">
               <ReceptionPage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="hostel"
+          element={
+            <PermissionRoute permission="hostel.view">
+              <HostelPage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="transport"
+          element={
+            <PermissionRoute permission="transport.view">
+              <TransportPage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="library"
+          element={
+            <PermissionRoute permission="library.view">
+              <LibraryPage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="admissions"
+          element={
+            <PermissionRoute permission="admissions.view">
+              <AdmissionsPage />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="inventory"
+          element={
+            <PermissionRoute permission="inventory.view">
+              <InventoryPage />
+            </PermissionRoute>
+          }
+        />
+
+
+        <Route
+          path="reports"
+          element={
+            <PermissionRoute permission="reports.view">
+              <ReportsPage />
             </PermissionRoute>
           }
         />

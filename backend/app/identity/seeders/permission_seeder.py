@@ -166,6 +166,8 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "reports.view", "module": "reports", "action": "view", "description": "View reports"},
     {"name": "reports.update", "module": "reports", "action": "update", "description": "Update reports"},
     {"name": "reports.delete", "module": "reports", "action": "delete", "description": "Delete reports"},
+    {"name": "reports.export", "module": "reports", "action": "export", "description": "Export executive reports"},
+
 
     # User Role Assignments
     {"name": "user_role.assign", "module": "user_role", "action": "assign", "description": "Assign user role"},
@@ -240,6 +242,42 @@ DEFAULT_PERMISSIONS: list[dict[str, str]] = [
     {"name": "ai.timetable.generate", "module": "ai", "action": "timetable.generate", "description": "Generate AI Timetable Drafts"},
     {"name": "ai.risk.view", "module": "ai", "action": "risk.view", "description": "View Student Academic Risk Evaluations"},
     {"name": "ai.communication.draft", "module": "ai", "action": "communication.draft", "description": "Draft AI Announcements and Notices"},
+
+    # Transport & Fleet Management (Phase 28)
+    {"name": "transport.view", "module": "transport", "action": "view", "description": "View transport fleet, routes, stops, and allocations"},
+    {"name": "transport.create", "module": "transport", "action": "create", "description": "Create transport vehicles, drivers, routes, and stops"},
+    {"name": "transport.update", "module": "transport", "action": "update", "description": "Update transport vehicles, drivers, routes, and stops"},
+    {"name": "transport.delete", "module": "transport", "action": "delete", "description": "Delete transport vehicles, drivers, routes, and stops"},
+    {"name": "transport.allocate", "module": "transport", "action": "allocate", "description": "Allocate and manage student transport assignments"},
+    {"name": "transport.manage", "module": "transport", "action": "manage", "description": "Manage all transport fleet configurations and operations"},
+
+    # Library & Circulation Management (Phase 28.2)
+    {"name": "library.view", "module": "library", "action": "view", "description": "View library catalog, copies, members, loans, reservations, and fines"},
+    {"name": "library.create", "module": "library", "action": "create", "description": "Create library catalog books, copies, categories, and libraries"},
+    {"name": "library.update", "module": "library", "action": "update", "description": "Update library catalog books, copies, categories, and libraries"},
+    {"name": "library.delete", "module": "library", "action": "delete", "description": "Delete library catalog books, copies, categories, and libraries"},
+    {"name": "library.circulate", "module": "library", "action": "circulate", "description": "Issue, return, and renew book loans, place reservations, and manage fines"},
+    {"name": "library.manage", "module": "library", "action": "manage", "description": "Manage all library memberships, rules, policies, and system configurations"},
+
+    # Admissions Pipeline (Phase 28.3)
+    {"name": "admissions.view", "module": "admissions", "action": "view", "description": "View admission cycles, applicants, applications, history, decisions"},
+    {"name": "admissions.create", "module": "admissions", "action": "create", "description": "Create admission cycles, applicants, applications"},
+    {"name": "admissions.update", "module": "admissions", "action": "update", "description": "Update admission cycles, applicants, applications"},
+    {"name": "admissions.delete", "module": "admissions", "action": "delete", "description": "Delete admission cycles, applicants, applications"},
+    {"name": "admissions.review", "module": "admissions", "action": "review", "description": "Review applications, record decisions, update status history"},
+    {"name": "admissions.manage", "module": "admissions", "action": "manage", "description": "Manage admission cycles, policies, and workflows"},
+
+    # Inventory & Asset Management (Phase 28.4)
+    {"name": "inventory.view", "module": "inventory", "action": "view", "description": "View inventory items, stock levels, assets, locations, and vendors"},
+    {"name": "inventory.create", "module": "inventory", "action": "create", "description": "Create inventory items, categories, locations, assets, and vendors"},
+    {"name": "inventory.update", "module": "inventory", "action": "update", "description": "Update inventory items, categories, locations, assets, and vendors"},
+    {"name": "inventory.delete", "module": "inventory", "action": "delete", "description": "Delete inventory items, categories, locations, assets, and vendors"},
+    {"name": "inventory.issue", "module": "inventory", "action": "issue", "description": "Issue inventory stock and assign physical assets"},
+    {"name": "inventory.transfer", "module": "inventory", "action": "transfer", "description": "Transfer stock and physical assets across locations/custodians"},
+    {"name": "inventory.manage", "module": "inventory", "action": "manage", "description": "Manage all inventory items, stock adjustments, assets, and policies"},
+
+    # Teacher Classroom Command Cockpit (Phase 30.3)
+    {"name": "teacher_cockpit.view", "module": "teacher_cockpit", "action": "view", "description": "Access Teacher Classroom Command Cockpit workstation"},
 ]
 
 

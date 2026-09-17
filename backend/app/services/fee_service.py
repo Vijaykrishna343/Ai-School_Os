@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 from math import ceil
+from typing import Any
 from uuid import UUID
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.common.enums.fees import (
@@ -24,6 +26,11 @@ from app.models.fees.student_fee_assignment import (
     StudentFeeAssignment,
     StudentFeeItem,
 )
+from app.models.notification import NotificationChannel, NotificationRecipientType
+from app.models.parent.parent import Parent
+from app.models.student.student import Student
+from app.schemas.notification_trigger import NotificationTriggerEvent
+from app.services.notification_trigger_service import notification_trigger_service
 from app.repositories.academic_year import (
     AcademicYearRepository,
     academic_year_repository,
@@ -73,6 +80,143 @@ from app.schemas.fees.fees import (
 )
 
 logger = get_logger(__name__)
+
+
+def _resolve_fee_payment_recipient(
+    db: Session,
+    school_id: UUID,
+    student_id: UUID,
+) -> dict[str, Any] | None:
+    """
+    Resolves canonical recipient for fee receipt notification strictly within school_id.
+    Prefers primary Parent/Guardian; falls back to Student.
+    Guarantees tenant isolation by scoping all queries to school_id.
+    """
+    student = db.scalar(
+        select(Student).where(
+            Student.id == student_id,
+            Student.school_id == school_id,
+            Student.is_deleted == False,
+        )
+    )
+    if not student:
+        return None
+
+    if student.parent_id:
+        parent = db.scalar(
+            select(Parent).where(
+                Parent.id == student.parent_id,
+                Parent.school_id == school_id,
+                Parent.is_deleted == False,
+            )
+        )
+        if parent:
+            p_name = (
+                parent.father_name
+                or parent.guardian_name
+                or parent.mother_name
+                or f"Parent of {student.first_name}"
+            )
+            contact = parent.primary_phone or parent.email
+            if contact:
+                return {
+                    "recipient_type": NotificationRecipientType.PARENT,
+                    "recipient_id": parent.id,
+                    "recipient_name": p_name,
+                    "recipient_contact": contact,
+                    "phone": parent.primary_phone,
+                    "email": parent.email,
+                    "student_name": f"{student.first_name} {student.last_name or ''}".strip(),
+                }
+
+    s_name = f"{student.first_name} {student.last_name or ''}".strip()
+    contact = student.phone or student.email
+    if contact:
+        return {
+            "recipient_type": NotificationRecipientType.STUDENT,
+            "recipient_id": student.id,
+            "recipient_name": s_name,
+            "recipient_contact": contact,
+            "phone": student.phone,
+            "email": student.email,
+            "student_name": s_name,
+        }
+
+    return None
+
+
+def _trigger_fee_receipt_notification(
+    db: Session,
+    payment: FeePayment,
+    assignment: StudentFeeAssignment,
+) -> None:
+    """
+    Stages fee payment/receipt notification event(s) prior to DB commit.
+    Wrapped in isolated try-except so notification errors never roll back fee payment recording.
+    """
+    try:
+        recipient = _resolve_fee_payment_recipient(
+            db=db,
+            school_id=payment.school_id,
+            student_id=assignment.student_id,
+        )
+        if not recipient:
+            return
+
+        amt_str = f"{payment.amount:.2f}"
+        pay_date_str = payment.payment_date.strftime("%Y-%m-%d") if payment.payment_date else ""
+
+        template_variables = {
+            "student_name": recipient["student_name"],
+            "amount": amt_str,
+            "receipt_number": payment.receipt_number,
+            "date": pay_date_str,
+            "payment_mode": payment.payment_mode.value if payment.payment_mode else "",
+        }
+
+        # Safe non-sensitive audit metadata - strictly omitting financial secrets/payloads
+        metadata = {
+            "payment_id": str(payment.id),
+            "receipt_number": payment.receipt_number,
+            "student_id": str(assignment.student_id),
+            "school_id": str(payment.school_id),
+            "event_type": "fee_payment_received",
+        }
+
+        channels = [NotificationChannel.IN_APP]
+        if recipient.get("phone"):
+            channels.append(NotificationChannel.SMS)
+            channels.append(NotificationChannel.WHATSAPP)
+        if recipient.get("email"):
+            channels.append(NotificationChannel.EMAIL)
+
+        for ch in channels:
+            idempotency_key = f"fee_receipt:{payment.receipt_number}:{ch.value.lower()}"
+            event = NotificationTriggerEvent(
+                event_type="fee_payment_received",
+                school_id=payment.school_id,
+                recipient_type=recipient["recipient_type"],
+                recipient_name=recipient["recipient_name"],
+                recipient_contact=recipient["recipient_contact"],
+                channel=ch,
+                template_key="fee_payment_received",
+                template_variables=template_variables,
+                recipient_id=recipient["recipient_id"],
+                idempotency_key=idempotency_key,
+                event_metadata=metadata,
+            )
+            notification_trigger_service.stage_notification_event(
+                db=db,
+                event=event,
+                auto_dispatch_on_commit=True,
+            )
+    except Exception as exc:
+        logger.warning(
+            "Failed to stage fee receipt notification for payment %s (Receipt %s): %s",
+            payment.id,
+            payment.receipt_number,
+            exc,
+        )
 
 
 class FeeService:
@@ -728,6 +872,8 @@ class FeeService:
 
         metrics = self.calculate_metrics(assignment)
         self.update_assignment_status(assignment, metrics)
+
+        _trigger_fee_receipt_notification(db, payment, assignment)
 
         db.commit()
         db.refresh(payment)

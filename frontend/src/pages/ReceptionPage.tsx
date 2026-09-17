@@ -22,15 +22,22 @@ import {
   PieChart,
   Users,
   Activity,
+  Printer,
+  QrCode,
+  UserPlus,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { receptionApi } from '@/services/api/receptionApi';
+import { teachersApi } from '@/services/api/teachersApi';
+import { usersApi } from '@/services/api/usersApi';
+import { studentsApi } from '@/services/api/studentsApi';
 import {
   HostType,
   IdProofType,
   ReceptionAnalyticsResponse,
   ReceptionInquiry,
   ReceptionInquiryStatus,
+  VisitorBadgeResponse,
   VisitorDetail,
   VisitorStatus,
   VisitorSummary,
@@ -66,6 +73,7 @@ export const ReceptionPage: React.FC = () => {
   // Stats / Overview
   const [activeVisitorsCount, setActiveVisitorsCount] = useState<number>(0);
   const [todayCheckedOutCount, setTodayCheckedOutCount] = useState<number>(0);
+  const [expectedVisitorsCount, setExpectedVisitorsCount] = useState<number>(0);
   const [pendingInquiriesCount, setPendingInquiriesCount] = useState<number>(0);
   const [inProgressInquiriesCount, setInProgressInquiriesCount] = useState<number>(0);
   const [todayAppointmentsCount, setTodayAppointmentsCount] = useState<number>(0);
@@ -82,12 +90,32 @@ export const ReceptionPage: React.FC = () => {
   const [selectedVisitor, setSelectedVisitor] = useState<VisitorDetail | null>(null);
   const [showVisitorDetailModal, setShowVisitorDetailModal] = useState<boolean>(false);
   const [showCheckInModal, setShowCheckInModal] = useState<boolean>(false);
+  const [showPreRegisterModal, setShowPreRegisterModal] = useState<boolean>(false);
+  const [showBadgeModal, setShowBadgeModal] = useState<boolean>(false);
+  const [badgeVisitor, setBadgeVisitor] = useState<VisitorBadgeResponse | VisitorDetail | VisitorSummary | null>(null);
   const [checkoutTarget, setCheckoutTarget] = useState<VisitorSummary | null>(null);
   const [checkoutRemarks, setCheckoutRemarks] = useState<string>('');
   const [checkInSuccessGatePass, setCheckInSuccessGatePass] = useState<string | null>(null);
 
+  // Host Directory Directory State
+  const [hostOptions, setHostOptions] = useState<{ id: string; name: string; detail: string }[]>([]);
+  const [loadingHosts, setLoadingHosts] = useState<boolean>(false);
+
   // Check-In Form
   const [checkInForm, setCheckInForm] = useState({
+    visitor_name: '',
+    phone: '',
+    email: '',
+    id_proof_type: '' as IdProofType | '',
+    id_proof_number: '',
+    purpose: '',
+    host_type: '' as HostType | '',
+    host_id: '',
+    remarks: '',
+  });
+
+  // Pre-Register Form
+  const [preRegisterForm, setPreRegisterForm] = useState({
     visitor_name: '',
     phone: '',
     email: '',
@@ -136,12 +164,58 @@ export const ReceptionPage: React.FC = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
+  // Load Hosts for selected type
+  const loadHostsForType = async (type: HostType | '') => {
+    if (!type) {
+      setHostOptions([]);
+      return;
+    }
+    setLoadingHosts(true);
+    try {
+      if (type === 'TEACHER') {
+        const res = await teachersApi.getTeachers({ page_size: 100 });
+        setHostOptions(
+          res.items.map((t) => ({
+            id: t.id,
+            name: `${t.first_name} ${t.last_name}`,
+            detail: t.employee_id ? `Employee ID: ${t.employee_id}` : 'Teacher',
+          }))
+        );
+      } else if (type === 'STAFF') {
+        const res = await usersApi.getUsers({ page_size: 100 });
+        setHostOptions(
+          res.items.map((u) => ({
+            id: u.id,
+            name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
+            detail: u.email || 'Staff Member',
+          }))
+        );
+      } else if (type === 'STUDENT') {
+        const res = await studentsApi.getStudents({ page_size: 100 });
+        setHostOptions(
+          res.items.map((s) => ({
+            id: s.id,
+            name: `${s.first_name} ${s.last_name}`,
+            detail: s.admission_number ? `Admission #: ${s.admission_number}` : 'Student',
+          }))
+        );
+      }
+    } catch (err) {
+      setHostOptions([]);
+    } finally {
+      setLoadingHosts(false);
+    }
+  };
+
   // Load Dashboard Counts
   const loadOverviewCounts = async () => {
     try {
       if (canViewVisitors) {
         const activeRes = await receptionApi.getVisitors({ status: 'CHECKED_IN', page_size: 1 });
         setActiveVisitorsCount(activeRes.total);
+
+        const expectedRes = await receptionApi.getVisitors({ status: 'EXPECTED', page_size: 1 });
+        setExpectedVisitorsCount(expectedRes.total);
 
         const checkedOutRes = await receptionApi.getVisitors({
           status: 'CHECKED_OUT',
@@ -261,6 +335,82 @@ export const ReceptionPage: React.FC = () => {
       loadAnalytics();
     }
   }, [activeTab, visitorStatusFilter, visitorSearch, visitorPage, inquiryStatusFilter, inquirySearch, inquiryPage, datePreset, customStartDate, customEndDate]);
+
+  // Handle Pre-Register Submit
+  const handlePreRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preRegisterForm.visitor_name.trim() || !preRegisterForm.phone.trim() || !preRegisterForm.purpose.trim()) {
+      setErrorMessage('Visitor Name, Phone Number, and Purpose are required.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const payload = {
+        visitor_name: preRegisterForm.visitor_name.trim(),
+        phone: preRegisterForm.phone.trim(),
+        email: preRegisterForm.email.trim() || undefined,
+        id_proof_type: preRegisterForm.id_proof_type || undefined,
+        id_proof_number: preRegisterForm.id_proof_number.trim() || undefined,
+        purpose: preRegisterForm.purpose.trim(),
+        host_type: preRegisterForm.host_type || undefined,
+        host_id: preRegisterForm.host_id.trim() || undefined,
+        remarks: preRegisterForm.remarks.trim() || undefined,
+      };
+
+      const expectedVisitor = await receptionApi.preRegisterVisitor(payload);
+      setSuccessMessage(`Visitor ${expectedVisitor.visitor_name} pre-registered successfully (Status: EXPECTED). Gate Pass Ref: ${expectedVisitor.pass_number}`);
+      setShowPreRegisterModal(false);
+      setPreRegisterForm({
+        visitor_name: '',
+        phone: '',
+        email: '',
+        id_proof_type: '',
+        id_proof_number: '',
+        purpose: '',
+        host_type: '',
+        host_id: '',
+        remarks: '',
+      });
+      loadVisitors();
+      loadOverviewCounts();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Pre-registration failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Quick Check-In for Expected Visitors
+  const handleQuickCheckIn = async (visitor: VisitorSummary) => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const checkedIn = await receptionApi.quickCheckInVisitor(visitor.id);
+      setSuccessMessage(`Expected visitor ${checkedIn.visitor_name} checked in successfully! Gate Pass: ${checkedIn.pass_number}`);
+      loadVisitors();
+      loadOverviewCounts();
+      setBadgeVisitor(checkedIn);
+      setShowBadgeModal(true);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Quick check-in failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Open Visitor Pass Badge Modal
+  const handleOpenBadge = async (visitorId: string) => {
+    setErrorMessage(null);
+    try {
+      const badgeData = await receptionApi.getVisitorBadge(visitorId);
+      setBadgeVisitor(badgeData);
+      setShowBadgeModal(true);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to load visitor badge.');
+    }
+  };
 
   // Handle Check-In Submit
   const handleCheckInSubmit = async (e: React.FormEvent) => {
@@ -509,15 +659,27 @@ export const ReceptionPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           {canCheckInVisitors && (
-            <button
-              onClick={() => {
-                setErrorMessage(null);
-                setShowCheckInModal(true);
-              }}
-              className="px-3.5 py-2 text-xs font-semibold rounded-md bg-brand-500 text-white hover:bg-brand-600 transition flex items-center gap-1.5 shadow-sm"
-            >
-              <UserCheck className="w-4 h-4" /> Check-In Visitor
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  setErrorMessage(null);
+                  setShowPreRegisterModal(true);
+                }}
+                className="px-3.5 py-2 text-xs font-semibold rounded-md bg-amber-600 text-white hover:bg-amber-700 transition flex items-center gap-1.5 shadow-sm"
+              >
+                <UserPlus className="w-4 h-4" /> Pre-Register Visitor
+              </button>
+
+              <button
+                onClick={() => {
+                  setErrorMessage(null);
+                  setShowCheckInModal(true);
+                }}
+                className="px-3.5 py-2 text-xs font-semibold rounded-md bg-brand-500 text-white hover:bg-brand-600 transition flex items-center gap-1.5 shadow-sm"
+              >
+                <UserCheck className="w-4 h-4" /> Check-In Visitor
+              </button>
+            </>
           )}
 
           {canCreateInquiry && (
@@ -813,7 +975,7 @@ export const ReceptionPage: React.FC = () => {
                           {v.check_in_time ? new Date(v.check_in_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}
                         </td>
                         <td className="p-3">{renderVisitorStatusBadge(v.status)}</td>
-                        <td className="p-3 text-right space-x-2">
+                        <td className="p-3 text-right space-x-1.5">
                           <button
                             onClick={() => handleViewVisitorDetail(v.id)}
                             className="p-1.5 rounded text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
@@ -821,6 +983,21 @@ export const ReceptionPage: React.FC = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => handleOpenBadge(v.id)}
+                            className="p-1.5 rounded text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/60"
+                            title="Print Gate Pass Badge"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          {canCheckInVisitors && v.status === 'EXPECTED' && (
+                            <button
+                              onClick={() => handleQuickCheckIn(v)}
+                              className="px-2 py-1 text-[11px] font-semibold rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300"
+                            >
+                              Quick Check-In
+                            </button>
+                          )}
                           {canCheckOutVisitors && v.status === 'CHECKED_IN' && (
                             <button
                               onClick={() => setCheckoutTarget(v)}
@@ -1504,7 +1681,11 @@ export const ReceptionPage: React.FC = () => {
                   <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">Host Entity Type</label>
                   <select
                     value={checkInForm.host_type}
-                    onChange={(e) => setCheckInForm({ ...checkInForm, host_type: e.target.value as HostType })}
+                    onChange={(e) => {
+                      const type = e.target.value as HostType | '';
+                      setCheckInForm({ ...checkInForm, host_type: type, host_id: '' });
+                      loadHostsForType(type);
+                    }}
                     className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
                   >
                     <option value="">No Host Specified</option>
@@ -1515,14 +1696,31 @@ export const ReceptionPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">Host Entity ID</label>
-                  <input
-                    type="text"
-                    value={checkInForm.host_id}
-                    onChange={(e) => setCheckInForm({ ...checkInForm, host_id: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100 font-mono text-[11px]"
-                    placeholder="Host UUID (Optional)"
-                  />
+                  <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">
+                    Select Host Person {loadingHosts && '(Loading...)'}
+                  </label>
+                  {hostOptions.length > 0 ? (
+                    <select
+                      value={checkInForm.host_id}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, host_id: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
+                    >
+                      <option value="">Select Host...</option>
+                      {hostOptions.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name} — {h.detail}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={checkInForm.host_id}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, host_id: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100 font-mono text-[11px]"
+                      placeholder="Host UUID (Optional)"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1554,6 +1752,246 @@ export const ReceptionPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1B: PRE-REGISTER EXPECTED VISITOR */}
+      {/* ========================================================================= */}
+      {showPreRegisterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/60 p-4">
+          <div className="bg-paper dark:bg-stone-900 rounded-xl border border-divider dark:border-stone-800 max-w-lg w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-divider dark:border-stone-800 pb-3">
+              <h3 className="text-base font-serif font-bold text-ink dark:text-stone-100 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-amber-600" /> Pre-Register Expected Visitor
+              </h3>
+              <button onClick={() => setShowPreRegisterModal(false)} className="text-ink-muted hover:text-ink">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePreRegisterSubmit} className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">
+                    Visitor Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={preRegisterForm.visitor_name}
+                    onChange={(e) => setPreRegisterForm({ ...preRegisterForm, visitor_name: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
+                    placeholder="Expected Visitor Full Name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">
+                    Phone Number <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={preRegisterForm.phone}
+                    onChange={(e) => setPreRegisterForm({ ...preRegisterForm, phone: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">Purpose of Visit <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={preRegisterForm.purpose}
+                  onChange={(e) => setPreRegisterForm({ ...preRegisterForm, purpose: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
+                  placeholder="e.g. Guest Speaker, Parent Meeting, Campus Audit"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">Host Entity Type</label>
+                  <select
+                    value={preRegisterForm.host_type}
+                    onChange={(e) => {
+                      const type = e.target.value as HostType | '';
+                      setPreRegisterForm({ ...preRegisterForm, host_type: type, host_id: '' });
+                      loadHostsForType(type);
+                    }}
+                    className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
+                  >
+                    <option value="">No Host Specified</option>
+                    <option value="TEACHER">Teacher / Faculty</option>
+                    <option value="STAFF">Staff / Admin</option>
+                    <option value="STUDENT">Student</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">
+                    Select Host Person {loadingHosts && '(Loading...)'}
+                  </label>
+                  {hostOptions.length > 0 ? (
+                    <select
+                      value={preRegisterForm.host_id}
+                      onChange={(e) => setPreRegisterForm({ ...preRegisterForm, host_id: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
+                    >
+                      <option value="">Select Host...</option>
+                      {hostOptions.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name} — {h.detail}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={preRegisterForm.host_id}
+                      onChange={(e) => setPreRegisterForm({ ...preRegisterForm, host_id: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100 font-mono text-[11px]"
+                      placeholder="Host UUID (Optional)"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={preRegisterForm.email}
+                  onChange={(e) => setPreRegisterForm({ ...preRegisterForm, email: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
+                  placeholder="visitor@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-ink-muted dark:text-stone-300 mb-1">Remarks / Expected Arrival Notes</label>
+                <textarea
+                  rows={2}
+                  value={preRegisterForm.remarks}
+                  onChange={(e) => setPreRegisterForm({ ...preRegisterForm, remarks: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded border border-divider dark:border-stone-700 bg-paper-dim dark:bg-stone-800 text-ink dark:text-stone-100"
+                  placeholder="e.g. Expected at 11:00 AM, VIP Parking Requested"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-divider dark:border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setShowPreRegisterModal(false)}
+                  className="px-3.5 py-1.5 rounded text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-1.5 rounded bg-amber-600 text-white font-semibold hover:bg-amber-700 transition disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Pre-Registering...' : 'Confirm Pre-Registration'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1C: PRINTABLE VISITOR PASS BADGE */}
+      {/* ========================================================================= */}
+      {showBadgeModal && badgeVisitor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/60 p-4 print:p-0 print:bg-white print:static print:z-auto">
+          <div className="bg-paper dark:bg-stone-900 rounded-xl border border-divider dark:border-stone-800 max-w-md w-full p-6 shadow-xl space-y-4 print:shadow-none print:border-2 print:border-black print:max-w-full">
+            <div className="flex items-center justify-between border-b border-divider dark:border-stone-800 pb-3 print:hidden">
+              <h3 className="text-base font-serif font-bold text-ink dark:text-stone-100 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-brand-500" /> Visitor Pass Badge
+              </h3>
+              <button onClick={() => setShowBadgeModal(false)} className="text-ink-muted hover:text-ink">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Printable Pass Body */}
+            <div className="p-5 border-2 border-dashed border-stone-300 dark:border-stone-700 rounded-xl bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 space-y-4 font-sans print:border-2 print:border-solid print:border-stone-900">
+              <div className="text-center border-b border-stone-200 dark:border-stone-800 pb-2">
+                <h4 className="text-[10px] tracking-widest font-bold text-stone-500 uppercase">AI SCHOOL OS</h4>
+                <h2 className="text-lg font-serif font-bold text-brand-700 dark:text-brand-400">CAMPUS VISITOR GATE PASS</h2>
+              </div>
+
+              <div className="text-center py-2.5 bg-stone-50 dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800">
+                <span className="text-[10px] uppercase tracking-wider text-stone-500 font-semibold block">GATE PASS NUMBER</span>
+                <span className="text-xl font-mono font-bold text-brand-600 dark:text-brand-400 tracking-wider">
+                  {badgeVisitor.pass_number || 'GP-EXPECTED'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div>
+                  <span className="text-stone-500 text-[10px] block font-semibold">VISITOR NAME</span>
+                  <span className="font-bold text-stone-900 dark:text-stone-100">{badgeVisitor.visitor_name}</span>
+                </div>
+                <div>
+                  <span className="text-stone-500 text-[10px] block font-semibold">PHONE</span>
+                  <span className="font-semibold">{badgeVisitor.phone}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-stone-500 text-[10px] block font-semibold">PURPOSE OF VISIT</span>
+                  <span>{badgeVisitor.purpose}</span>
+                </div>
+                {badgeVisitor.host_type && (
+                  <div>
+                    <span className="text-stone-500 text-[10px] block font-semibold">HOST CATEGORY</span>
+                    <span>{badgeVisitor.host_type}</span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-stone-500 text-[10px] block font-semibold">CURRENT STATUS</span>
+                  {renderVisitorStatusBadge(badgeVisitor.status)}
+                </div>
+                {badgeVisitor.check_in_time && (
+                  <div className="col-span-2">
+                    <span className="text-stone-500 text-[10px] block font-semibold">CHECK-IN TIMESTAMP</span>
+                    <span>{new Date(badgeVisitor.check_in_time).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Non-sensitive Pass QR Visual Representation */}
+              <div className="pt-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between text-[10px] text-stone-500">
+                <div className="flex items-center gap-2 font-mono">
+                  <QrCode className="w-8 h-8 text-stone-800 dark:text-stone-200 shrink-0" />
+                  <div>
+                    <span className="block font-bold">SECURITY VERIFIED</span>
+                    <span>PASS REF: {badgeVisitor.id.substring(0, 8)}</span>
+                  </div>
+                </div>
+                <span className="italic text-[9px] text-stone-400">Valid for authorized entry</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 print:hidden">
+              <button
+                onClick={() => setShowBadgeModal(false)}
+                className="px-3.5 py-1.5 text-xs rounded text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-1.5 text-xs rounded bg-brand-500 text-white font-semibold hover:bg-brand-600 transition flex items-center gap-1.5 shadow-sm"
+              >
+                <Printer className="w-4 h-4" /> Print Gate Pass
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -19,6 +19,9 @@ from app.ai.schemas.admin import (
     AIAuditLogItemResponse,
 )
 
+from app.common.security.encryption import encrypt_credential, mask_credential
+from app.ai.security.ssrf_validator import validate_provider_endpoint
+
 VALID_PROVIDERS = {"MOCK", "GEMINI", "OPENAI", "ANTHROPIC", "LOCAL_ORTOOLS"}
 
 
@@ -26,6 +29,21 @@ class AIAdminService:
     """
     Service layer for AI Subsystem Administration, Provider Management, System Audit & Quota Control.
     """
+
+    def _to_response(self, config: AIProviderConfig) -> AIProviderConfigResponse:
+        return AIProviderConfigResponse(
+            id=config.id,
+            school_id=config.school_id,
+            provider_type=config.provider_type,
+            model_name=config.model_name,
+            is_enabled=config.is_enabled,
+            allow_external_ai=config.allow_external_ai,
+            api_key_configured=bool(config.encrypted_api_key),
+            masked_api_key=mask_credential(config.encrypted_api_key),
+            api_base_url=config.api_base_url,
+            notes=config.notes,
+            updated_at=config.updated_at,
+        )
 
     def get_provider_config(self, db: Session, school_id: uuid.UUID) -> AIProviderConfigResponse:
         config = db.scalar(
@@ -46,7 +64,7 @@ class AIAdminService:
             db.commit()
             db.refresh(config)
 
-        return AIProviderConfigResponse.model_validate(config)
+        return self._to_response(config)
 
     def update_provider_config(
         self, db: Session, school_id: uuid.UUID, data: AIProviderConfigUpdate
@@ -57,10 +75,13 @@ class AIAdminService:
                 f"Invalid provider_type '{data.provider_type}'. Allowed: {', '.join(sorted(VALID_PROVIDERS))}"
             )
 
+        sanitized_base_url = validate_provider_endpoint(data.api_base_url) if data.api_base_url is not None else None
+
         config = db.scalar(
             select(AIProviderConfig).where(AIProviderConfig.school_id == school_id)
         )
         if not config:
+            encrypted_key = encrypt_credential(data.api_key.strip()) if data.api_key and data.api_key.strip() else None
             config = AIProviderConfig(
                 id=uuid.uuid4(),
                 school_id=school_id,
@@ -68,6 +89,8 @@ class AIAdminService:
                 model_name=data.model_name or "mock-default-v1",
                 is_enabled=data.is_enabled,
                 allow_external_ai=data.allow_external_ai,
+                encrypted_api_key=encrypted_key,
+                api_base_url=sanitized_base_url,
                 notes=data.notes,
             )
             db.add(config)
@@ -77,12 +100,19 @@ class AIAdminService:
                 config.model_name = data.model_name
             config.is_enabled = data.is_enabled
             config.allow_external_ai = data.allow_external_ai
+            if data.api_key is not None:
+                if data.api_key.strip():
+                    config.encrypted_api_key = encrypt_credential(data.api_key.strip())
+                else:
+                    config.encrypted_api_key = None
+            if data.api_base_url is not None:
+                config.api_base_url = sanitized_base_url
             if data.notes is not None:
                 config.notes = data.notes
 
         db.commit()
         db.refresh(config)
-        return AIProviderConfigResponse.model_validate(config)
+        return self._to_response(config)
 
     def update_usage_limit(
         self, db: Session, school_id: uuid.UUID, data: AIUsageLimitUpdate

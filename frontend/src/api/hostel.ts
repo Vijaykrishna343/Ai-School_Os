@@ -64,6 +64,16 @@ export interface HostelFeeStructure {
   description?: string;
 }
 
+export interface HostelFeeAllocation {
+  id: string;
+  student_id: string;
+  fee_structure_id: string;
+  due_date: string;
+  amount_due: number;
+  paid_amount: number;
+  status: string;
+}
+
 export const hostelApi = {
   getDashboard: async (): Promise<HostelDashboardMetrics> => {
     const res = await apiClient.get('/api/v1/hostel/dashboard');
@@ -122,6 +132,24 @@ export const hostelApi = {
 
   createFeeStructure: async (data: any): Promise<any> => {
     const res = await apiClient.post('/api/v1/hostel/fees/structures', data);
+    return res.data;
+  },
+
+  getFeeAllocations: async (studentId?: string): Promise<HostelFeeAllocation[]> => {
+    const res = await apiClient.get('/api/v1/hostel/fees/allocations', { params: { student_id: studentId } });
+    return res.data.data;
+  },
+
+  allocateFee: async (data: { student_id: string; fee_structure_id: string; due_date: string }): Promise<any> => {
+    const res = await apiClient.post('/api/v1/hostel/fees/allocations', data);
+    return res.data;
+  },
+
+  payFeeAllocation: async (
+    allocationId: string,
+    data: { payment_amount: number; payment_mode?: string; reference_number?: string; remarks?: string }
+  ): Promise<any> => {
+    const res = await apiClient.put(`/api/v1/hostel/fees/allocations/${allocationId}/pay`, data);
     return res.data;
   },
 };

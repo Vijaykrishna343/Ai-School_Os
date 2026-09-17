@@ -475,4 +475,48 @@ def get_reception_analytics_service() -> ReceptionAnalyticsService:
     return reception_analytics_service
 
 
+from app.services.transport_service import (
+    TransportService,
+    transport_service,
+)
+
+
+def get_transport_service() -> TransportService:
+    """Return the TransportService singleton."""
+    return transport_service
+
+
+from app.services.library_service import (
+    LibraryService,
+    library_service,
+)
+
+
+def get_library_service() -> LibraryService:
+    """Return the LibraryService singleton."""
+    return library_service
+
+
+from app.services.admissions_service import (
+    AdmissionsService,
+    admissions_service,
+)
+
+
+def get_admissions_service() -> AdmissionsService:
+    """Return the AdmissionsService singleton."""
+    return admissions_service
+
+
+from app.services.inventory_service import (
+    InventoryService,
+    inventory_service,
+)
+
+
+def get_inventory_service() -> InventoryService:
+    """Return the InventoryService singleton."""
+    return inventory_service
+
+
 

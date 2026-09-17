@@ -27,7 +27,7 @@ class MockNotificationProvider(BaseNotificationProvider):
     def provider_name(self) -> str:
         return "mock"
 
-    def send(self, notification: Notification) -> tuple[NotificationStatus, str | None]:
+    def send(self, notification: Notification, db: Session | None = None) -> tuple[NotificationStatus, str | None]:
         logger.info(
             "[MOCK PROVIDER] channel=%s | recipient=%s (%s) | title='%s' | body='%s'",
             notification.channel,

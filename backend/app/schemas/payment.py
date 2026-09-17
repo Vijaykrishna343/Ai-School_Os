@@ -151,3 +151,51 @@ class WebhookResponse(BaseModel):
     processed: bool = True
 
 
+class PaymentConfigResponse(BaseModel):
+    """
+    Sanitized provider configuration response. All secret keys are strictly masked.
+    """
+    school_id: UUID | str | None = None
+    razorpay_enabled: bool = False
+    razorpay_key_id: str = ""
+    razorpay_key_secret_masked: str | None = None
+    razorpay_webhook_secret_masked: str | None = None
+    razorpay_webhook_url: str = "/api/v1/payments/webhooks/razorpay"
+    stripe_enabled: bool = False
+    stripe_publishable_key: str = ""
+    stripe_secret_key_masked: str | None = None
+    stripe_webhook_secret_masked: str | None = None
+    stripe_webhook_url: str = "/api/v1/payments/webhooks/stripe"
+
+
+class PaymentConfigUpdate(BaseModel):
+    """
+    Request DTO for updating payment gateway credentials. Secrets are write-only and encrypted at rest.
+    """
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: str | None = None
+    razorpay_webhook_secret: str | None = None
+    stripe_publishable_key: str | None = None
+    stripe_secret_key: str | None = None
+    stripe_webhook_secret: str | None = None
+
+
+class PaymentOrderStatusResponse(BaseModel):
+    """
+    Authoritative payment order status response for frontend polling.
+    """
+    order_id: UUID
+    school_id: UUID
+    student_fee_assignment_id: UUID
+    provider: PaymentProvider
+    gateway_order_id: str
+    amount: Decimal
+    currency: str
+    status: PaymentOrderStatus
+    receipt_number: str | None = None
+    is_settled: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
+

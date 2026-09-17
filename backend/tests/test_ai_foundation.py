@@ -119,8 +119,11 @@ def test_provider_factory_resolution():
     prov_mock = AIProviderFactory.get_provider("MOCK")
     assert prov_mock.provider_type == "MOCK"
 
-    with pytest.raises(AIProviderException, match="External AI Provider 'OPENAI' is not configured"):
+    with pytest.raises(AIProviderException, match="OpenAI live provider requires an API key"):
         AIProviderFactory.get_provider("OPENAI")
+
+    with pytest.raises(AIProviderException, match="not supported or recognized"):
+        AIProviderFactory.get_provider("NON_EXISTENT_PROVIDER")
 
 
 # ============================================================================

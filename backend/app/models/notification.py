@@ -111,9 +111,19 @@ class Notification(CommonModel):
     )
 
     idempotency_key: Mapped[str | None] = mapped_column(
-        String(100),
+        String(255),
         nullable=True,
         index=True,
+    )
+
+    provider_name: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    provider_message_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
     )
 
     retry_count: Mapped[int] = mapped_column(
