@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { communicationApi, NotificationItem, UserPreferences, NotificationTemplate } from '@/api/communication';
+import {
+  communicationApi,
+  NotificationItem,
+  NotificationDetail,
+  UserPreferences,
+  NotificationTemplate,
+  NotificationAnalytics,
+} from '@/api/communication';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -25,6 +32,11 @@ import {
   ShieldCheck,
   CheckCheck,
   Sparkles,
+  BarChart3,
+  Eye,
+  Search,
+  Calendar,
+  Filter,
 } from 'lucide-react';
 import { generateCommunicationDraft, CommunicationDraftResponse } from '@/api/aiCommunicationApi';
 
@@ -39,11 +51,20 @@ export const NotificationsPage: React.FC = () => {
     permissions.includes('notification.manage') ||
     permissions.includes('notification.delivery.view');
 
-  const [activeTab, setActiveTab] = useState<'inbox' | 'preferences' | 'logs' | 'templates' | 'providers'>('inbox');
+  const [activeTab, setActiveTab] = useState<'inbox' | 'preferences' | 'logs' | 'analytics' | 'templates' | 'providers'>('inbox');
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState('');
   const [channelFilter, setChannelFilter] = useState('');
+  const [eventTypeFilter, setEventTypeFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
+  const [searchFilter, setSearchFilter] = useState('');
+
+  // Notification Detail Inspection State
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
@@ -96,21 +117,35 @@ export const NotificationsPage: React.FC = () => {
   });
 
   const logsQuery = useQuery({
-    queryKey: ['notification-logs', page, pageSize, statusFilter, channelFilter],
+    queryKey: ['notification-logs', page, pageSize, statusFilter, channelFilter, eventTypeFilter, startDateFilter, endDateFilter, searchFilter],
     queryFn: () =>
       communicationApi.fetchDeliveryLogs({
         page,
         page_size: pageSize,
         status: statusFilter || undefined,
         channel: channelFilter || undefined,
+        event_type: eventTypeFilter || undefined,
+        start_date: startDateFilter ? `${startDateFilter}T00:00:00Z` : undefined,
+        end_date: endDateFilter ? `${endDateFilter}T23:59:59Z` : undefined,
+        search: searchFilter || undefined,
       }),
     enabled: isCommunicationAdmin,
   });
 
-  const metricsQuery = useQuery({
-    queryKey: ['delivery-metrics'],
-    queryFn: communicationApi.fetchDeliveryMetrics,
+  const analyticsQuery = useQuery({
+    queryKey: ['notification-analytics', startDateFilter, endDateFilter],
+    queryFn: () =>
+      communicationApi.fetchNotificationAnalytics({
+        start_date: startDateFilter ? `${startDateFilter}T00:00:00Z` : undefined,
+        end_date: endDateFilter ? `${endDateFilter}T23:59:59Z` : undefined,
+      }),
     enabled: isCommunicationAdmin,
+  });
+
+  const detailQuery = useQuery({
+    queryKey: ['notification-detail', selectedNotificationId],
+    queryFn: () => communicationApi.fetchNotificationDetail(selectedNotificationId!),
+    enabled: !!selectedNotificationId && isDetailModalOpen,
   });
 
   const templatesQuery = useQuery({
@@ -151,7 +186,8 @@ export const NotificationsPage: React.FC = () => {
     mutationFn: communicationApi.retryNotification,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['delivery-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-detail'] });
     },
   });
 
@@ -159,6 +195,7 @@ export const NotificationsPage: React.FC = () => {
     mutationFn: communicationApi.sendAnnouncement,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-analytics'] });
       queryClient.invalidateQueries({ queryKey: ['user-inbox'] });
       setIsSendModalOpen(false);
       setSendForm({
@@ -222,6 +259,11 @@ export const NotificationsPage: React.FC = () => {
     }
   };
 
+  const openNotificationDetail = (id: string) => {
+    setSelectedNotificationId(id);
+    setIsDetailModalOpen(true);
+  };
+
   const logsColumns: Column<NotificationItem>[] = [
     {
       key: 'channel',
@@ -231,6 +273,15 @@ export const NotificationsPage: React.FC = () => {
           {getChannelIcon(n.channel)}
           <span className="font-medium text-xs text-ink dark:text-stone-200">{n.channel}</span>
         </div>
+      ),
+    },
+    {
+      key: 'template_key',
+      header: 'Event / Type',
+      render: (n) => (
+        <Badge variant="neutral" className="font-mono text-[10px]">
+          {n.template_key}
+        </Badge>
       ),
     },
     {
@@ -247,8 +298,10 @@ export const NotificationsPage: React.FC = () => {
       key: 'title',
       header: 'Notification Payload',
       render: (n) => (
-        <div>
-          <div className="font-semibold text-xs text-ink dark:text-stone-100">{n.title}</div>
+        <div className="cursor-pointer" onClick={() => openNotificationDetail(n.id)}>
+          <div className="font-semibold text-xs text-ink dark:text-stone-100 hover:text-brand-600 transition-colors">
+            {n.title}
+          </div>
           <div className="text-[11px] text-muted dark:text-stone-400 line-clamp-1">{n.body}</div>
           {n.error_message && (
             <div className="text-[10px] text-rose-600 dark:text-rose-400 mt-1">Err: {n.error_message}</div>
@@ -273,21 +326,34 @@ export const NotificationsPage: React.FC = () => {
     {
       key: 'actions',
       header: 'Actions',
-      render: (n) =>
-        n.status === 'FAILED' ? (
+      render: (n) => (
+        <div className="flex items-center space-x-1.5">
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => retryMutation.mutate(n.id)}
-            isLoading={retryMutation.isPending}
+            variant="ghost"
+            onClick={() => openNotificationDetail(n.id)}
+            title="Inspect Details"
           >
-            <RefreshCw className="w-3 h-3 mr-1" /> Retry
+            <Eye className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
           </Button>
-        ) : null,
+          {n.status === 'FAILED' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => retryMutation.mutate(n.id)}
+              isLoading={retryMutation.isPending}
+              title="Retry Delivery"
+            >
+              <RefreshCw className="w-3 h-3 mr-1" /> Retry
+            </Button>
+          )}
+        </div>
+      ),
     },
   ];
 
   const prefs = preferencesQuery.data;
+  const analytics = analyticsQuery.data;
 
   return (
     <div className="p-6 space-y-6">
@@ -299,7 +365,7 @@ export const NotificationsPage: React.FC = () => {
             Communication & Notification Center
           </h1>
           <p className="text-sm text-muted dark:text-stone-400">
-            Multi-channel messaging platform, user notification inbox, and provider administration.
+            Multi-channel messaging platform, operational delivery monitoring, and tenant administration.
           </p>
         </div>
 
@@ -320,41 +386,43 @@ export const NotificationsPage: React.FC = () => {
       </div>
 
       {/* Admin KPI Summary Cards */}
-      {isCommunicationAdmin && metricsQuery.data && (
+      {isCommunicationAdmin && analytics && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card className="p-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
             <div className="text-xs text-muted dark:text-stone-400 font-medium">Total Notifications</div>
             <div className="text-2xl font-bold text-ink dark:text-stone-100 mt-1">
-              {metricsQuery.data.total_notifications}
+              {analytics.total_notifications}
             </div>
-            <div className="text-[11px] text-stone-500 mt-1">Dispatched across channels</div>
+            <div className="text-[11px] text-stone-500 mt-1">
+              Success Rate: <span className="font-semibold text-emerald-600">{analytics.success_rate_percent}%</span>
+            </div>
           </Card>
 
           <Card className="p-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
             <div className="text-xs text-muted dark:text-stone-400 font-medium">Sent & Delivered</div>
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-              {metricsQuery.data.sent_count}
+              {analytics.sent_count + analytics.delivered_count}
             </div>
-            <div className="text-[11px] text-emerald-600 mt-1">100% Verified delivery</div>
+            <div className="text-[11px] text-emerald-600 mt-1">Verified outbound dispatches</div>
           </Card>
 
           <Card className="p-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
             <div className="text-xs text-muted dark:text-stone-400 font-medium">Failed Attempts</div>
             <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">
-              {metricsQuery.data.failed_count}
+              {analytics.failed_count}
             </div>
             <div className="text-[11px] text-rose-600 mt-1">
-              Failure rate: {metricsQuery.data.failure_rate_percent}%
+              Failure rate: {analytics.failure_rate_percent}%
             </div>
           </Card>
 
           <Card className="p-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
             <div className="text-xs text-muted dark:text-stone-400 font-medium">Channel Distribution</div>
             <div className="flex items-center space-x-2 mt-2 text-xs font-semibold">
-              <span className="text-amber-500">IN:{metricsQuery.data.by_channel.IN_APP || 0}</span>
-              <span className="text-purple-500">EM:{metricsQuery.data.by_channel.EMAIL || 0}</span>
-              <span className="text-blue-500">SMS:{metricsQuery.data.by_channel.SMS || 0}</span>
-              <span className="text-emerald-500">WA:{metricsQuery.data.by_channel.WHATSAPP || 0}</span>
+              <span className="text-amber-500">IN:{analytics.by_channel.IN_APP || 0}</span>
+              <span className="text-purple-500">EM:{analytics.by_channel.EMAIL || 0}</span>
+              <span className="text-blue-500">SMS:{analytics.by_channel.SMS || 0}</span>
+              <span className="text-emerald-500">WA:{analytics.by_channel.WHATSAPP || 0}</span>
             </div>
           </Card>
         </div>
@@ -399,7 +467,18 @@ export const NotificationsPage: React.FC = () => {
                   : 'border-transparent text-muted hover:text-ink dark:text-stone-400'
               }`}
             >
-              <FileCode className="w-4 h-4" /> Delivery Logs & Retry
+              <FileCode className="w-4 h-4" /> Delivery Logs & History
+            </button>
+
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`pb-2 px-1 text-sm font-semibold flex items-center gap-2 border-b-2 ${
+                activeTab === 'analytics'
+                  ? 'border-brand-600 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-muted hover:text-ink dark:text-stone-400'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" /> Analytics & Reports
             </button>
 
             <button
@@ -573,9 +652,29 @@ export const NotificationsPage: React.FC = () => {
       {/* ── TAB 3: DELIVERY LOGS & RETRY QUEUE ──────────────────────────────────── */}
       {activeTab === 'logs' && isCommunicationAdmin && (
         <Card className="p-6 space-y-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h3 className="text-base font-bold text-ink dark:text-stone-100">Delivery History & Retry Audit</h3>
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h3 className="text-base font-bold text-ink dark:text-stone-100 flex items-center gap-2">
+                <FileCode className="w-5 h-5 text-brand-500" /> Delivery History & Audit Trail
+              </h3>
+              <div className="text-xs text-muted">
+                Total Records: <span className="font-semibold text-ink dark:text-stone-200">{logsQuery.data?.total ?? 0}</span>
+              </div>
+            </div>
+
+            {/* Filter Toolbar */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5 pt-2 border-t border-stone-200 dark:border-stone-800">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-stone-400" />
+                <input
+                  type="text"
+                  placeholder="Search recipient/title..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 border border-stone-300 dark:border-stone-700 rounded-md text-xs bg-white dark:bg-stone-900"
+                />
+              </div>
+
               <select
                 value={channelFilter}
                 onChange={(e) => setChannelFilter(e.target.value)}
@@ -595,10 +694,44 @@ export const NotificationsPage: React.FC = () => {
               >
                 <option value="">All Statuses</option>
                 <option value="SENT">Sent</option>
+                <option value="DELIVERED">Delivered</option>
                 <option value="FAILED">Failed</option>
                 <option value="PENDING">Pending</option>
                 <option value="CANCELLED">Cancelled</option>
               </select>
+
+              <select
+                value={eventTypeFilter}
+                onChange={(e) => setEventTypeFilter(e.target.value)}
+                className="px-3 py-1.5 border border-stone-300 dark:border-stone-700 rounded-md text-xs bg-white dark:bg-stone-900"
+              >
+                <option value="">All Event Types</option>
+                <option value="visitor_checkin">Visitor Check-in</option>
+                <option value="visitor_checkout">Visitor Check-out</option>
+                <option value="fee_payment_received">Fee Payment Receipt</option>
+                <option value="student_absence">Student Absence</option>
+                <option value="homework_published">Homework Published</option>
+                <option value="general_announcement">General Announcement</option>
+                <option value="emergency_alert">Emergency Alert</option>
+              </select>
+
+              <div className="flex items-center space-x-1">
+                <input
+                  type="date"
+                  value={startDateFilter}
+                  onChange={(e) => setStartDateFilter(e.target.value)}
+                  className="w-1/2 px-2 py-1.5 border border-stone-300 dark:border-stone-700 rounded-md text-xs bg-white dark:bg-stone-900"
+                  title="From Date"
+                />
+                <span className="text-muted text-xs">-</span>
+                <input
+                  type="date"
+                  value={endDateFilter}
+                  onChange={(e) => setEndDateFilter(e.target.value)}
+                  className="w-1/2 px-2 py-1.5 border border-stone-300 dark:border-stone-700 rounded-md text-xs bg-white dark:bg-stone-900"
+                  title="To Date"
+                />
+              </div>
             </div>
           </div>
 
@@ -606,9 +739,144 @@ export const NotificationsPage: React.FC = () => {
             data={logsQuery.data?.items || []}
             columns={logsColumns}
             isLoading={logsQuery.isLoading}
-            emptyText="No delivery logs match your filter."
+            emptyText="No delivery logs match your active filters."
           />
         </Card>
+      )}
+
+      {/* ── TAB 3B: ANALYTICS & REPORTS ────────────────────────────────────────── */}
+      {activeTab === 'analytics' && isCommunicationAdmin && (
+        <div className="space-y-6">
+          <Card className="p-6 space-y-6 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-ink dark:text-stone-100 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-brand-500" /> Communication Performance & Volume Analytics
+                </h3>
+                <p className="text-xs text-muted dark:text-stone-400 mt-1">
+                  Database-aggregated operational metrics, channel mix, delivery success rates, and volume distribution.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={startDateFilter}
+                  onChange={(e) => setStartDateFilter(e.target.value)}
+                  className="px-2.5 py-1.5 border border-stone-300 dark:border-stone-700 rounded-md text-xs bg-white dark:bg-stone-900"
+                />
+                <span className="text-muted text-xs">to</span>
+                <input
+                  type="date"
+                  value={endDateFilter}
+                  onChange={(e) => setEndDateFilter(e.target.value)}
+                  className="px-2.5 py-1.5 border border-stone-300 dark:border-stone-700 rounded-md text-xs bg-white dark:bg-stone-900"
+                />
+                {(startDateFilter || endDateFilter) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setStartDateFilter('');
+                      setEndDateFilter('');
+                    }}
+                  >
+                    Reset
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {analyticsQuery.isLoading ? (
+              <div className="p-8 text-center text-muted">Calculating analytics...</div>
+            ) : analytics ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Event Breakdown */}
+                <div className="p-4 border border-stone-200 dark:border-stone-800 rounded-lg space-y-3 bg-stone-50/50 dark:bg-stone-950/50">
+                  <h4 className="font-bold text-xs uppercase text-brand-600 dark:text-brand-400">
+                    Volume by Trigger Event
+                  </h4>
+                  {Object.keys(analytics.by_event).length === 0 ? (
+                    <div className="text-xs text-muted">No events recorded in this period.</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {Object.entries(analytics.by_event).map(([evt, count]) => {
+                        const pct = analytics.total_notifications > 0
+                          ? Math.round((count / analytics.total_notifications) * 100)
+                          : 0;
+                        return (
+                          <div key={evt} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-mono font-medium text-ink dark:text-stone-200">{evt}</span>
+                              <span className="text-stone-500">{count} ({pct}%)</span>
+                            </div>
+                            <div className="w-full bg-stone-200 dark:bg-stone-800 h-2 rounded-full overflow-hidden">
+                              <div className="bg-brand-500 h-full rounded-full" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Channel Breakdown */}
+                <div className="p-4 border border-stone-200 dark:border-stone-800 rounded-lg space-y-3 bg-stone-50/50 dark:bg-stone-950/50">
+                  <h4 className="font-bold text-xs uppercase text-brand-600 dark:text-brand-400">
+                    Volume by Channel
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(analytics.by_channel).map(([ch, count]) => {
+                      const pct = analytics.total_notifications > 0
+                        ? Math.round((count / analytics.total_notifications) * 100)
+                        : 0;
+                      return (
+                        <div key={ch} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-ink dark:text-stone-200 flex items-center gap-1.5">
+                              {getChannelIcon(ch)} {ch}
+                            </span>
+                            <span className="text-stone-500">{count} ({pct}%)</span>
+                          </div>
+                          <div className="w-full bg-stone-200 dark:bg-stone-800 h-2 rounded-full overflow-hidden">
+                            <div className="bg-blue-500 h-full rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Daily Volume Timeline */}
+                <div className="md:col-span-2 p-4 border border-stone-200 dark:border-stone-800 rounded-lg space-y-3 bg-stone-50/50 dark:bg-stone-950/50">
+                  <h4 className="font-bold text-xs uppercase text-brand-600 dark:text-brand-400">
+                    Daily Notification Volume
+                  </h4>
+                  {analytics.daily_volume.length === 0 ? (
+                    <div className="text-xs text-muted">No daily volume data available.</div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-4 text-xs font-semibold text-muted border-b border-stone-200 dark:border-stone-800 pb-1">
+                        <span>Date</span>
+                        <span>Total Volume</span>
+                        <span className="text-emerald-600">Sent / Delivered</span>
+                        <span className="text-rose-600">Failed</span>
+                      </div>
+                      {analytics.daily_volume.map((dv) => (
+                        <div key={dv.date} className="grid grid-cols-4 text-xs font-mono py-1 border-b border-stone-100 dark:border-stone-900">
+                          <span className="text-ink dark:text-stone-200">{dv.date}</span>
+                          <span className="font-semibold">{dv.count}</span>
+                          <span className="text-emerald-600 font-semibold">{dv.sent}</span>
+                          <span className="text-rose-600 font-semibold">{dv.failed}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </Card>
+        </div>
       )}
 
       {/* ── TAB 4: NOTIFICATION TEMPLATES ──────────────────────────────────────── */}
@@ -651,36 +919,55 @@ export const NotificationsPage: React.FC = () => {
         </Card>
       )}
 
-      {/* ── TAB 5: PROVIDER ADAPTERS STATUS ────────────────────────────────────── */}
+      {/* ── TAB 5: PROVIDER ADAPTERS & TENANT CONFIGURATION ──────────────────── */}
       {activeTab === 'providers' && isCommunicationAdmin && (
-        <Card className="p-6 space-y-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
-          <div>
-            <h3 className="text-base font-bold text-ink dark:text-stone-100 flex items-center gap-2">
-              <Server className="w-5 h-5 text-brand-500" /> Channel Provider Adapters
-            </h3>
-            <p className="text-xs text-muted dark:text-stone-400 mt-1">
-              Active channel driver state. Unconfigured production drivers fall back to Mock Development Mode safely.
-            </p>
-          </div>
+        <div className="space-y-6">
+          <Card className="p-6 space-y-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
+            <div>
+              <h3 className="text-base font-bold text-ink dark:text-stone-100 flex items-center gap-2">
+                <Server className="w-5 h-5 text-brand-500" /> Channel Provider Statuses
+              </h3>
+              <p className="text-xs text-muted dark:text-stone-400 mt-1">
+                Active channel driver state. Unconfigured production drivers fall back to Mock Development Mode safely.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {providersQuery.data?.map((p) => (
-              <div key={p.channel} className="p-4 border border-stone-200 dark:border-stone-800 rounded-lg space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {getChannelIcon(p.channel)}
-                    <span className="font-bold text-sm text-ink dark:text-stone-100">{p.channel}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {providersQuery.data?.map((p) => (
+                <div key={p.channel} className="p-4 border border-stone-200 dark:border-stone-800 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      {getChannelIcon(p.channel)}
+                      <span className="font-bold text-sm text-ink dark:text-stone-100">{p.channel}</span>
+                    </div>
+                    <Badge variant={p.is_configured ? 'success' : 'warning'}>{p.status}</Badge>
                   </div>
-                  <Badge variant={p.is_configured ? 'success' : 'warning'}>{p.status}</Badge>
+                  <div className="text-xs text-stone-600 dark:text-stone-400">
+                    Driver Adapter: <span className="font-mono font-semibold">{p.provider_name}</span>
+                  </div>
                 </div>
-                <div className="text-xs text-stone-600 dark:text-stone-400">
-                  Driver Adapter: <span className="font-mono font-semibold">{p.provider_name}</span>
-                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Tenant Provider Credentials & Settings Form */}
+          <Card className="p-6 space-y-6 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
+            <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-ink dark:text-stone-100 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" /> School Gateway Provider Configuration
+                </h3>
+                <p className="text-xs text-muted dark:text-stone-400 mt-1">
+                  Configure gateway credentials and DLT metadata. Secrets are encrypted at rest and never rendered back in plaintext.
+                </p>
               </div>
-            ))}
-          </div>
-        </Card>
+            </div>
+
+            <ProviderConfigForm />
+          </Card>
+        </div>
       )}
+
 
       {/* Modal: Send Announcement */}
       <Modal isOpen={isSendModalOpen} onClose={() => setIsSendModalOpen(false)} title="Dispatch Transactional Announcement">
@@ -992,6 +1279,367 @@ export const NotificationsPage: React.FC = () => {
           )}
         </div>
       </Modal>
+
+      {/* Modal: Notification Detail Inspection */}
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedNotificationId(null);
+        }}
+        title="Notification Audit & Delivery Details"
+      >
+        {detailQuery.isLoading ? (
+          <div className="p-8 text-center text-muted text-xs">Loading notification details...</div>
+        ) : detailQuery.data ? (
+          <div className="space-y-4 text-xs">
+            {/* Header / Summary Status */}
+            <div className="p-3 bg-stone-50 dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                {getChannelIcon(detailQuery.data.channel)}
+                <span className="font-bold text-sm text-ink dark:text-stone-100">{detailQuery.data.channel}</span>
+                <Badge variant="neutral" className="font-mono text-[10px]">
+                  {detailQuery.data.template_key}
+                </Badge>
+              </div>
+              <div className="flex items-center space-x-2">
+                {getStatusBadge(detailQuery.data.status)}
+                {detailQuery.data.retry_count !== undefined && (
+                  <span className="text-[10px] text-stone-500 font-mono">
+                    ({detailQuery.data.retry_count}/{detailQuery.data.max_retries} Retries)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Recipient Details */}
+            <div className="grid grid-cols-2 gap-3 p-3 border border-stone-200 dark:border-stone-800 rounded-lg">
+              <div>
+                <span className="text-muted block text-[10px] uppercase font-semibold">Recipient Name</span>
+                <span className="font-medium text-ink dark:text-stone-200">{detailQuery.data.recipient_name}</span>
+              </div>
+              <div>
+                <span className="text-muted block text-[10px] uppercase font-semibold">Contact / Target</span>
+                <span className="font-mono text-ink dark:text-stone-200">{detailQuery.data.recipient_contact}</span>
+              </div>
+              <div>
+                <span className="text-muted block text-[10px] uppercase font-semibold">Recipient Type</span>
+                <span className="font-medium text-ink dark:text-stone-200">{detailQuery.data.recipient_type || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="text-muted block text-[10px] uppercase font-semibold">Recipient UUID</span>
+                <span className="font-mono text-[10px] text-stone-500">{detailQuery.data.recipient_id || 'None'}</span>
+              </div>
+            </div>
+
+            {/* Payload */}
+            <div className="space-y-1.5 p-3 border border-stone-200 dark:border-stone-800 rounded-lg">
+              <span className="text-muted block text-[10px] uppercase font-semibold">Message Title</span>
+              <div className="font-semibold text-ink dark:text-stone-100">{detailQuery.data.title}</div>
+              <span className="text-muted block text-[10px] uppercase font-semibold pt-1">Message Body</span>
+              <div className="p-2.5 bg-stone-50 dark:bg-stone-950 rounded border border-stone-200 dark:border-stone-800 font-mono text-[11px] whitespace-pre-wrap text-stone-800 dark:text-stone-300">
+                {detailQuery.data.body}
+              </div>
+            </div>
+
+            {/* Provider & Dispatch Info */}
+            <div className="grid grid-cols-2 gap-3 p-3 border border-stone-200 dark:border-stone-800 rounded-lg">
+              <div>
+                <span className="text-muted block text-[10px] uppercase font-semibold">Provider</span>
+                <span className="font-mono text-ink dark:text-stone-200">{detailQuery.data.provider_name || 'MOCK / Default'}</span>
+              </div>
+              <div>
+                <span className="text-muted block text-[10px] uppercase font-semibold">Provider Message ID</span>
+                <span className="font-mono text-[11px] text-ink dark:text-stone-200">{detailQuery.data.provider_message_id || 'None'}</span>
+              </div>
+              <div>
+                <span className="text-muted block text-[10px] uppercase font-semibold">Created At</span>
+                <span className="font-mono text-[11px]">{detailQuery.data.created_at ? new Date(detailQuery.data.created_at).toLocaleString() : 'N/A'}</span>
+              </div>
+              <div>
+                <span className="text-muted block text-[10px] uppercase font-semibold">Sent At</span>
+                <span className="font-mono text-[11px] text-emerald-600">{detailQuery.data.sent_at ? new Date(detailQuery.data.sent_at).toLocaleString() : 'Not Sent'}</span>
+              </div>
+            </div>
+
+            {/* Error Message if Failed */}
+            {detailQuery.data.error_message && (
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-lg text-rose-700 dark:text-rose-300">
+                <span className="font-bold block text-[10px] uppercase">Error Log:</span>
+                <span className="font-mono text-[11px]">{detailQuery.data.error_message}</span>
+              </div>
+            )}
+
+            {/* Action Footer */}
+            <div className="flex justify-between items-center pt-2">
+              {detailQuery.data.idempotency_key && (
+                <span className="text-[10px] text-muted font-mono truncate max-w-[200px]" title={detailQuery.data.idempotency_key}>
+                  Key: {detailQuery.data.idempotency_key}
+                </span>
+              )}
+              <div className="flex space-x-2 ml-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedNotificationId(null);
+                  }}
+                  size="sm"
+                >
+                  Close
+                </Button>
+                {detailQuery.data.status === 'FAILED' && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (selectedNotificationId) {
+                        retryMutation.mutate(selectedNotificationId);
+                      }
+                    }}
+                    isLoading={retryMutation.isPending}
+                    className="flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Retry Dispatch
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-8 text-center text-muted text-xs">Notification record not found.</div>
+        )}
+      </Modal>
     </div>
   );
 };
+
+const ProviderConfigForm: React.FC = () => {
+  const queryClient = useQueryClient();
+  const configQuery = useQuery({
+    queryKey: ['school-comm-config'],
+    queryFn: communicationApi.fetchSchoolCommunicationConfig,
+  });
+
+  const [form, setForm] = useState({
+    sms_provider: 'NONE',
+    whatsapp_provider: 'NONE',
+    sms_enabled: false,
+    whatsapp_enabled: false,
+    sms_api_key: '',
+    sms_sender_id: '',
+    sms_entity_id: '',
+    whatsapp_access_token: '',
+    whatsapp_phone_number_id: '',
+    whatsapp_business_account_id: '',
+  });
+
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (configQuery.data) {
+      setForm((prev) => ({
+        ...prev,
+        sms_provider: configQuery.data.sms_provider,
+        whatsapp_provider: configQuery.data.whatsapp_provider,
+        sms_enabled: configQuery.data.sms_enabled,
+        whatsapp_enabled: configQuery.data.whatsapp_enabled,
+        sms_sender_id: configQuery.data.sms_sender_id || '',
+        sms_entity_id: configQuery.data.sms_entity_id || '',
+        whatsapp_phone_number_id: configQuery.data.whatsapp_phone_number_id || '',
+        whatsapp_business_account_id: configQuery.data.whatsapp_business_account_id || '',
+        sms_api_key: '',
+        whatsapp_access_token: '',
+      }));
+    }
+  }, [configQuery.data]);
+
+  const updateMutation = useMutation({
+    mutationFn: communicationApi.updateSchoolCommunicationConfig,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['school-comm-config'] });
+      queryClient.invalidateQueries({ queryKey: ['provider-statuses'] });
+      setSuccessMsg('Provider configuration updated and credentials encrypted successfully.');
+      setTimeout(() => setSuccessMsg(null), 4000);
+    },
+  });
+
+  if (configQuery.isLoading) return <div className="text-xs text-muted">Loading provider configuration...</div>;
+
+  const cfg = configQuery.data;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload: any = {
+      sms_provider: form.sms_provider,
+      whatsapp_provider: form.whatsapp_provider,
+      sms_enabled: form.sms_enabled,
+      whatsapp_enabled: form.whatsapp_enabled,
+      sms_sender_id: form.sms_sender_id,
+      sms_entity_id: form.sms_entity_id,
+      whatsapp_phone_number_id: form.whatsapp_phone_number_id,
+      whatsapp_business_account_id: form.whatsapp_business_account_id,
+    };
+    if (form.sms_api_key.trim()) payload.sms_api_key = form.sms_api_key.trim();
+    if (form.whatsapp_access_token.trim()) payload.whatsapp_access_token = form.whatsapp_access_token.trim();
+    updateMutation.mutate(payload);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {successMsg && <Alert type="success">{successMsg}</Alert>}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* SMS Provider Settings */}
+        <div className="p-4 border border-stone-200 dark:border-stone-800 rounded-lg space-y-4 bg-stone-50/50 dark:bg-stone-950/50">
+          <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-2">
+            <span className="font-bold text-xs uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <Smartphone className="w-4 h-4" /> SMS Provider Configuration
+            </span>
+            <Badge variant={cfg?.sms_configured ? 'success' : 'neutral'}>
+              {cfg?.sms_configured ? 'CONFIGURED' : 'NOT CONFIGURED'}
+            </Badge>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-ink dark:text-stone-300 mb-1">SMS Gateway</label>
+            <select
+              value={form.sms_provider}
+              onChange={(e) => setForm({ ...form, sms_provider: e.target.value as any })}
+              className="w-full px-3 py-2 border rounded-md text-xs bg-white dark:bg-stone-900 border-stone-300 dark:border-stone-700"
+            >
+              <option value="NONE">Disabled / None</option>
+              <option value="FAST2SMS">Fast2SMS (India)</option>
+              <option value="TWILIO">Twilio SMS</option>
+              <option value="MOCK">Mock Provider (Dev)</option>
+            </select>
+          </div>
+
+          <label className="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.sms_enabled}
+              onChange={(e) => setForm({ ...form, sms_enabled: e.target.checked })}
+              className="w-4 h-4 rounded text-blue-600"
+            />
+            <span className="text-xs font-medium text-ink dark:text-stone-200">Enable SMS Dispatch</span>
+          </label>
+
+          <div>
+            <label className="block text-xs font-semibold text-ink dark:text-stone-300 mb-1">
+              SMS API Key / Token
+              {cfg?.sms_api_key_masked && (
+                <span className="ml-2 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
+                  (Current: {cfg.sms_api_key_masked})
+                </span>
+              )}
+            </label>
+            <Input
+              type="password"
+              value={form.sms_api_key}
+              onChange={(e) => setForm({ ...form, sms_api_key: e.target.value })}
+              placeholder={cfg?.sms_configured ? 'Leave blank to keep current key' : 'Enter API Key'}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-ink dark:text-stone-300 mb-1">Sender / Header ID</label>
+              <Input
+                value={form.sms_sender_id}
+                onChange={(e) => setForm({ ...form, sms_sender_id: e.target.value })}
+                placeholder="e.g. SCHLOB"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink dark:text-stone-300 mb-1">DLT Entity ID (India)</label>
+              <Input
+                value={form.sms_entity_id}
+                onChange={(e) => setForm({ ...form, sms_entity_id: e.target.value })}
+                placeholder="e.g. 170115..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* WhatsApp Provider Settings */}
+        <div className="p-4 border border-stone-200 dark:border-stone-800 rounded-lg space-y-4 bg-stone-50/50 dark:bg-stone-950/50">
+          <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-2">
+            <span className="font-bold text-xs uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4" /> WhatsApp Gateway Configuration
+            </span>
+            <Badge variant={cfg?.whatsapp_configured ? 'success' : 'neutral'}>
+              {cfg?.whatsapp_configured ? 'CONFIGURED' : 'NOT CONFIGURED'}
+            </Badge>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-ink dark:text-stone-300 mb-1">WhatsApp Gateway</label>
+            <select
+              value={form.whatsapp_provider}
+              onChange={(e) => setForm({ ...form, whatsapp_provider: e.target.value as any })}
+              className="w-full px-3 py-2 border rounded-md text-xs bg-white dark:bg-stone-900 border-stone-300 dark:border-stone-700"
+            >
+              <option value="NONE">Disabled / None</option>
+              <option value="META_WHATSAPP_CLOUD">Meta WhatsApp Cloud API</option>
+              <option value="TWILIO_WHATSAPP">Twilio WhatsApp</option>
+              <option value="MOCK">Mock Provider (Dev)</option>
+            </select>
+          </div>
+
+          <label className="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.whatsapp_enabled}
+              onChange={(e) => setForm({ ...form, whatsapp_enabled: e.target.checked })}
+              className="w-4 h-4 rounded text-emerald-600"
+            />
+            <span className="text-xs font-medium text-ink dark:text-stone-200">Enable WhatsApp Dispatch</span>
+          </label>
+
+          <div>
+            <label className="block text-xs font-semibold text-ink dark:text-stone-300 mb-1">
+              WhatsApp Access Token
+              {cfg?.whatsapp_access_token_masked && (
+                <span className="ml-2 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
+                  (Current: {cfg.whatsapp_access_token_masked})
+                </span>
+              )}
+            </label>
+            <Input
+              type="password"
+              value={form.whatsapp_access_token}
+              onChange={(e) => setForm({ ...form, whatsapp_access_token: e.target.value })}
+              placeholder={cfg?.whatsapp_configured ? 'Leave blank to keep current token' : 'Enter Access Token'}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-ink dark:text-stone-300 mb-1">Phone Number ID</label>
+              <Input
+                value={form.whatsapp_phone_number_id}
+                onChange={(e) => setForm({ ...form, whatsapp_phone_number_id: e.target.value })}
+                placeholder="e.g. 1045..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink dark:text-stone-300 mb-1">Business Account ID</label>
+              <Input
+                value={form.whatsapp_business_account_id}
+                onChange={(e) => setForm({ ...form, whatsapp_business_account_id: e.target.value })}
+                placeholder="e.g. 2049..."
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end pt-2">
+        <Button type="submit" isLoading={updateMutation.isPending} className="flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4" /> Save Provider Configuration
+        </Button>
+      </div>
+    </form>
+  );
+};
+

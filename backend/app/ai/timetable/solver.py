@@ -1,9 +1,9 @@
-from __future__ import annotations
-
 import time
-from typing import Any
 from dataclasses import dataclass, field
-from ortools.sat.python import cp_model
+try:
+    from ortools.sat.python import cp_model
+except (ImportError, OSError):
+    cp_model = None
 
 from app.common.logger.logger import get_logger
 

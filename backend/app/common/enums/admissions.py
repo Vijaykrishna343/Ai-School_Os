@@ -1,0 +1,38 @@
+from enum import Enum
+
+
+class AdmissionCycleStatus(str, Enum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    CLOSED = "CLOSED"
+    ARCHIVED = "ARCHIVED"
+
+
+class ApplicantStatus(str, Enum):
+    PROSPECT = "PROSPECT"
+    APPLIED = "APPLIED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    SHORTLISTED = "SHORTLISTED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    WITHDRAWN = "WITHDRAWN"
+    ENROLLED = "ENROLLED"
+
+
+class AdmissionApplicationStatus(str, Enum):
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    WAITLISTED = "WAITLISTED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    WITHDRAWN = "WITHDRAWN"
+    ENROLLED = "ENROLLED"
+
+
+class AdmissionDecisionType(str, Enum):
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    WAITLISTED = "WAITLISTED"
+    WITHDRAWN = "WITHDRAWN"
+    CONDITIONAL_ACCEPT = "CONDITIONAL_ACCEPT"

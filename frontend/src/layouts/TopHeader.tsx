@@ -24,6 +24,8 @@ export const TopHeader = ({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
 
   const getPageTitle = () => {
     const path = location.pathname;
+    if (path.includes('/teacher-cockpit')) return 'Teacher Classroom Cockpit';
+    if (path.includes('/reports')) return 'Executive Reports & BI Analytics';
     if (path.includes('/dashboard')) return 'Administrative Command Center';
     if (path.includes('/students')) return 'Student Registry';
     if (path.includes('/teachers')) return 'Faculty Directory';

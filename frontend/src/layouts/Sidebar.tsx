@@ -20,6 +20,11 @@ import {
   Bell,
   Shield,
   FileText,
+  Bus,
+  UserPlus,
+  Package,
+  BarChart3,
+  Presentation,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -39,16 +44,18 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    title: 'Level 1 — Platform',
+    title: 'Platform',
     items: [
-      { name: 'Platform Command Center', path: '/app/platform', icon: <Building2 className="w-4 h-4 text-indigo-400" />, permission: 'platform.view' },
-      { name: 'Tenant Schools', path: '/app/schools', icon: <Building2 className="w-4 h-4 text-indigo-400" />, permission: 'platform.view' },
+      { name: 'Platform Admin', path: '/app/platform', icon: <ShieldCheck className="w-4 h-4" /> },
+      { name: 'School Directory', path: '/app/schools', icon: <Building2 className="w-4 h-4" /> },
     ],
   },
   {
     title: 'Overview',
     items: [
       { name: 'Dashboard', path: '/app/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+      { name: 'Teacher Cockpit', path: '/app/teacher-cockpit', icon: <Presentation className="w-4 h-4" />, permission: 'teacher_cockpit.view' },
+      { name: 'Executive BI & Reports', path: '/app/reports', icon: <BarChart3 className="w-4 h-4" />, permission: 'reports.view' },
     ],
   },
   {
@@ -61,6 +68,7 @@ const navGroups: NavGroup[] = [
   {
     title: 'Registrar',
     items: [
+      { name: 'Admissions Pipeline', path: '/app/admissions', icon: <UserPlus className="w-4 h-4" />, permission: 'admissions.view' },
       { name: 'Student Registry', path: '/app/students', icon: <GraduationCap className="w-4 h-4" />, permission: 'student.view' },
       { name: 'Faculty Directory', path: '/app/teachers', icon: <UserCheck className="w-4 h-4" />, permission: 'teacher.view' },
       { name: 'Guardian Directory', path: '/app/parents', icon: <Users className="w-4 h-4" />, permission: 'parent.view' },
@@ -75,6 +83,9 @@ const navGroups: NavGroup[] = [
       { name: 'Staff Leave', path: '/app/staff-leave', icon: <UserCheck className="w-4 h-4" />, permission: 'staff_leave.view' },
       { name: 'Events & Calendar', path: '/app/events', icon: <CalendarCheck className="w-4 h-4" />, permission: 'events.view' },
       { name: 'Hostel Management', path: '/app/hostel', icon: <Building2 className="w-4 h-4" />, permission: 'hostel.view' },
+      { name: 'Transport Fleet', path: '/app/transport', icon: <Bus className="w-4 h-4" />, permission: 'transport.view' },
+      { name: 'Library & Books', path: '/app/library', icon: <BookOpen className="w-4 h-4" />, permission: 'library.view' },
+      { name: 'Inventory & Assets', path: '/app/inventory', icon: <Package className="w-4 h-4" />, permission: 'inventory.view' },
       { name: 'Homework', path: '/app/homework', icon: <BookOpen className="w-4 h-4" />, permission: 'homework.view' },
       { name: 'Document Vault', path: '/app/documents', icon: <FileText className="w-4 h-4" />, permission: 'documents.view' },
       { name: 'Fees & Payments', path: '/app/fees', icon: <CreditCard className="w-4 h-4" />, permission: 'fees.view' },

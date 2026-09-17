@@ -61,6 +61,47 @@ class VisitorCheckOut(BaseModel):
     remarks: str | None = Field(default=None, max_length=255)
 
 
+class VisitorPreRegister(BaseModel):
+    """
+    Request payload for pre-registering an expected visitor.
+    Server enforces status = EXPECTED.
+    """
+
+    visitor_name: str = Field(..., min_length=1, max_length=150)
+    phone: str = Field(..., min_length=5, max_length=20)
+    email: str | None = Field(default=None, max_length=255)
+    id_proof_type: IdProofType | None = Field(default=None)
+    id_proof_number: str | None = Field(default=None, max_length=100)
+    purpose: str = Field(..., min_length=1, max_length=255)
+    host_type: HostType | None = Field(default=None)
+    host_id: UUID | None = Field(default=None)
+    remarks: str | None = Field(default=None, max_length=255)
+
+
+class VisitorBadgeResponse(BaseModel):
+    """
+    Privacy-preserving visitor pass badge schema.
+    Omits sensitive ID proof numbers for badge printing and pass visual rendering.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    school_id: UUID
+    visitor_name: str
+    phone: str
+    email: str | None
+    purpose: str
+    host_type: HostType | None
+    host_id: UUID | None
+    check_in_time: datetime | None
+    check_out_time: datetime | None
+    status: VisitorStatus
+    pass_number: str | None
+    created_at: datetime
+
+
+
 class VisitorResponse(BaseModel):
     """
     Detailed response schema for a visitor record.

@@ -46,7 +46,7 @@ class AIAssistantService:
         all_redactions = sorted(set(message_redactions + context_redactions))
 
         # 4. Resolve AI Provider
-        provider = provider_override or AIProviderFactory.get_provider("MOCK")
+        provider = provider_override or AIProviderFactory.resolve_for_school(db, school_id)
 
         # 5. Build AI Request with permission-filtered whitelisted tools
         permitted_tools = ai_tool_registry.list_tools_for_user(current_user)

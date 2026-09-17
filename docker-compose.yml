@@ -1,29 +1,11 @@
-version: '3.8'
-
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      - ENVIRONMENT=${ENVIRONMENT:-production}
-      - DEBUG=${DEBUG:-False}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-school_user}:${POSTGRES_PASSWORD:-change_me_in_prod}@db:5432/${POSTGRES_DB:-school_erp}}
-      - SECRET_KEY=${SECRET_KEY:-change_this_to_a_secure_random_secret_in_production}
-      - TRUST_PROXY=${TRUST_PROXY:-True}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: always
-
   db:
     image: postgres:16-alpine
+    container_name: school_erp_db
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-school_erp}
-      - POSTGRES_USER=${POSTGRES_USER:-school_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change_me_in_prod}
+      POSTGRES_DB: ${POSTGRES_DB:-school_erp}
+      POSTGRES_USER: ${POSTGRES_USER:-school_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_prod}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -33,6 +15,64 @@ services:
       retries: 5
     restart: always
 
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: school_erp_migration
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-False}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-school_user}:${POSTGRES_PASSWORD:-change_me_in_prod}@db:5432/${POSTGRES_DB:-school_erp}}
+      SECRET_KEY: ${SECRET_KEY:-change_this_to_a_secure_random_secret_in_production}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: school_erp_backend
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-False}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-school_user}:${POSTGRES_PASSWORD:-change_me_in_prod}@db:5432/${POSTGRES_DB:-school_erp}}
+      SECRET_KEY: ${SECRET_KEY:-change_this_to_a_secure_random_secret_in_production}
+      TRUST_PROXY: ${TRUST_PROXY:-True}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost,http://localhost:80,http://127.0.0.1}
+      DOCUMENT_STORAGE_PATH: /app/storage/documents
+    volumes:
+      - document_storage:/app/storage/documents
+    depends_on:
+      db:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: school_erp_frontend
+    ports:
+      - "${PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always
+
 volumes:
   pgdata:
-
+    name: school_erp_pgdata
+  document_storage:
+    name: school_erp_document_storage

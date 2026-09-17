@@ -9,14 +9,42 @@ from app.dependencies import get_db, get_visitor_service
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.user import IdentityUser
 from app.schemas.visitor import (
+    VisitorBadgeResponse,
     VisitorCheckOut,
     VisitorCreate,
     VisitorListResponse,
+    VisitorPreRegister,
     VisitorResponse,
 )
 from app.services.visitor_service import VisitorService
 
 router = APIRouter()
+
+
+@router.post(
+    "/pre-register",
+    response_model=VisitorResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Pre-Register Expected Visitor",
+)
+def pre_register_visitor(
+    data: VisitorPreRegister,
+    current_user: IdentityUser = Depends(require_permission("visitors.checkin")),
+    db: Session = Depends(get_db),
+    service: VisitorService = Depends(get_visitor_service),
+) -> VisitorResponse:
+    """
+    Pre-registers an expected visitor for the current authenticated user's school.
+    Enforces server-controlled status = EXPECTED and generates pre-registration gate pass reference.
+    """
+    user_role = current_user.roles[0].name if current_user.roles else "User"
+    return service.pre_register_visitor(
+        db=db,
+        current_school_id=current_user.school_id,
+        data=data,
+        current_user=current_user,
+        user_role=user_role,
+    )
 
 
 @router.post(
@@ -40,6 +68,35 @@ def check_in_visitor(
         db=db,
         current_school_id=current_user.school_id,
         data=data,
+        current_user=current_user,
+        user_role=user_role,
+    )
+
+
+@router.post(
+    "/{id}/quick-check-in",
+    response_model=VisitorResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Quick Check In Expected Visitor",
+)
+def quick_check_in_visitor(
+    id: UUID,
+    payload: VisitorCheckOut | None = None,
+    current_user: IdentityUser = Depends(require_permission("visitors.checkin")),
+    db: Session = Depends(get_db),
+    service: VisitorService = Depends(get_visitor_service),
+) -> VisitorResponse:
+    """
+    Transitions an EXPECTED visitor to CHECKED_IN upon arrival.
+    Server-generates check-in timestamp and updates status.
+    """
+    user_role = current_user.roles[0].name if current_user.roles else "User"
+    remarks = payload.remarks if payload else None
+    return service.quick_check_in_visitor(
+        db=db,
+        visitor_id=id,
+        current_school_id=current_user.school_id,
+        remarks=remarks,
         current_user=current_user,
         user_role=user_role,
     )
@@ -125,3 +182,26 @@ def get_visitor(
         visitor_id=id,
         current_school_id=current_user.school_id,
     )
+
+
+@router.get(
+    "/{id}/badge",
+    response_model=VisitorBadgeResponse,
+    summary="Get Privacy-Preserving Visitor Pass Badge",
+)
+def get_visitor_badge(
+    id: UUID,
+    current_user: IdentityUser = Depends(require_permission("visitors.view")),
+    db: Session = Depends(get_db),
+    service: VisitorService = Depends(get_visitor_service),
+) -> VisitorBadgeResponse:
+    """
+    Retrieves privacy-preserving visitor badge data for gate pass rendering and printing.
+    Omits sensitive ID proof numbers.
+    """
+    return service.get_visitor_badge(
+        db=db,
+        visitor_id=id,
+        current_school_id=current_user.school_id,
+    )
+

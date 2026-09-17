@@ -35,7 +35,7 @@ class EmailNotificationProvider(BaseNotificationProvider):
     def is_configured(self) -> bool:
         return bool(self.smtp_server and self.smtp_username and self.smtp_password)
 
-    def send(self, notification: Notification) -> tuple[NotificationStatus, str | None]:
+    def send(self, notification: Notification, db: Session | None = None) -> tuple[NotificationStatus, str | None]:
         if not self.is_configured():
             logger.info(
                 "[MOCK EMAIL PROVIDER] (SMTP Not Configured) recipient=%s <%s> | subject='%s'",

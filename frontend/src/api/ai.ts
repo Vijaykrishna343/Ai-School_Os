@@ -35,6 +35,9 @@ export interface AIProviderConfig {
   model_name: string | null;
   is_enabled: boolean;
   allow_external_ai: boolean;
+  api_key_configured?: boolean;
+  masked_api_key?: string | null;
+  api_base_url?: string | null;
   notes: string | null;
   updated_at: string;
 }
@@ -44,6 +47,8 @@ export interface AIProviderConfigUpdate {
   model_name?: string | null;
   is_enabled: boolean;
   allow_external_ai: boolean;
+  api_key?: string | null;
+  api_base_url?: string | null;
   notes?: string | null;
 }
 

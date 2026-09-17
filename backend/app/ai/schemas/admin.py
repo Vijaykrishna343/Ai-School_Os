@@ -15,6 +15,9 @@ class AIProviderConfigResponse(BaseModel):
     model_name: str | None
     is_enabled: bool
     allow_external_ai: bool
+    api_key_configured: bool = False
+    masked_api_key: str | None = None
+    api_base_url: str | None = None
     notes: str | None
     updated_at: datetime
 
@@ -24,6 +27,8 @@ class AIProviderConfigUpdate(BaseModel):
     model_name: str | None = Field(None, description="Model identifier string")
     is_enabled: bool = Field(True, description="Enable or disable AI provider")
     allow_external_ai: bool = Field(False, description="Allow cloud LLM dispatches for this tenant")
+    api_key: str | None = Field(None, description="Plaintext API key to securely encrypt and store at rest")
+    api_base_url: str | None = Field(None, description="Optional custom base URL for provider")
     notes: str | None = Field(None, description="Administrative notes")
 
 

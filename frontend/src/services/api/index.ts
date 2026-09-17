@@ -34,5 +34,11 @@ export * from './homeworkApi';
 export * from './documentsApi';
 export * from './jobsApi';
 export * from './receptionApi';
-
-
+export * from './transportApi';
+export * from './libraryApi';
+export * from './admissionsApi';
+export * from './inventoryApi';
+export * from './paymentsApi';
+export * from './reportsApi';
+export * from './teacherCockpitApi';
+export * from './schoolOnboardingApi';

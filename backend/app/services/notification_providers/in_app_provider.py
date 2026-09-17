@@ -23,6 +23,6 @@ class InAppNotificationProvider(BaseNotificationProvider):
     def is_configured(self) -> bool:
         return True
 
-    def send(self, notification: Notification) -> tuple[NotificationStatus, str | None]:
+    def send(self, notification: Notification, db: Session | None = None) -> tuple[NotificationStatus, str | None]:
         logger.info("In-App Notification persisted for recipient %s", notification.recipient_name)
         return NotificationStatus.SENT, None

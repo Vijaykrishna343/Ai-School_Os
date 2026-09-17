@@ -20,6 +20,7 @@ from starlette.concurrency import run_in_threadpool
 from app.api.v1.api import api_router
 from app.common.exceptions import register_exception_handlers
 from app.common.logger.logger import get_logger, setup_logging
+from app.common.metrics import metrics_registry
 from app.core.config import settings
 
 
@@ -106,8 +107,10 @@ async def check_database_connection() -> bool:
         try:
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
+            metrics_registry.set_db_connected(True)
             return True
         except Exception:
+            metrics_registry.set_db_connected(False)
             logger.exception("Readiness DB probe failed")
             return False
 
@@ -198,15 +201,21 @@ async def correlation_id_middleware(
     request.state.correlation_id = correlation_id
 
     start_time = time.perf_counter()
+    metrics_registry.inc_active_requests()
 
     try:
         response = await call_next(request)
     except Exception:
-        process_time_ms = round(
-            (time.perf_counter() - start_time) * 1000,
-            2,
+        duration = time.perf_counter() - start_time
+        metrics_registry.dec_active_requests()
+        metrics_registry.record_http_request(
+            method=request.method,
+            path=request.url.path,
+            status_code=500,
+            duration_seconds=duration,
         )
 
+        process_time_ms = round(duration * 1000, 2)
         logger.exception(
             "HTTP %s %s -> unhandled exception (%sms)",
             request.method,
@@ -217,11 +226,16 @@ async def correlation_id_middleware(
 
         raise
 
-    process_time_ms = round(
-        (time.perf_counter() - start_time) * 1000,
-        2,
+    duration = time.perf_counter() - start_time
+    metrics_registry.dec_active_requests()
+    metrics_registry.record_http_request(
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        duration_seconds=duration,
     )
 
+    process_time_ms = round(duration * 1000, 2)
     response.headers["X-Correlation-ID"] = correlation_id
     response.headers["X-Request-ID"] = correlation_id
     response.headers["X-Response-Time-MS"] = str(process_time_ms)
@@ -387,3 +401,30 @@ async def health_ready() -> JSONResponse:
     Readiness probe alias.
     """
     return await readyz()
+
+
+# -------------------------------------------------------
+# Observability & Metrics
+# -------------------------------------------------------
+
+
+@app.get(
+    "/metrics",
+    tags=["Observability"],
+    summary="Prometheus Metrics Endpoint",
+    response_class=Response,
+)
+async def prometheus_metrics() -> Response:
+    """
+    Expose application metrics in standard Prometheus exposition format (version 0.0.4).
+    Provides request counts, duration histograms, active requests, DB health, and app info.
+    All endpoint labels are normalized to prevent label explosion and PII leakage.
+    """
+    output = metrics_registry.generate_prometheus_output(
+        app_version=settings.APP_VERSION,
+        environment=settings.ENVIRONMENT,
+    )
+    return Response(
+        content=output,
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )

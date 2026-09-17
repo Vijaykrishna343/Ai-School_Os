@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
 
+    # Meta WhatsApp Cloud API Settings (Phase 27.3)
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = "school_erp_whatsapp_verify_token_secure"
+    WHATSAPP_APP_SECRET: str = ""
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
         env_file_encoding="utf-8",

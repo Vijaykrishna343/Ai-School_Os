@@ -8,12 +8,14 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Modal } from '@/components/ui/Modal';
+import { PaymentConfigTab } from '@/components/payments/PaymentConfigTab';
 
 export const SettingsPage: React.FC = () => {
   const { user: currentUser, permissions } = useAuthStore();
   const hasPerm = (p: string) => permissions.includes(p);
 
   const schoolId = currentUser?.school_id;
+  const [activeTab, setActiveTab] = useState<'profile' | 'payments'>('profile');
 
   // Alerts
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -120,86 +122,118 @@ export const SettingsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Alerts */}
-      {errorMessage && <Alert type="error" title="Update Failure">{errorMessage}</Alert>}
-      {successMessage && <Alert type="success">{successMessage}</Alert>}
+      {/* Tabs */}
+      <div className="flex border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`px-4 py-2.5 text-xs font-bold font-mono transition-colors border-b-2 ${
+            activeTab === 'profile'
+              ? 'border-brand-500 text-brand-500 bg-white'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          INSTITUTIONAL PROFILE
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('payments')}
+          className={`px-4 py-2.5 text-xs font-bold font-mono transition-colors border-b-2 ${
+            activeTab === 'payments'
+              ? 'border-brand-500 text-brand-500 bg-white'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          PAYMENT GATEWAYS & WEBHOOKS
+        </button>
+      </div>
 
-      {/* Query Error */}
-      {isError && (
-        <Alert type="error" title="Failed to load school profile">
-          {(error as any)?.message || 'An error occurred while fetching school profile details.'}
-          <Button variant="secondary" onClick={() => refetch()} className="ml-2">Retry</Button>
-        </Alert>
-      )}
+      {activeTab === 'payments' ? (
+        <PaymentConfigTab canEdit={hasPerm('fees.update') || hasPerm('school.update')} />
+      ) : (
+        <>
+          {/* Alerts */}
+          {errorMessage && <Alert type="error" title="Update Failure">{errorMessage}</Alert>}
+          {successMessage && <Alert type="success">{successMessage}</Alert>}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="bg-white border border-slate-200 dark:border-slate-800 p-8 rounded-none text-center">
-          <p className="text-xs text-slate-400 font-mono">Loading school profile details...</p>
-        </div>
-      )}
+          {/* Query Error */}
+          {isError && (
+            <Alert type="error" title="Failed to load school profile">
+              {(error as any)?.message || 'An error occurred while fetching school profile details.'}
+              <Button variant="secondary" onClick={() => refetch()} className="ml-2">Retry</Button>
+            </Alert>
+          )}
 
-      {/* Profile Card */}
-      {schoolData && (
-        <div className="bg-white border border-slate-200 dark:border-slate-800 p-6 rounded-none space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
-            <div>
-              <span className="text-[10px] font-mono uppercase text-slate-400">INSTITUTION_NAME</span>
-              <h2 className="text-xl font-bold text-slate-800 font-serif">{schoolData.name}</h2>
+          {/* Loading State */}
+          {isLoading && (
+            <div className="bg-white border border-slate-200 dark:border-slate-800 p-8 rounded-none text-center">
+              <p className="text-xs text-slate-400 font-mono">Loading school profile details...</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <span className="text-[10px] font-mono uppercase text-slate-400 block">SCHOOL_CODE</span>
-                <span className="text-xs font-mono font-bold text-brand-500">{schoolData.code}</span>
+          )}
+
+          {/* Profile Card */}
+          {schoolData && (
+            <div className="bg-white border border-slate-200 dark:border-slate-800 p-6 rounded-none space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-slate-400">INSTITUTION_NAME</span>
+                  <h2 className="text-xl font-bold text-slate-800 font-serif">{schoolData.name}</h2>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="text-[10px] font-mono uppercase text-slate-400 block">SCHOOL_CODE</span>
+                    <span className="text-xs font-mono font-bold text-brand-500">{schoolData.code}</span>
+                  </div>
+                  {statusBadge(schoolData.status)}
+                </div>
               </div>
-              {statusBadge(schoolData.status)}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                <div className="space-y-4">
+                  <div>
+                    <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">Physical Address</span>
+                    <p className="text-slate-700 font-medium">{schoolData.address || '—'}</p>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">Phone Contact</span>
+                    <p className="text-slate-700 font-mono">{schoolData.phone || '—'}</p>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">Email Address</span>
+                    <p className="text-slate-700 font-mono">{schoolData.email || '—'}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">Website</span>
+                    <p className="text-slate-700 font-mono">
+                      {schoolData.website ? (
+                        <a href={schoolData.website} target="_blank" rel="noreferrer" className="text-brand-500 underline">
+                          {schoolData.website}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">System Registration</span>
+                    <p className="text-slate-500 font-mono text-[11px]">
+                      Created: {new Date(schoolData.created_at).toLocaleString()}
+                    </p>
+                    <p className="text-slate-500 font-mono text-[11px]">
+                      Last Updated: {new Date(schoolData.updated_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-            <div className="space-y-4">
-              <div>
-                <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">Physical Address</span>
-                <p className="text-slate-700 font-medium">{schoolData.address || '—'}</p>
-              </div>
-
-              <div>
-                <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">Phone Contact</span>
-                <p className="text-slate-700 font-mono">{schoolData.phone || '—'}</p>
-              </div>
-
-              <div>
-                <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">Email Address</span>
-                <p className="text-slate-700 font-mono">{schoolData.email || '—'}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">Website</span>
-                <p className="text-slate-700 font-mono">
-                  {schoolData.website ? (
-                    <a href={schoolData.website} target="_blank" rel="noreferrer" className="text-brand-500 underline">
-                      {schoolData.website}
-                    </a>
-                  ) : (
-                    '—'
-                  )}
-                </p>
-              </div>
-
-              <div>
-                <span className="block text-[10px] font-mono uppercase text-slate-400 mb-0.5">System Registration</span>
-                <p className="text-slate-500 font-mono text-[11px]">
-                  Created: {new Date(schoolData.created_at).toLocaleString()}
-                </p>
-                <p className="text-slate-500 font-mono text-[11px]">
-                  Last Updated: {new Date(schoolData.updated_at).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
       {/* ============================================================= */}

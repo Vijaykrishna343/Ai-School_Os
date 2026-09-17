@@ -60,6 +60,10 @@ from .services import (
     get_visitor_service,
     get_reception_inquiry_service,
     get_reception_analytics_service,
+    get_transport_service,
+    get_library_service,
+    get_admissions_service,
+    get_inventory_service,
 )
 
 __all__ = [
@@ -125,4 +129,9 @@ __all__ = [
     "get_visitor_service",
     "get_reception_inquiry_service",
     "get_reception_analytics_service",
+    "get_transport_service",
+    "get_library_service",
+    "get_admissions_service",
+    "get_inventory_service",
 ]
+

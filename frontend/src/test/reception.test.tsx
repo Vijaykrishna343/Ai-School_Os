@@ -82,6 +82,39 @@ vi.mock('@/services/api/receptionApi', () => ({
       updated_at: '2026-09-07T11:00:00Z',
     }),
 
+    preRegisterVisitor: vi.fn().mockResolvedValue({
+      id: 'vis-expected-1',
+      school_id: 'sch-1',
+      visitor_name: 'Samuel Expected',
+      phone: '9876500001',
+      purpose: 'Guest Speaker',
+      status: 'EXPECTED',
+      pass_number: 'GP-20260907-0099',
+      created_at: '2026-09-07T10:00:00Z',
+      updated_at: '2026-09-07T10:00:00Z',
+    }),
+
+    quickCheckInVisitor: vi.fn().mockResolvedValue({
+      id: 'vis-expected-1',
+      status: 'CHECKED_IN',
+      check_in_time: '2026-09-07T10:30:00Z',
+      pass_number: 'GP-20260907-0099',
+    }),
+
+    getVisitorBadge: vi.fn().mockResolvedValue({
+      id: 'vis-1',
+      school_id: 'sch-1',
+      school_name: 'Greenwood High School',
+      visitor_name: 'John Smith',
+      purpose: 'Parent-Teacher Meeting',
+      host_type: 'TEACHER',
+      host_name: 'Alice Teacher',
+      check_in_time: '2026-09-07T10:00:00Z',
+      status: 'CHECKED_IN',
+      pass_number: 'GP-20260907-001',
+      issued_at: '2026-09-07T10:00:00Z',
+    }),
+
     checkOutVisitor: vi.fn().mockResolvedValue({
       id: 'vis-1',
       status: 'CHECKED_OUT',
@@ -408,5 +441,57 @@ describe('ReceptionPage Workstation UI', () => {
         expect.objectContaining({ start_date: todayStr, end_date: todayStr })
       );
     });
+  });
+
+  it('10. Pre-registers an expected visitor via modal with host selector', async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ReceptionPage />
+      </QueryClientProvider>
+    );
+
+    const preRegBtn = await screen.findByText('Pre-Register Visitor');
+    fireEvent.click(preRegBtn);
+
+    expect(screen.getByText('Pre-Register Expected Visitor')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText('Expected Visitor Full Name'), { target: { value: 'Samuel Expected' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '9876500001' } });
+    fireEvent.change(screen.getByPlaceholderText('e.g. Guest Speaker, Parent Meeting, Campus Audit'), { target: { value: 'Guest Speaker' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Confirm Pre-Registration/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(receptionApi.preRegisterVisitor).toHaveBeenCalledWith(
+        expect.objectContaining({
+          visitor_name: 'Samuel Expected',
+          phone: '9876500001',
+          purpose: 'Guest Speaker',
+        })
+      );
+    });
+  });
+
+  it('11. Fetches and displays printable visitor gate pass badge modal', async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ReceptionPage />
+      </QueryClientProvider>
+    );
+
+    const visitorsTab = await screen.findByRole('button', { name: /Campus Visitors/i });
+    fireEvent.click(visitorsTab);
+
+    const printBtns = await screen.findAllByTitle('Print Gate Pass Badge');
+    fireEvent.click(printBtns[0]);
+
+    await waitFor(() => {
+      expect(receptionApi.getVisitorBadge).toHaveBeenCalledWith('vis-1');
+      expect(screen.getByText('Visitor Pass Badge')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('CAMPUS VISITOR GATE PASS')).toBeInTheDocument();
+    expect(screen.getAllByText('John Smith').length).toBeGreaterThan(0);
   });
 });

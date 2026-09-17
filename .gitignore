@@ -59,3 +59,15 @@ Thumbs.db
 # ==========================
 
 project-tree.txt
+
+# ==========================
+# Database Backups & Dumps
+# ==========================
+
+storage/backups/
+backend/storage/backups/
+backups/
+*.dump
+*.dump.sha256
+*.sql.sha256
+

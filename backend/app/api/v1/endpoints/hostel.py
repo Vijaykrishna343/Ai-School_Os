@@ -13,6 +13,7 @@ from app.common.responses import ApiResponse
 from app.dependencies import get_db
 from app.identity.dependencies.require_permission import require_permission
 from app.identity.models.user import IdentityUser
+from app.common.enums.fees import PaymentMode
 from app.services.hostel_service import hostel_service
 from app.services.hostel_attendance_service import hostel_attendance_service
 from app.services.hostel_outpass_service import hostel_outpass_service
@@ -99,6 +100,9 @@ class FeeAllocationCreateSchema(BaseModel):
 
 class FeePaymentSchema(BaseModel):
     payment_amount: float
+    payment_mode: Optional[str] = "CASH"
+    reference_number: Optional[str] = None
+    remarks: Optional[str] = None
 
 
 # --- BUILDINGS ENDPOINTS ---
@@ -463,13 +467,31 @@ def record_fee_payment(
     current_user: IdentityUser = Depends(require_permission("hostel.fees.manage")),
     db: Session = Depends(get_db),
 ):
+    payment_mode = PaymentMode.CASH
+    if payload.payment_mode:
+        try:
+            payment_mode = PaymentMode(payload.payment_mode.upper())
+        except ValueError:
+            payment_mode = PaymentMode.CASH
+
     alloc = hostel_fee_service.record_fee_payment(
         db=db,
         school_id=current_user.school_id,
         allocation_id=allocation_id,
         payment_amount=payload.payment_amount,
+        payment_mode=payment_mode,
+        reference_number=payload.reference_number,
+        remarks=payload.remarks,
     )
-    return ApiResponse.success(message="Fee payment recorded successfully.", data={"id": str(alloc.id), "status": alloc.status})
+    return ApiResponse.success(
+        message="Fee payment recorded successfully.",
+        data={
+            "id": str(alloc.id),
+            "status": alloc.status,
+            "paid_amount": float(alloc.paid_amount),
+            "amount_due": float(alloc.amount_due),
+        },
+    )
 
 @router.get("/fees/allocations")
 def get_fee_allocations(

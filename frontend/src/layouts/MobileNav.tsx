@@ -14,6 +14,11 @@ import {
   Building2,
   UserCog,
   ShieldCheck,
+  Bus,
+  UserPlus,
+  Package,
+  BarChart3,
+  Presentation,
   X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -30,6 +35,9 @@ interface NavItem {
 
 const navigationItems: NavItem[] = [
   { name: 'Dashboard', path: '/app/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+  { name: 'Teacher Cockpit', path: '/app/teacher-cockpit', icon: <Presentation className="w-5 h-5" />, permission: 'teacher_cockpit.view' },
+  { name: 'Executive BI & Reports', path: '/app/reports', icon: <BarChart3 className="w-5 h-5" />, permission: 'reports.view' },
+  { name: 'Admissions', path: '/app/admissions', icon: <UserPlus className="w-5 h-5" />, permission: 'admissions.view' },
   { name: 'Students', path: '/app/students', icon: <GraduationCap className="w-5 h-5" />, permission: 'student.view' },
   { name: 'Teachers', path: '/app/teachers', icon: <UserCheck className="w-5 h-5" />, permission: 'teacher.view' },
   { name: 'Parents', path: '/app/parents', icon: <Users className="w-5 h-5" />, permission: 'parent.view' },
@@ -38,7 +46,10 @@ const navigationItems: NavItem[] = [
   { name: 'Attendance', path: '/app/attendance', icon: <CalendarCheck className="w-5 h-5" />, permission: 'attendance.view' },
   { name: 'Reception Desk', path: '/app/reception', icon: <UserCheck className="w-5 h-5" />, permission: 'visitors.view' },
   { name: 'Staff Leave', path: '/app/staff-leave', icon: <UserCheck className="w-5 h-5" />, permission: 'staff_leave.view' },
-
+  { name: 'Hostel Management', path: '/app/hostel', icon: <Building2 className="w-5 h-5" />, permission: 'hostel.view' },
+  { name: 'Transport Fleet', path: '/app/transport', icon: <Bus className="w-5 h-5" />, permission: 'transport.view' },
+  { name: 'Library & Books', path: '/app/library', icon: <BookOpen className="w-5 h-5" />, permission: 'library.view' },
+  { name: 'Inventory & Assets', path: '/app/inventory', icon: <Package className="w-5 h-5" />, permission: 'inventory.view' },
   { name: 'Fees & Payments', path: '/app/fees', icon: <CreditCard className="w-5 h-5" />, permission: 'fees.view' },
   { name: 'Exams & Reports', path: '/app/exams', icon: <FileSpreadsheet className="w-5 h-5" />, permission: 'exam.view' },
   { name: 'Timetable', path: '/app/timetable', icon: <Clock className="w-5 h-5" />, permission: 'timetable.view' },

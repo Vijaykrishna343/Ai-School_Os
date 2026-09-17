@@ -10,6 +10,7 @@ import {
   CheckCircle,
   Database,
   Lock,
+  Key,
 } from 'lucide-react';
 import { aiApi } from '../services/api/aiApi';
 import type {
@@ -36,6 +37,8 @@ export const AISettingsPage: React.FC = () => {
   const [modelName, setModelName] = useState<string>('mock-default-v1');
   const [allowExternal, setAllowExternal] = useState<boolean>(false);
   const [isEnabled, setIsEnabled] = useState<boolean>(true);
+  const [apiKey, setApiKey] = useState<string>('');
+  const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
 
   // Quota form state
@@ -67,6 +70,8 @@ export const AISettingsPage: React.FC = () => {
       setModelName(configRes.model_name || 'mock-default-v1');
       setAllowExternal(configRes.allow_external_ai);
       setIsEnabled(configRes.is_enabled);
+      setApiBaseUrl(configRes.api_base_url || '');
+      setApiKey('');
       setNotes(configRes.notes || '');
 
       setAuditLogs(logsRes);
@@ -92,9 +97,12 @@ export const AISettingsPage: React.FC = () => {
         model_name: modelName,
         allow_external_ai: allowExternal,
         is_enabled: isEnabled,
+        api_key: apiKey.trim() ? apiKey.trim() : undefined,
+        api_base_url: apiBaseUrl.trim() ? apiBaseUrl.trim() : undefined,
         notes: notes,
       });
       setProviderConfig(updated);
+      setApiKey('');
       setSuccessMsg('AI Provider Configuration updated successfully.');
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Failed to update provider configuration.');
@@ -322,6 +330,65 @@ export const AISettingsPage: React.FC = () => {
                 />
               </div>
             </div>
+
+            {/* API Key & Endpoint Configuration */}
+            {(providerType === 'GEMINI' || providerType === 'OPENAI' || providerType === 'ANTHROPIC') && (
+              <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-indigo-600" />
+                    <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      Provider Credentials & Endpoint
+                    </span>
+                  </div>
+                  {providerConfig?.api_key_configured ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                      <CheckCircle className="w-3 h-3 text-emerald-600" />
+                      Key Configured ({providerConfig.masked_api_key || '••••••••'})
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                      <AlertTriangle className="w-3 h-3 text-amber-600" />
+                      No API Key Configured
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                      {providerConfig?.api_key_configured ? 'Update API Key (Leave blank to keep current)' : 'API Key'}
+                    </label>
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder={providerConfig?.api_key_configured ? 'Enter new key to replace existing' : 'Enter provider API key'}
+                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                      Custom Base URL / Endpoint (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={apiBaseUrl}
+                      onChange={(e) => setApiBaseUrl(e.target.value)}
+                      placeholder="e.g. https://api.openai.com/v1"
+                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500">
+                  <Lock className="w-3 h-3 inline mr-1 text-gray-400" />
+                  API keys are encrypted at rest with authenticated Fernet encryption and are never exposed over GET APIs.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">

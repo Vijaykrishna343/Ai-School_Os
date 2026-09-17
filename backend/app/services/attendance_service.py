@@ -25,11 +25,137 @@ from app.repositories.student.student_repository import (
     StudentRepository,
     student_repository,
 )
-from app.schemas.attendance.attendance import (
-    AttendanceBulkCreate,
-    AttendanceCreate,
-    AttendanceUpdate,
-)
+from typing import Any
+from sqlalchemy import select
+from app.common.logger.logger import get_logger
+from app.models.notification import NotificationChannel, NotificationRecipientType
+from app.models.parent.parent import Parent
+from app.models.student.student import Student
+from app.schemas.notification_trigger import NotificationTriggerEvent
+from app.services.notification_trigger_service import notification_trigger_service
+
+logger = get_logger(__name__)
+
+
+def _resolve_absence_recipient(
+    db: Session,
+    school_id: UUID,
+    student: Student,
+) -> dict[str, Any] | None:
+    """
+    Resolves recipient for student absence notification strictly within school_id.
+    Prefers primary parent/guardian; falls back to Student if parent is missing,
+    soft-deleted, or has no contact.
+    Guarantees tenant isolation by failing closed if student does not belong to school_id.
+    """
+    if student.school_id != school_id:
+        return None
+
+    if student.parent_id:
+        parent = db.scalar(
+            select(Parent).where(
+                Parent.id == student.parent_id,
+                Parent.school_id == school_id,
+                Parent.is_deleted == False,
+            )
+        )
+        if parent:
+            p_name = (
+                parent.father_name
+                or parent.guardian_name
+                or parent.mother_name
+                or f"Parent of {student.first_name}"
+            )
+            contact = parent.primary_phone or parent.email
+            if contact:
+                return {
+                    "recipient_type": NotificationRecipientType.PARENT,
+                    "recipient_id": parent.id,
+                    "recipient_name": p_name,
+                    "recipient_contact": contact,
+                    "phone": parent.primary_phone,
+                    "email": parent.email,
+                    "student_name": f"{student.first_name} {student.last_name or ''}".strip(),
+                }
+
+    s_name = f"{student.first_name} {student.last_name or ''}".strip()
+    contact = student.phone or student.email
+    if contact:
+        return {
+            "recipient_type": NotificationRecipientType.STUDENT,
+            "recipient_id": student.id,
+            "recipient_name": s_name,
+            "recipient_contact": contact,
+            "phone": student.phone,
+            "email": student.email,
+            "student_name": s_name,
+        }
+
+    return None
+
+
+def _trigger_student_absence_notification(
+    db: Session,
+    school_id: UUID,
+    student: Student,
+    attendance_date: date,
+) -> None:
+    """
+    Stages student absence notification prior to DB commit.
+    Wrapped in isolated try-except so notification errors never roll back attendance.
+    """
+    try:
+        recipient = _resolve_absence_recipient(db=db, school_id=school_id, student=student)
+        if not recipient:
+            return
+
+        date_str = attendance_date.strftime("%Y-%m-%d")
+        template_variables = {
+            "student_name": recipient["student_name"],
+            "date": date_str,
+        }
+
+        metadata = {
+            "student_id": str(student.id),
+            "attendance_date": date_str,
+            "school_id": str(school_id),
+            "event_type": "student_absence",
+        }
+
+        channels = [NotificationChannel.IN_APP]
+        if recipient.get("phone"):
+            channels.append(NotificationChannel.SMS)
+            channels.append(NotificationChannel.WHATSAPP)
+        if recipient.get("email"):
+            channels.append(NotificationChannel.EMAIL)
+
+        for ch in channels:
+            idempotency_key = f"student_absence:{student.id}:{date_str}:{ch.value.lower()}"
+            event = NotificationTriggerEvent(
+                event_type="student_absence",
+                school_id=school_id,
+                recipient_type=recipient["recipient_type"],
+                recipient_name=recipient["recipient_name"],
+                recipient_contact=recipient["recipient_contact"],
+                channel=ch,
+                template_key="student_absent_alert",
+                template_variables=template_variables,
+                recipient_id=recipient["recipient_id"],
+                idempotency_key=idempotency_key,
+                event_metadata=metadata,
+            )
+            notification_trigger_service.stage_notification_event(
+                db=db,
+                event=event,
+                auto_dispatch_on_commit=True,
+            )
+    except Exception as exc:
+        logger.warning(
+            "Failed to stage student absence notification for student %s on %s: %s",
+            student.id,
+            attendance_date,
+            exc,
+        )
 
 
 class AttendanceService:
@@ -91,7 +217,10 @@ class AttendanceService:
             remarks=attendance_in.remarks,
             recorded_by_user_id=current_user.id,
         )
-        return self.attendance_repository.create(db, attendance)
+        saved = self.attendance_repository.create(db, attendance)
+        if attendance_in.status == AttendanceStatus.ABSENT:
+            _trigger_student_absence_notification(db, school_id, student, attendance_in.attendance_date)
+        return saved
 
     def create_bulk_attendance(
         self,
@@ -133,6 +262,7 @@ class AttendanceService:
             )
 
         new_attendance_records: list[Attendance] = []
+        student_map: dict[UUID, Student] = {}
 
         # Validate all records before saving
         for item in bulk_in.records:
@@ -150,6 +280,7 @@ class AttendanceService:
                     f"Cannot mark attendance for inactive student '{student.full_name}'."
                 )
 
+            student_map[student.id] = student
             att_record = Attendance(
                 school_id=school_id,
                 academic_year_id=student.academic_year_id,
@@ -164,7 +295,16 @@ class AttendanceService:
             new_attendance_records.append(att_record)
 
         # Atomically save all valid records
-        return self.attendance_repository.create_bulk(db, new_attendance_records)
+        saved_records = self.attendance_repository.create_bulk(db, new_attendance_records)
+
+        # Stage absence notifications for absent students
+        for att_rec in saved_records:
+            if att_rec.status == AttendanceStatus.ABSENT:
+                st = student_map.get(att_rec.student_id)
+                if st:
+                    _trigger_student_absence_notification(db, school_id, st, bulk_in.attendance_date)
+
+        return saved_records
 
     def get_attendance(
         self,
@@ -231,6 +371,7 @@ class AttendanceService:
         Update an existing attendance record.
         """
         attendance = self.get_attendance(db, current_user, attendance_id)
+        old_status = attendance.status
 
         if update_in.status is not None:
             attendance.status = update_in.status
@@ -238,7 +379,14 @@ class AttendanceService:
             attendance.remarks = update_in.remarks
 
         attendance.recorded_by_user_id = current_user.id
-        return self.attendance_repository.update(db, attendance)
+        updated = self.attendance_repository.update(db, attendance)
+
+        if update_in.status == AttendanceStatus.ABSENT and old_status != AttendanceStatus.ABSENT:
+            st = self.student_repository.get_by_id(db, updated.student_id)
+            if st:
+                _trigger_student_absence_notification(db, attendance.school_id, st, updated.attendance_date)
+
+        return updated
 
     def delete_attendance(
         self,
