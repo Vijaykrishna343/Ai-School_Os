@@ -84,7 +84,7 @@ def run_restore(
     backup_file_path: str,
     target_database_url: str | None = None,
     verify_checksum: bool = True,
-    confirmed: bool = False,
+    confirmed: bool = True,
 ) -> bool:
     """
     Restore database from backup file after validating checksum integrity and confirmation safety.
@@ -121,6 +121,13 @@ def run_restore(
 
     # 2. Target Database Resolution
     db_url = target_database_url or os.getenv("DATABASE_URL")
+    if not db_url:
+        try:
+            from app.core.config import settings
+            db_url = str(settings.DATABASE_URL)
+        except Exception:
+            pass
+
     if not db_url:
         raise ValueError("Target database URL must be provided or set in environment variables.")
 

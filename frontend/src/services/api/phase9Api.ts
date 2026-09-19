@@ -22,9 +22,46 @@ export interface ImportSchema {
   description: string;
 }
 
+export interface ImportError {
+  row_number: number;
+  field: string | null;
+  message: string;
+}
+
+export interface ImportDuplicate {
+  row_number: number;
+  duplicate_fields: string[];
+  message: string;
+}
+
+export interface ImportPreviewResponse {
+  entity_type: string;
+  filename: string;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  duplicate_candidates: number;
+  reference_errors: number;
+  can_commit: boolean;
+  errors: ImportError[];
+  duplicates: ImportDuplicate[];
+  preview_rows: Array<Record<string, any>>;
+}
+
+export interface ImportCommitResponse {
+  success: boolean;
+  entity_type: string;
+  filename: string;
+  total_rows: number;
+  inserted_rows: number;
+  skipped_rows: number;
+  errors: ImportError[];
+  message?: string;
+}
+
 export const importApi = {
   /**
-   * Bulk import data from a CSV/XLSX file.
+   * Bulk import data from a CSV/XLSX file (direct).
    */
   async importData(entityType: string, file: File): Promise<ImportResult> {
     const formData = new FormData();
@@ -37,7 +74,42 @@ export const importApi = {
         headers: { 'Content-Type': 'multipart/form-data' },
       }
     );
-    // Handle API envelope
+    const body = response as any;
+    return body?.data || body;
+  },
+
+  /**
+   * Dry-run validation preview (zero DB mutations).
+   */
+  async previewImport(entityType: string, file: File): Promise<ImportPreviewResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<{ success: boolean; data: ImportPreviewResponse }>(
+      `/import/${entityType}/preview`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    const body = response as any;
+    return body?.data || body;
+  },
+
+  /**
+   * Commit validated import batch.
+   */
+  async commitImport(entityType: string, file: File, atomicMode: boolean = true): Promise<ImportCommitResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<ImportCommitResponse>(
+      `/import/${entityType}/commit?atomic_mode=${atomicMode}`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
     const body = response as any;
     return body?.data || body;
   },
