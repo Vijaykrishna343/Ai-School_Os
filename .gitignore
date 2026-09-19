@@ -1,8 +1,9 @@
 # ==========================
-# Python
+# Python & Virtual Environments
 # ==========================
 
 backend/venv/
+backend/.venv/
 venv/
 .venv/
 **/__pycache__/
@@ -10,42 +11,58 @@ venv/
 **/.pytest_cache/
 **/.coverage
 .coverage
+coverage/
 htmlcov/
 .mypy_cache/
 .ruff_cache/
 
 # ==========================
-# Environment Variables
+# Environment Variables & Secrets
 # ==========================
 
 backend/.env
+backend/.env.*
 frontend/.env
+frontend/.env.*
 .env
+.env.*
 *.env
 !*.env.example
+!.env.example
 
 # ==========================
-# Node.js
+# Node.js & Builds
 # ==========================
 
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.next/
 dist/
 build/
+.next/
 
 # ==========================
-# IDE
+# IDE & Editor Config
 # ==========================
 
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # ==========================
-# Logs
+# Logs & Temporary Files
 # ==========================
 
 *.log
+*.tmp
+*.bak
+backend/full_suite_result.txt
+backend/full_test_output.txt
+backend/importlog.txt
+backend/warning_audit_output.txt
+project-tree.txt
 
 # ==========================
 # OS Files
@@ -55,15 +72,15 @@ Thumbs.db
 .DS_Store
 
 # ==========================
-# Generated Inspection Artifacts
+# Local Databases & Backups
 # ==========================
 
-project-tree.txt
-
-# ==========================
-# Database Backups & Dumps
-# ==========================
-
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
 storage/backups/
 backend/storage/backups/
 backups/
@@ -77,4 +94,5 @@ backups/
 
 storage/documents/
 backend/storage/documents/
+
 
