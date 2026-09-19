@@ -93,6 +93,13 @@ def run_backup(
     """
     db_url = database_url or os.getenv("DATABASE_URL")
     if not db_url:
+        try:
+            from app.core.config import settings
+            db_url = str(settings.DATABASE_URL)
+        except Exception:
+            pass
+
+    if not db_url:
         raise ValueError("DATABASE_URL must be provided or set in environment variables.")
 
     sanitized_url = sanitize_database_url(db_url)

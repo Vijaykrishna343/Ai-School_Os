@@ -77,7 +77,7 @@ class TestBackupRestoreTooling:
         assert line.startswith(expected_hash)
 
     def test_run_backup_missing_db_url(self):
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.dict(os.environ, {}, clear=True), patch("app.core.config.settings.DATABASE_URL", ""):
             if "DATABASE_URL" in os.environ:
                 del os.environ["DATABASE_URL"]
             with pytest.raises(ValueError, match="DATABASE_URL must be provided"):

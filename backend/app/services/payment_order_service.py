@@ -151,7 +151,7 @@ class PaymentOrderService:
                 active_order.status = PaymentOrderStatus.CANCELLED
 
         # 6. Resolve provider credentials from settings
-        key_id, key_secret, webhook_secret = self._resolve_credentials(target_provider)
+        key_id, key_secret, webhook_secret = self._resolve_credentials(target_provider, school_id=school_id)
 
         if not key_id or not key_secret:
             raise ValidationException(

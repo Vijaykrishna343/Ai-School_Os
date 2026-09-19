@@ -1,8 +1,11 @@
 """
-Data Import Endpoint — Phase 9.1
+Data Import Endpoint — Phase 9.1 & Phase 30.9 (GAP-05)
+POST /api/v1/import/{entity_type}/preview
+POST /api/v1/import/{entity_type}/commit
 POST /api/v1/import/{entity_type}
+GET  /api/v1/import/schema/{entity_type}
 """
-from fastapi import APIRouter, Depends, File, UploadFile, Path, status
+from fastapi import APIRouter, Depends, File, UploadFile, Path, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -12,6 +15,8 @@ from app.identity.models.user import IdentityUser
 from app.identity.security.current_user import get_current_user
 from app.services.import_service import (
     import_data,
+    preview_import,
+    commit_import,
     preview_student_import,
     commit_student_import,
     ENTITY_SCHEMAS,
@@ -23,12 +28,15 @@ ENTITY_PERMISSION = {
     "students": "student.create",
     "teachers": "teacher.create",
     "parents": "parent.create",
+    "fee_structures": "fees.create",
+    "outstanding_balances": "fees.create",
+    "historical_marks": "marks.create",
 }
 
 
 @router.post(
     "/students/preview",
-    summary="Bulk Student Onboarding Validation Preview",
+    summary="Bulk Student Onboarding Validation Preview (Legacy Alias)",
     status_code=status.HTTP_200_OK,
 )
 def preview_student_onboarding(
@@ -42,8 +50,9 @@ def preview_student_onboarding(
     content = file.file.read()
     filename = file.filename or "upload.csv"
 
-    preview_res = preview_student_import(
+    preview_res = preview_import(
         db=db,
+        entity_type="students",
         file_content=content,
         filename=filename,
         school_id=current_user.school_id,
@@ -59,12 +68,12 @@ def preview_student_onboarding(
 
 @router.post(
     "/students/commit",
-    summary="Atomic Bulk Student Onboarding Commit",
+    summary="Atomic Bulk Student Onboarding Commit (Legacy Alias)",
     status_code=status.HTTP_200_OK,
 )
 def commit_student_onboarding(
     file: UploadFile = File(..., description="CSV or XLSX file"),
-    atomic_mode: bool = True,
+    atomic_mode: bool = Query(True),
     current_user: IdentityUser = Depends(require_permission("student.create")),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
@@ -74,8 +83,107 @@ def commit_student_onboarding(
     content = file.file.read()
     filename = file.filename or "upload.csv"
 
-    commit_res = commit_student_import(
+    commit_res = commit_import(
         db=db,
+        entity_type="students",
+        file_content=content,
+        filename=filename,
+        school_id=current_user.school_id,
+        atomic_mode=atomic_mode,
+    )
+    status_code = status.HTTP_200_OK if commit_res["success"] else status.HTTP_422_UNPROCESSABLE_CONTENT
+    return JSONResponse(
+        status_code=status_code,
+        content=commit_res,
+    )
+
+
+@router.post(
+    "/{entity_type}/preview",
+    summary="Bulk Entity Onboarding Validation Preview",
+    status_code=status.HTTP_200_OK,
+)
+def preview_entity_onboarding(
+    entity_type: str = Path(..., description="Entity to preview"),
+    file: UploadFile = File(..., description="CSV or XLSX file"),
+    current_user: IdentityUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """
+    Validate bulk import file without mutating database.
+    Returns row-level preview, duplicate candidates, reference errors, and stats.
+    """
+    if entity_type not in ENTITY_SCHEMAS:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": f"Unsupported entity type '{entity_type}'. Valid: {list(ENTITY_SCHEMAS)}"},
+        )
+
+    required_perm = ENTITY_PERMISSION.get(entity_type)
+    if not required_perm:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": f"No permission mapping for entity type '{entity_type}'."},
+        )
+
+    require_permission(required_perm)(current_user=current_user, db=db)
+
+    content = file.file.read()
+    filename = file.filename or "upload.csv"
+
+    preview_res = preview_import(
+        db=db,
+        entity_type=entity_type,
+        file_content=content,
+        filename=filename,
+        school_id=current_user.school_id,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "success": True,
+            "data": preview_res,
+        },
+    )
+
+
+@router.post(
+    "/{entity_type}/commit",
+    summary="Bulk Entity Onboarding Commit",
+    status_code=status.HTTP_200_OK,
+)
+def commit_entity_onboarding(
+    entity_type: str = Path(..., description="Entity to commit"),
+    file: UploadFile = File(..., description="CSV or XLSX file"),
+    atomic_mode: bool = Query(True),
+    current_user: IdentityUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """
+    Commit validated bulk onboarding batch.
+    Supports atomic all-or-nothing rollback mode or partial insert mode.
+    """
+    if entity_type not in ENTITY_SCHEMAS:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": f"Unsupported entity type '{entity_type}'. Valid: {list(ENTITY_SCHEMAS)}"},
+        )
+
+    required_perm = ENTITY_PERMISSION.get(entity_type)
+    if not required_perm:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": f"No permission mapping for entity type '{entity_type}'."},
+        )
+
+    require_permission(required_perm)(current_user=current_user, db=db)
+
+    content = file.file.read()
+    filename = file.filename or "upload.csv"
+
+    commit_res = commit_import(
+        db=db,
+        entity_type=entity_type,
         file_content=content,
         filename=filename,
         school_id=current_user.school_id,
@@ -90,20 +198,18 @@ def commit_student_onboarding(
 
 @router.post(
     "/{entity_type}",
-    summary="Bulk Import School Data",
+    summary="Bulk Import School Data (Legacy Direct)",
     status_code=status.HTTP_200_OK,
 )
 def bulk_import(
-    entity_type: str = Path(..., description="Entity to import: students | teachers | parents"),
+    entity_type: str = Path(..., description="Entity to import: students | teachers | parents | fee_structures | outstanding_balances | historical_marks"),
     file: UploadFile = File(..., description="CSV or XLSX file"),
     current_user: IdentityUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """
     Bulk import school data from a CSV or XLSX file.
-
-    Supports entity types: students, teachers, parents.
-
+    Supports entity types: students, teachers, parents, fee_structures, outstanding_balances, historical_marks.
     Returns an import summary with per-row error details.
     """
     if entity_type not in ENTITY_SCHEMAS:
@@ -154,7 +260,7 @@ def bulk_import(
 )
 def get_import_schema(
     entity_type: str = Path(...),
-    current_user: IdentityUser = Depends(require_permission("student.view")),
+    current_user: IdentityUser = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Returns the expected CSV column schema for the given entity type.

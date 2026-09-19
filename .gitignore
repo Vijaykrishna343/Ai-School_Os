@@ -71,3 +71,10 @@ backups/
 *.dump.sha256
 *.sql.sha256
 
+# ==========================
+# Document Uploads & Storage (Runtime Artifacts)
+# ==========================
+
+storage/documents/
+backend/storage/documents/
+
