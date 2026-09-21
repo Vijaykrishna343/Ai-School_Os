@@ -2,7 +2,6 @@
 
 [![CI Pipeline](https://github.com/Vijaykrishna343/Ai-School_Os/actions/workflows/ci.yml/badge.svg)](https://github.com/Vijaykrishna343/Ai-School_Os/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Vijaykrishna343/Ai-School_Os)
-[![License](https://img.shields.io/badge/license-Proprietary-lightgrey.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.14-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-green.svg)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev/)
