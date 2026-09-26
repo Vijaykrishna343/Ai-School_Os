@@ -661,7 +661,10 @@ def run_pilot_validation():
         res_ready = client.get("/health/ready")
         assert res_ready.status_code == 200, f"/health/ready returned {res_ready.status_code}"
 
-        res_metrics = client.get("/metrics")
+        res_metrics = client.get(
+            "/metrics",
+            headers={"Authorization": f"Bearer {settings.METRICS_AUTH_TOKEN}"},
+        )
         assert res_metrics.status_code == 200, f"/metrics returned {res_metrics.status_code}"
         assert "http_requests_total" in res_metrics.text or "process_cpu_seconds" in res_metrics.text
         print(" [PASS] Health checks (/health/live, /health/ready) and Prometheus /metrics all operational.")

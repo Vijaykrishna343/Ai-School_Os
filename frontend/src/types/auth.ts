@@ -40,3 +40,27 @@ export interface UserLoginPayload {
   email: string;
   password: string;
 }
+
+export interface UserLogoutResponse {
+  message: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+  school_code?: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  new_password: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+}

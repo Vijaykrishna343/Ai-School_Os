@@ -32,11 +32,19 @@ from .role_permission_service import (
     role_permission_service,
 )
 
+from .password_reset_delivery_service import (
+    PasswordResetDeliveryService,
+    password_reset_delivery_service,
+)
+
 __all__ = [
     "BaseIdentityService",
     # Authentication
     "AuthenticationService",
     "authentication_service",
+    # Delivery
+    "PasswordResetDeliveryService",
+    "password_reset_delivery_service",
     # Permission
     "IdentityPermissionService",
     "permission_service",

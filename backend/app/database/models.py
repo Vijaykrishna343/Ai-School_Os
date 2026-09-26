@@ -22,6 +22,9 @@ from app.identity.models.role import IdentityRole
 from app.identity.models.permission import IdentityPermission
 from app.identity.models.user_role import IdentityUserRole
 from app.identity.models.role_permission import IdentityRolePermission
+from app.identity.models.refresh_token import IdentityRefreshToken
+from app.identity.models.password_reset_token import IdentityPasswordResetToken
+from app.identity.models.bootstrap_state import IdentityBootstrapState
 from app.models.academic_term import AcademicTerm
 from app.models.school_class import SchoolClass
 from app.models.section.section import Section
@@ -109,6 +112,8 @@ __all__ = [
     "IdentityPermission",
     "IdentityUserRole",
     "IdentityRolePermission",
+    "IdentityRefreshToken",
+    "IdentityPasswordResetToken",
     "StudentExamResult",
     "GradeScale",
     "GradeScaleEntry",

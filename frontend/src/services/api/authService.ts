@@ -1,14 +1,38 @@
 import { apiClient } from './client';
-import { RolePermission, TokenResponse, User, UserLoginPayload, UserRole } from '@/types/auth';
+import {
+  ForgotPasswordPayload,
+  ForgotPasswordResponse,
+  ResetPasswordPayload,
+  ResetPasswordResponse,
+  RolePermission,
+  TokenResponse,
+  User,
+  UserLoginPayload,
+  UserLogoutResponse,
+  UserRole,
+} from '@/types/auth';
 
 export const authService = {
   async login(credentials: UserLoginPayload): Promise<TokenResponse> {
     return apiClient.post('/auth/login', credentials);
   },
 
-  async refreshToken(refreshToken: string): Promise<TokenResponse> {
-    return apiClient.post('/auth/refresh', { refresh_token: refreshToken });
+  async refreshToken(refreshToken?: string): Promise<TokenResponse> {
+    return apiClient.post('/auth/refresh', refreshToken ? { refresh_token: refreshToken } : {});
   },
+
+  async logout(refreshToken?: string): Promise<UserLogoutResponse> {
+    return apiClient.post('/auth/logout', refreshToken ? { refresh_token: refreshToken } : {});
+  },
+
+  async forgotPassword(payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> {
+    return apiClient.post('/auth/forgot-password', payload);
+  },
+
+  async resetPassword(payload: ResetPasswordPayload): Promise<ResetPasswordResponse> {
+    return apiClient.post('/auth/reset-password', payload);
+  },
+
 
   async getCurrentUser(): Promise<User> {
     return apiClient.get('/auth/me');

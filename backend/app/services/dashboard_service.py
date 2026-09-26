@@ -20,6 +20,7 @@ from app.common.authorization import (
     resolve_student_id_for_user,
 )
 from app.common.exceptions import ForbiddenException, NotFoundException
+from app.identity.models.user import IdentityUser
 from app.models.student import Student
 
 

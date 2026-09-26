@@ -22,8 +22,8 @@ def test_emergency_preference_disable_prevention():
     """Verify backend prevents disabling mandatory emergency notifications via API."""
     db = SessionLocal()
     school = School(
-        name=f"Sec School {uuid4().hex[:4]}",
-        code=f"SEC-{uuid4().hex[:4]}",
+        name=f"Sec School {uuid4().hex[:8]}",
+        code=f"SEC-{uuid4().hex[:8]}",
         address_line1="123 Main St",
         city="Hyderabad",
         district="Hyderabad",
@@ -108,21 +108,21 @@ def test_inbox_idor_cross_user_and_cross_tenant_isolation():
         db.flush()
 
     # School A
-    school_a = School(name=f"School A {uuid4().hex[:4]}", code=f"SA-{uuid4().hex[:4]}", address_line1="123", city="H", district="H", state="T", postal_code="500001")
+    school_a = School(name=f"School A {uuid4().hex[:8]}", code=f"SA-{uuid4().hex[:8]}", address_line1="123", city="H", district="H", state="T", postal_code="500001")
     db.add(school_a)
     db.flush()
 
-    user_a = IdentityUser(email=f"usera.{uuid4().hex[:4]}@a.com", username=f"ua_{uuid4().hex[:4]}", password_hash="pass", first_name="A", last_name="A", school_id=school_a.id)
+    user_a = IdentityUser(email=f"usera.{uuid4().hex[:8]}@a.com", username=f"ua_{uuid4().hex[:8]}", password_hash="pass", first_name="A", last_name="A", school_id=school_a.id)
     user_a.roles = [super_admin_role]
     db.add(user_a)
     db.flush()
 
     # School B
-    school_b = School(name=f"School B {uuid4().hex[:4]}", code=f"SB-{uuid4().hex[:4]}", address_line1="123", city="H", district="H", state="T", postal_code="500001")
+    school_b = School(name=f"School B {uuid4().hex[:8]}", code=f"SB-{uuid4().hex[:8]}", address_line1="123", city="H", district="H", state="T", postal_code="500001")
     db.add(school_b)
     db.flush()
 
-    user_c = IdentityUser(email=f"userc.{uuid4().hex[:4]}@b.com", username=f"uc_{uuid4().hex[:4]}", password_hash="pass", first_name="C", last_name="C", school_id=school_b.id)
+    user_c = IdentityUser(email=f"userc.{uuid4().hex[:8]}@b.com", username=f"uc_{uuid4().hex[:8]}", password_hash="pass", first_name="C", last_name="C", school_id=school_b.id)
     db.add(user_c)
     db.flush()
 
@@ -153,7 +153,7 @@ def test_inbox_idor_cross_user_and_cross_tenant_isolation():
 def test_concurrent_idempotency_duplicate_suppression():
     """Simulates concurrent delivery attempts with identical idempotency key."""
     db = SessionLocal()
-    school = School(name=f"Conc School {uuid4().hex[:4]}", code=f"CNC-{uuid4().hex[:4]}", address_line1="123", city="H", district="H", state="T", postal_code="500001")
+    school = School(name=f"Conc School {uuid4().hex[:8]}", code=f"CNC-{uuid4().hex[:8]}", address_line1="123", city="H", district="H", state="T", postal_code="500001")
     db.add(school)
     db.commit()
 

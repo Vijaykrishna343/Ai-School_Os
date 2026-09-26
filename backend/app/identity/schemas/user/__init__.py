@@ -6,9 +6,10 @@ from .user_list_response import UserListResponse
 from .user_login import UserLogin
 from .user_login_response import UserLoginResponse
 from .change_password import ChangePassword
-from .forgot_password import ForgotPassword
-from .reset_password import ResetPassword
+from .forgot_password import ForgotPassword, ForgotPasswordResponse
+from .reset_password import ResetPassword, ResetPasswordResponse
 from .refresh_token import RefreshToken
+from .logout import UserLogout, UserLogoutResponse
 from .current_user import CurrentUser
 from .user_status_update import UserStatusUpdate
 
@@ -22,8 +23,12 @@ __all__ = [
     "UserLoginResponse",
     "ChangePassword",
     "ForgotPassword",
+    "ForgotPasswordResponse",
     "ResetPassword",
+    "ResetPasswordResponse",
     "RefreshToken",
+    "UserLogout",
+    "UserLogoutResponse",
     "CurrentUser",
     "UserStatusUpdate",
-]
+]

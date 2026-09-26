@@ -12,6 +12,9 @@ from app.common.metrics import (
 from app.main import app
 
 
+from app.core.config import settings
+
+
 class TestPrometheusMetrics:
     def test_normalize_route_path(self):
         # UUID normalization
@@ -66,7 +69,17 @@ class TestPrometheusMetrics:
         client.get("/")
         client.get("/health/live")
 
-        resp = client.get("/metrics")
+        # Anonymous access must be rejected (401)
+        anon_resp = client.get("/metrics")
+        assert anon_resp.status_code == 401
+
+        # Invalid token must be rejected (401)
+        invalid_resp = client.get("/metrics", headers={"Authorization": "Bearer wrong-token"})
+        assert invalid_resp.status_code == 401
+
+        # Valid monitoring credentials must succeed (200)
+        auth_headers = {"Authorization": f"Bearer {settings.METRICS_AUTH_TOKEN}"}
+        resp = client.get("/metrics", headers=auth_headers)
         assert resp.status_code == 200
         assert "text/plain" in resp.headers["content-type"]
         assert "version=0.0.4" in resp.headers["content-type"]

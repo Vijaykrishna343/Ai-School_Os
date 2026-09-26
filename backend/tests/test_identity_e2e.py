@@ -352,6 +352,7 @@ def test_06_auth_me_returns_current_user(db, client):
 ])
 def test_07_protected_endpoints_reject_anonymous(method, url, body, client):
     """Each protected endpoint must return 401 or 403 when no token is provided."""
+    client.cookies.clear()
     func = getattr(client, method)
     kwargs = {}
     if body:
@@ -420,6 +421,7 @@ def test_09_user_without_permission_gets_403(db, client):
 
 def test_10_anonymous_create_user_rejected_when_users_exist(db, client):
     """Once at least one active user exists, anonymous POST /api/v1/users returns 401."""
+    client.cookies.clear()
     payload = {
         "school_id": str(S.school.id),
         "email": "intruder@e2etest.edu",

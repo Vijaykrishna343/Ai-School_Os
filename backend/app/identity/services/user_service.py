@@ -4,11 +4,13 @@ from sqlalchemy.orm import Session
 
 from app.common.exceptions import (
     AlreadyExistsException,
+    ForbiddenException,
     NotFoundException,
 )
 from app.common.logger.logger import get_logger
 from app.identity.models.user import IdentityUser
 from app.identity.repositories import (
+    identity_bootstrap_repository,
     identity_user_repository,
     role_repository,
     user_role_repository,
@@ -40,10 +42,25 @@ class IdentityUserService(BaseIdentityService):
         db: Session,
         user: UserCreate,
         current_user: IdentityUser | None = None,
+        is_bootstrap_request: bool = False,
     ) -> IdentityUser:
         """
         Create a new identity user with tenant scoping.
         """
+        if is_bootstrap_request:
+            # 1. Acquire row-level lock on platform bootstrap state immediately
+            bootstrap_state = identity_bootstrap_repository.get_by_scope_for_update(
+                db,
+                scope="platform",
+            )
+            if bootstrap_state is not None and bootstrap_state.is_completed:
+                logger.warning(
+                    "Unauthenticated bootstrap rejected: platform setup is already completed."
+                )
+                raise ForbiddenException(
+                    "System bootstrap is completed. Authentication is required."
+                )
+
         if current_user and not current_user.is_super_admin:
             user.school_id = current_user.school_id
 
@@ -57,7 +74,6 @@ class IdentityUserService(BaseIdentityService):
             db,
             user.school_id,
         )
-
 
         if school is None:
             logger.warning(
@@ -101,7 +117,78 @@ class IdentityUserService(BaseIdentityService):
                 user.username,
             )
 
-        # Count active users for the given school prior to user creation
+        if is_bootstrap_request:
+            try:
+                db_user = IdentityUser(
+                    school_id=user.school_id,
+                    email=user.email,
+                    username=user.username,
+                    password_hash=hash_password(user.password),
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    phone=user.phone,
+                )
+                db.add(db_user)
+                db.flush()
+
+                logger.info(
+                    "Bootstrap user '%s' created successfully with ID: %s",
+                    db_user.email,
+                    db_user.id,
+                )
+
+                # Assign School Admin role to bootstrap user
+                admin_role = role_repository.get_by_name(
+                    db,
+                    user.school_id,
+                    "School Admin",
+                )
+                if admin_role is None:
+                    admin_role = role_repository.get_by_name(
+                        db,
+                        None,
+                        "School Admin",
+                    )
+
+                if admin_role is not None:
+                    if not user_role_repository.role_exists(
+                        db,
+                        db_user.id,
+                        admin_role.id,
+                    ):
+                        user_role_repository.assign_role(
+                            db,
+                            db_user.id,
+                            admin_role.id,
+                        )
+                        logger.info(
+                            "Assigned School Admin role to bootstrap user ID: %s",
+                            db_user.id,
+                        )
+
+                # Atomic conditional transition
+                transitioned = identity_bootstrap_repository.mark_completed_atomic(
+                    db,
+                    completed_by_id=db_user.id,
+                    scope="platform",
+                )
+                if not transitioned:
+                    logger.warning(
+                        "Concurrent bootstrap race detected: another transaction already completed platform setup."
+                    )
+                    raise ForbiddenException(
+                        "System bootstrap is completed. Authentication is required."
+                    )
+
+                db.commit()
+                db.refresh(db_user)
+                return db_user
+            except Exception as e:
+                db.rollback()
+                logger.error("Atomic bootstrap creation failed: %s", str(e))
+                raise
+
+        # Standard user creation
         active_user_count = identity_user_repository.count_by_school(
             db,
             user.school_id,
@@ -128,9 +215,12 @@ class IdentityUserService(BaseIdentityService):
             created_user.id,
         )
 
-        # Automatic bootstrap role assignment for the first user of the school
+        # Automatic initial role assignment if this is the first user of the school
         if active_user_count == 0:
-            logger.info("First active user detected for school %s: Assigning School Admin role", user.school_id)
+            logger.info(
+                "First active user detected for school %s: Assigning School Admin role",
+                user.school_id,
+            )
             admin_role = role_repository.get_by_name(
                 db,
                 user.school_id,
@@ -154,7 +244,19 @@ class IdentityUserService(BaseIdentityService):
                         created_user.id,
                         admin_role.id,
                     )
-                    logger.info("Assigned School Admin role to user ID: %s", created_user.id)
+                    logger.info(
+                        "Assigned School Admin role to user ID: %s",
+                        created_user.id,
+                    )
+
+        # If platform was not marked bootstrapped, ensure it is marked now
+        if not identity_bootstrap_repository.is_platform_bootstrapped(db):
+            identity_bootstrap_repository.mark_completed(
+                db,
+                completed_by_id=created_user.id,
+                scope="platform",
+            )
+            db.commit()
 
         return created_user
 

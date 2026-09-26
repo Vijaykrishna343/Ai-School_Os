@@ -5,6 +5,7 @@ Unit & Integration tests for Database Backup & Restore Tooling (Phase 30.8).
 import hashlib
 import os
 import tempfile
+import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -209,3 +210,54 @@ class TestBackupRestoreTooling:
         assert "--clean" in cmd_executed
         assert "--if-exists" in cmd_executed
         assert "--no-owner" in cmd_executed
+
+    def test_backup_retention_pruning(self, tmp_path):
+        storage_dir = tmp_path / "backups"
+        storage_dir.mkdir(parents=True, exist_ok=True)
+
+        now = time.time()
+        # 1. Create old backup (40 days old) and its checksum sidecar
+        old_dump = storage_dir / "backup_AISchoolOS_20260101_000000.dump"
+        old_dump.write_bytes(b"OLD_DUMP")
+        old_sha = storage_dir / "backup_AISchoolOS_20260101_000000.dump.sha256"
+        old_sha.write_text("dummy_hash  backup_AISchoolOS_20260101_000000.dump")
+        os.utime(old_dump, (now - 40 * 86400, now - 40 * 86400))
+        os.utime(old_sha, (now - 40 * 86400, now - 40 * 86400))
+
+        # 2. Create recent backup (5 days old)
+        recent_dump = storage_dir / "backup_AISchoolOS_20260920_000000.dump"
+        recent_dump.write_bytes(b"RECENT_DUMP")
+        recent_sha = storage_dir / "backup_AISchoolOS_20260920_000000.dump.sha256"
+        recent_sha.write_text("dummy_hash  backup_AISchoolOS_20260920_000000.dump")
+        os.utime(recent_dump, (now - 5 * 86400, now - 5 * 86400))
+        os.utime(recent_sha, (now - 5 * 86400, now - 5 * 86400))
+
+        # 3. Create unrelated file
+        unrelated = storage_dir / "unrelated_notes.txt"
+        unrelated.write_text("Do not delete me")
+        os.utime(unrelated, (now - 50 * 86400, now - 50 * 86400))
+
+        # 4. Run backup with 30-day retention
+        db_src = tmp_path / "source.db"
+        db_src.write_bytes(b"CURRENT_DATA")
+        backup_file = run_backup(
+            storage_dir=str(storage_dir),
+            retention_days=30,
+            database_url=f"sqlite:///{db_src}",
+        )
+
+        # Verify old backup and its sidecar were deleted
+        assert not old_dump.exists()
+        assert not old_sha.exists()
+
+        # Verify recent backup was retained
+        assert recent_dump.exists()
+        assert recent_sha.exists()
+
+        # Verify newest created backup exists
+        assert Path(backup_file).exists()
+        assert (storage_dir / f"{Path(backup_file).name}.sha256").exists()
+
+        # Verify unrelated file was preserved
+        assert unrelated.exists()
+

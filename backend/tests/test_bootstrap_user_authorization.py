@@ -28,7 +28,9 @@ def create_sample_school(db, code="SCH001", name="Test School"):
 def test_first_user_can_be_created_anonymously_on_fresh_installation(db_session, client):
     db = db_session
     from app.identity.models.user import IdentityUser
+    from app.identity.models.bootstrap_state import IdentityBootstrapState
     db.query(IdentityUser).delete()
+    db.query(IdentityBootstrapState).delete()
     db.commit()
     seed_identity(db)
     school = create_sample_school(db)

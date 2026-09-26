@@ -42,6 +42,7 @@ def create_user(
         db,
         user,
         current_user=current_user,
+        is_bootstrap_request=(current_user is None),
     )
 
 

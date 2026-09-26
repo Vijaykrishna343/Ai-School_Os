@@ -90,8 +90,7 @@ export const documentsApi = {
   },
 
   getPreviewUrl: (id: string): string => {
-    const token = localStorage.getItem('access_token');
-    return `/api/v1/documents/${id}/preview?token=${token}`;
+    return `/api/v1/documents/${id}/preview`;
   },
 
   updateDocument: async (id: string, payload: { title?: string; document_type?: string }): Promise<DocumentItem> => {

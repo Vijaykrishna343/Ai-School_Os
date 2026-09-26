@@ -10,8 +10,9 @@ import time
 import uuid
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -21,6 +22,7 @@ from app.api.v1.api import api_router
 from app.common.exceptions import register_exception_handlers
 from app.common.logger.logger import get_logger, setup_logging
 from app.common.metrics import metrics_registry
+from app.common.metrics_auth import verify_metrics_access
 from app.core.config import settings
 
 
@@ -252,6 +254,72 @@ async def correlation_id_middleware(
     return response
 
 
+CSRF_PROTECTED_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+CSRF_EXEMPT_PATHS = {
+    "/api/v1/auth/forgot-password",
+    "/api/v1/auth/reset-password",
+}
+
+
+@app.middleware("http")
+async def csrf_origin_validation_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    """
+    CSRF Defense: For state-changing requests carrying cookie authentication,
+    validate Origin and Referer headers against trusted origins.
+    """
+    if request.method in CSRF_PROTECTED_METHODS and request.url.path not in CSRF_EXEMPT_PATHS:
+        has_auth_cookie = bool(
+            request.cookies.get("access_token") or request.cookies.get("refresh_token")
+        )
+        if has_auth_cookie:
+            origin = request.headers.get("origin")
+            referer = request.headers.get("referer")
+            sec_fetch_site = request.headers.get("sec-fetch-site")
+
+            # Check explicit cross-site indicator
+            if sec_fetch_site == "cross-site":
+                logger.warning(
+                    "CSRF blocked: Sec-Fetch-Site is cross-site for path %s",
+                    request.url.path,
+                )
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "CSRF verification failed: Cross-site request rejected."},
+                )
+
+            allowed = set(get_allowed_origins())
+            # Add request's own origin
+            server_origin = f"{request.url.scheme}://{request.url.netloc}"
+            allowed.add(server_origin)
+
+            request_origin = None
+            if origin:
+                request_origin = origin.rstrip("/")
+            elif referer:
+                parsed = urlparse(referer)
+                if parsed.scheme and parsed.netloc:
+                    request_origin = f"{parsed.scheme}://{parsed.netloc}"
+
+            if request_origin is not None:
+                # Compare against allowed origins (normalized without trailing slashes)
+                normalized_allowed = {o.rstrip("/") for o in allowed if o}
+                if request_origin not in normalized_allowed:
+                    logger.warning(
+                        "CSRF blocked: Origin '%s' not in allowed origins for path %s",
+                        request_origin,
+                        request.url.path,
+                    )
+                    return JSONResponse(
+                        status_code=403,
+                        content={"detail": "CSRF verification failed: Untrusted Origin."},
+                    )
+
+    return await call_next(request)
+
+
 @app.middleware("http")
 async def add_security_headers(
     request: Request,
@@ -413,6 +481,7 @@ async def health_ready() -> JSONResponse:
     tags=["Observability"],
     summary="Prometheus Metrics Endpoint",
     response_class=Response,
+    dependencies=[Depends(verify_metrics_access)],
 )
 async def prometheus_metrics() -> Response:
     """

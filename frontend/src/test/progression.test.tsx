@@ -47,8 +47,6 @@ describe('Academic Progression Workspace Component', () => {
       user: { id: 'admin-id', email: 'principal@school.com', school_id: 'school-1' } as any,
       roles: [{ id: 'role-1', name: 'Administrator', code: 'admin', permissions: [] }],
       permissions: ['progression_matrix.view', 'progression_matrix.manage', 'progression.execute'],
-
-      accessToken: 'token',
       isAuthenticated: true,
       isLoading: false,
       authError: null,

@@ -281,13 +281,10 @@ export const reportsApi = {
   },
 
   exportCsv: async (category: string, filters?: ReportFilterParams): Promise<Blob> => {
-    const token = localStorage.getItem('access_token');
     const response = await axios.get(`${BASE_URL}/reports/export/csv`, {
       params: { category, ...filters },
       responseType: 'blob',
-      headers: {
-        Authorization: token ? `Bearer ${token}` : '',
-      },
+      withCredentials: true,
     });
     return response.data;
   },

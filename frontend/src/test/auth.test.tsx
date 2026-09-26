@@ -20,7 +20,6 @@ describe('Frontend Authentication & Login Experience', () => {
       user: null,
       roles: [],
       permissions: [],
-      accessToken: null,
       isAuthenticated: false,
       isLoading: false,
       authError: null,

@@ -128,7 +128,6 @@ export const exportApi = {
    * Download a CSV export by opening a direct URL with auth token.
    */
   downloadCsv(endpoint: string, params?: Record<string, string>): void {
-    const token = localStorage.getItem('access_token');
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
     const queryString = params
       ? '?' + new URLSearchParams(params).toString()
@@ -139,9 +138,9 @@ export const exportApi = {
     const a = document.createElement('a');
     a.href = url;
     a.download = `${endpoint}_export.csv`;
-    // Add auth header via fetch instead of anchor for security
+    // Fetch with credentials (HttpOnly cookies)
     fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     })
       .then((res) => res.blob())
       .then((blob) => {

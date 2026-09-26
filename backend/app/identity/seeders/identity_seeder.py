@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.common.logger.logger import get_logger
+from app.identity.repositories import identity_bootstrap_repository
 from app.identity.seeders.permission_seeder import permission_seeder
 from app.identity.seeders.role_permission_seeder import role_permission_seeder
 from app.identity.seeders.role_seeder import role_seeder
@@ -26,6 +27,9 @@ def seed_identity(db: Session) -> dict[str, Any]:
         dict containing summary statistics of created and skipped entities.
     """
     try:
+        # Phase 0: Ensure Persistent Platform Bootstrap State
+        identity_bootstrap_repository.ensure_initialized(db, scope="platform")
+
         # Phase 1: Permissions
         logger.info("Seeding Permissions...")
         perm_stats = permission_seeder.seed(db)

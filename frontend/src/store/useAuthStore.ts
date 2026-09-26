@@ -7,7 +7,6 @@ interface AuthState {
   user: User | null;
   roles: UserRole[];
   permissions: string[];
-  accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   authError: string | null;
@@ -22,21 +21,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   roles: [],
   permissions: [],
-  accessToken: localStorage.getItem('access_token'),
-  isAuthenticated: Boolean(localStorage.getItem('access_token')),
+  isAuthenticated: false,
   isLoading: true,
   authError: null,
 
   login: async (credentials: UserLoginPayload) => {
     set({ isLoading: true, authError: null });
     try {
-      const tokenRes = await authService.login(credentials);
-      localStorage.setItem('access_token', tokenRes.access_token);
-      localStorage.setItem('refresh_token', tokenRes.refresh_token);
+      await authService.login(credentials);
 
-      set({ accessToken: tokenRes.access_token });
-
-      // Fetch user profile and roles
+      // Fetch user profile and roles (authenticated via HttpOnly cookie)
       const user = await authService.getCurrentUser();
       const roles = await authService.getUserRoles(user.id);
 
@@ -70,14 +64,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     set({ isLoading: true });
     try {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      await authService.logout().catch(() => {
+        // Ignore network or token revocation errors on logout
+      });
     } finally {
       set({
         user: null,
         roles: [],
         permissions: [],
-        accessToken: null,
         isAuthenticated: false,
         isLoading: false,
         authError: null,
@@ -86,12 +80,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initializeAuth: async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      set({ isLoading: false, isAuthenticated: false });
-      return;
-    }
-
     set({ isLoading: true });
     try {
       const user = await authService.getCurrentUser();
@@ -112,13 +100,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
     } catch {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
       set({
         user: null,
         roles: [],
         permissions: [],
-        accessToken: null,
         isAuthenticated: false,
         isLoading: false,
       });
@@ -126,13 +111,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearAuth: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
     set({
       user: null,
       roles: [],
       permissions: [],
-      accessToken: null,
       isAuthenticated: false,
       isLoading: false,
       authError: null,

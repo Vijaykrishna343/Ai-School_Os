@@ -5,6 +5,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -12,32 +13,20 @@ export const apiClient = axios.create({
 
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (token: string) => void;
+  resolve: () => void;
   reject: (err: any) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: any) => {
   failedQueue.forEach((promise) => {
     if (error) {
       promise.reject(error);
-    } else if (token) {
-      promise.resolve(token);
+    } else {
+      promise.resolve();
     }
   });
   failedQueue = [];
 };
-
-// Request Interceptor: Attach Access Token
-apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('access_token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // Response Interceptor: Envelope Handling & 401 Refresh
 apiClient.interceptors.response.use(
@@ -70,21 +59,14 @@ apiClient.interceptors.response.use(
 
     const { status, data } = error.response;
 
-    // Handle 401 Token Expiration & Refresh Flow
+    // Handle 401 Token Expiration & Refresh Flow using HttpOnly cookies
     if (status === 401 && !originalRequest._retry) {
-      const refreshToken = localStorage.getItem('refresh_token');
-
-      if (refreshToken && !originalRequest.url?.includes('/auth/login') && !originalRequest.url?.includes('/auth/refresh')) {
+      if (!originalRequest.url?.includes('/auth/login') && !originalRequest.url?.includes('/auth/refresh')) {
         if (isRefreshing) {
-          return new Promise((resolve, reject) => {
+          return new Promise<void>((resolve, reject) => {
             failedQueue.push({ resolve, reject });
           })
-            .then((token) => {
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-              }
-              return apiClient(originalRequest);
-            })
+            .then(() => apiClient(originalRequest))
             .catch((err) => Promise.reject(err));
         }
 
@@ -92,29 +74,11 @@ apiClient.interceptors.response.use(
         isRefreshing = true;
 
         try {
-          const res = await axios.post(`${BASE_URL}/auth/refresh`, {
-            refresh_token: refreshToken,
-          });
-
-          const responseData = res.data?.data || res.data;
-          const newToken = responseData.access_token;
-          const newRefreshToken = responseData.refresh_token;
-
-          localStorage.setItem('access_token', newToken);
-          if (newRefreshToken) {
-            localStorage.setItem('refresh_token', newRefreshToken);
-          }
-
-          processQueue(null, newToken);
-
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          }
+          await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+          processQueue(null);
           return apiClient(originalRequest);
         } catch (refreshErr) {
-          processQueue(refreshErr, null);
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          processQueue(refreshErr);
           window.dispatchEvent(new Event('auth:unauthorized'));
           const authErr: ApiError = {
             message: 'Session expired. Please log in again.',
@@ -125,8 +89,6 @@ apiClient.interceptors.response.use(
           isRefreshing = false;
         }
       } else {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
         window.dispatchEvent(new Event('auth:unauthorized'));
       }
     }

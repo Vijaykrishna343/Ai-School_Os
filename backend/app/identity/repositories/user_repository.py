@@ -63,6 +63,24 @@ class IdentityUserRepository(BaseRepository[IdentityUser]):
 
         return db.scalar(stmt)
 
+    def get_all_by_email(
+        self,
+        db: Session,
+        email: str,
+    ) -> list[IdentityUser]:
+        """
+        Retrieve all non-deleted identity users matching an email across schools.
+        """
+        stmt = (
+            select(IdentityUser)
+            .where(
+                func.lower(IdentityUser.email) == email.lower(),
+                IdentityUser.is_deleted.is_(False),
+            )
+        )
+        return list(db.scalars(stmt).all())
+
+
     # ------------------------------------------------------------------
     # Update Methods
     # ------------------------------------------------------------------

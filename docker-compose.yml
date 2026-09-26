@@ -31,6 +31,19 @@ services:
         condition: service_healthy
     restart: "no"
 
+  redis:
+    image: redis:7-alpine
+    container_name: school_erp_redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: always
+
   backend:
     build:
       context: .
@@ -40,6 +53,7 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-production}
       DEBUG: ${DEBUG:-False}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-school_user}:${POSTGRES_PASSWORD:-change_me_in_prod}@db:5432/${POSTGRES_DB:-school_erp}}
+      REDIS_URL: ${REDIS_URL:-}
       SECRET_KEY: ${SECRET_KEY:-change_this_to_a_secure_random_secret_in_production}
       TRUST_PROXY: ${TRUST_PROXY:-True}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost,http://localhost:80,http://127.0.0.1}
@@ -48,6 +62,8 @@ services:
       - document_storage:/app/storage/documents
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
@@ -74,5 +90,7 @@ services:
 volumes:
   pgdata:
     name: school_erp_pgdata
+  redis_data:
+    name: school_erp_redis_data
   document_storage:
     name: school_erp_document_storage
